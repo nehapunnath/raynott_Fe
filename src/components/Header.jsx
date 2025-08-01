@@ -8,24 +8,54 @@ function Header() {
 
   const dropdownItems = {
     schools: [
-      { label: 'Day School', subItems: ['Schools in Bangalore', 'Schools in Mumbai'] },
-      { label: 'Boarding School', subItems: ['Residential Schools', 'International Schools'] }
+      { label: 'Day School', subItems: [
+        { name: 'Schools in Bangalore', path: '/listed' },
+        { name: 'Schools in Mumbai', path: '/listed?location=mumbai' }
+      ] },
+      { label: 'Boarding School', subItems: [
+        { name: 'Residential Schools', path: '/listed?type=residential' },
+        { name: 'International Schools', path: '/listed?type=international' }
+      ] }
     ],
     colleges: [
-      { label: 'Engineering', subItems: ['Bangalore Colleges', 'Pune Colleges'] },
-      { label: 'Medical', subItems: ['MBBS Colleges', 'Dental Colleges'] }
+      { label: 'Engineering', subItems: [
+        { name: 'Bangalore Colleges', path: '/colleges?location=bangalore' },
+        { name: 'Pune Colleges', path: '/colleges?location=pune' }
+      ] },
+      { label: 'Medical', subItems: [
+        { name: 'MBBS Colleges', path: '/colleges?type=medical' },
+        { name: 'Dental Colleges', path: '/colleges?type=dental' }
+      ] }
     ],
     pu: [
-      { label: 'Plus One', subItems: ['Science', 'Commerce'] },
-      { label: 'Plus Two', subItems: ['Arts', 'Vocational'] }
+      { label: 'Plus One', subItems: [
+        { name: 'Science', path: '/pu-colleges?stream=science' },
+        { name: 'Commerce', path: '/pu-colleges?stream=commerce' }
+      ] },
+      { label: 'Plus Two', subItems: [
+        { name: 'Arts', path: '/pu-colleges?stream=arts' },
+        { name: 'Vocational', path: '/pu-colleges?stream=vocational' }
+      ] }
     ],
     coaching: [
-      { label: 'Entrance Exams', subItems: ['JEE Coaching', 'NEET Coaching'] },
-      { label: 'Others', subItems: ['UPSC', 'SSC'] }
+      { label: 'Entrance Exams', subItems: [
+        { name: 'JEE Coaching', path: '/coaching?exam=jee' },
+        { name: 'NEET Coaching', path: '/coaching?exam=neet' }
+      ] },
+      { label: 'Others', subItems: [
+        { name: 'UPSC', path: '/coaching?exam=upsc' },
+        { name: 'SSC', path: '/coaching?exam=ssc' }
+      ] }
     ],
     tuition: [
-      { label: 'Home Tutors', subItems: ['Maths', 'Science'] },
-      { label: 'Online Tutors', subItems: ['CBSE', 'ICSE'] }
+      { label: 'Home Tutors', subItems: [
+        { name: 'Maths', path: '/tuition?subject=maths' },
+        { name: 'Science', path: '/tuition?subject=science' }
+      ] },
+      { label: 'Online Tutors', subItems: [
+        { name: 'CBSE', path: '/tuition?board=cbse' },
+        { name: 'ICSE', path: '/tuition?board=icse' }
+      ] }
     ]
   };
 
@@ -39,10 +69,11 @@ function Header() {
               {group.subItems.map((item, i) => (
                 <li key={i}>
                   <Link 
-                    to={`/${category}/${item.toLowerCase().replace(/\s+/g, '-')}`} 
+                    to={item.path} 
                     className="text-sm hover:text-orange-400 block"
+                    onClick={() => setMenuOpen(false)}
                   >
-                    {item}
+                    {item.name}
                   </Link>
                 </li>
               ))}
@@ -107,8 +138,12 @@ function Header() {
                   <ul className="ml-2 space-y-1">
                     {group.subItems.map((item, iidx) => (
                       <li key={iidx}>
-                        <Link to={`/${key}/${item.toLowerCase().replace(/\s+/g, '-')}`} onClick={() => setMenuOpen(false)} className="text-sm block">
-                          {item}
+                        <Link 
+                          to={item.path} 
+                          onClick={() => setMenuOpen(false)} 
+                          className="text-sm block"
+                        >
+                          {item.name}
                         </Link>
                       </li>
                     ))}

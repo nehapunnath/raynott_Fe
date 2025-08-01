@@ -134,7 +134,7 @@ export default function Schools() {
               transition={{ delay: idx * 0.1 }}
             >
               <motion.div
-                onClick={() => navigate(`/schools/${school.id}`)}
+                onClick={() => navigate(`/details`)}
                 className="bg-white rounded-xl overflow-hidden shadow-md hover:shadow-xl transition-all duration-300 cursor-pointer group"
                 whileHover={{ y: -10 }}
               >
@@ -156,9 +156,7 @@ export default function Schools() {
                 <div className="p-5">
                   <h3 className="text-xl font-bold text-gray-800 mb-1">{school.name}</h3>
                   <p className="text-gray-600 text-sm">CBSE, ICSE & State Board</p>
-                  {/* <button className="mt-4 w-full bg-blue-600 hover:bg-blue-700 text-white py-2 rounded-lg font-medium transition-colors">
-                    View Details
-                  </button> */}
+                  
                 </div>
               </motion.div>
             </motion.div>
