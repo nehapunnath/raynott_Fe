@@ -1,18 +1,32 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { motion } from 'framer-motion';
-import { FaBookOpen, FaSearch, FaStar, FaPhone, FaMapMarkerAlt, FaGraduationCap } from 'react-icons/fa';
+import {
+    FaBookOpen,
+    FaSearch,
+    FaStar,
+    FaPhone,
+    FaMapMarkerAlt,
+    FaGraduationCap,
+    FaChevronLeft,
+    FaChevronRight,
+    FaTimes
+} from 'react-icons/fa';
 import { IoMdTime } from 'react-icons/io';
 import BasicInfo from '../components/BasicInfo';
 import FeesStructure from '../components/FeesStructure';
 import Contact from '../components/Contact';
 import Review from '../components/Review';
 import { useEffect } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 
 const SchoolDetails = () => {
+    const [selectedImage, setSelectedImage] = useState(null);
+    const [currentImageIndex, setCurrentImageIndex] = useState(0);
 
     useEffect(() => {
-        window.scrollTo(0,0);
+        window.scrollTo(0, 0);
     }, []);
+
 
     const school = {
         name: 'New Horizon International School',
@@ -25,7 +39,15 @@ const SchoolDetails = () => {
         established: 2005,
         medium: 'English',
         grades: 'Nursery to 12th',
-        facilities: ['Smart Classes', 'Swimming Pool', 'STEM Lab', 'Basketball Court', 'Music Room']
+        facilities: ['Smart Classes', 'Swimming Pool', 'STEM Lab', 'Basketball Court', 'Music Room'],
+        photos: [
+            'https://images.unsplash.com/photo-1588072432836-e10032774350?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1470&q=80',
+            'https://images.unsplash.com/photo-1523050854058-8df90110c9f1?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1470&q=80',
+            'https://images.unsplash.com/photo-1522202176988-66273c2fd55f?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1470&q=80',
+            'https://images.unsplash.com/photo-1549861833-c5932fd19229?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1470&q=80',
+            'https://images.unsplash.com/photo-1581093450021-4a7360e9a6a3?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1470&q=80',
+            'https://images.unsplash.com/photo-1588072432836-e10032774350?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1470&q=80'
+        ]
     };
 
     const similarSchools = [
@@ -43,9 +65,25 @@ const SchoolDetails = () => {
         }
     };
 
+    const openImage = (image, index) => {
+        setSelectedImage(image);
+        setCurrentImageIndex(index);
+    };
 
+    const closeImage = () => {
+        setSelectedImage(null);
+    };
 
-
+    const navigateImages = (direction) => {
+        let newIndex;
+        if (direction === 'prev') {
+            newIndex = currentImageIndex === 0 ? school.photos.length - 1 : currentImageIndex - 1;
+        } else {
+            newIndex = currentImageIndex === school.photos.length - 1 ? 0 : currentImageIndex + 1;
+        }
+        setSelectedImage(school.photos[newIndex]);
+        setCurrentImageIndex(newIndex);
+    };
 
     return (
         <div className="min-h-screen bg-gradient-to-b from-orange-50 to-white">
@@ -57,14 +95,16 @@ const SchoolDetails = () => {
                 className="bg-gradient-to-r from-orange-600 to-amber-600 shadow-lg sticky top-0 z-50 py-2"
             >
                 <div className="max-w-7xl mx-auto px-4 flex flex-col md:flex-row items-center justify-between">
+
                     <motion.div
                         className="flex items-center"
                         whileHover={{ scale: 1.03 }}
                     >
-                        <span className="text-2xl font-extrabold text-white tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-white to-amber-100">
+                        <Link to="/" className="text-2xl font-extrabold text-white tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-white to-amber-100">
                             Raynott
-                        </span>
+                        </Link>
                     </motion.div>
+
 
                     <div className="relative w-full max-w-2xl mx-2 my-2 md:my-0">
                         <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -165,7 +205,7 @@ const SchoolDetails = () => {
             >
                 <div className="bg-white rounded-xl shadow-lg overflow-hidden">
                     <div className="flex overflow-x-auto scrollbar-hide justify-center bg-gradient-to-r from-orange-50 to-amber-50 rounded-xl p-1 shadow-inner">
-                        {['Basic Info', 'Fee Structure', 'Contact', 'Reviews'].map((section) => (
+                        {['Basic Info', 'Photos', 'Fee Structure', 'Contact', 'Reviews'].map((section) => (
                             <motion.button
                                 key={section}
                                 onClick={() => scrollToSection(section.replace(/\s+/g, '').toLowerCase())}
@@ -207,6 +247,45 @@ const SchoolDetails = () => {
                                 Basic Information
                             </h2>
                             <BasicInfo school={school} />
+                        </div>
+                    </motion.div>
+
+                    {/* Photos Section */}
+                    <motion.div
+                        id="photos"
+                        className="bg-white rounded-2xl shadow-lg overflow-hidden"
+                        initial={{ opacity: 0, y: 20 }}
+                        whileInView={{ opacity: 1, y: 0 }}
+                        transition={{ duration: 0.5 }}
+                        viewport={{ once: true, margin: "-100px" }}
+                    >
+                        <div className="p-6">
+                            <h2 className="text-2xl font-bold text-gray-800 mb-6 flex items-center">
+                                <span className="w-2 h-8 bg-orange-600 rounded-full mr-3"></span>
+                                School Gallery
+                            </h2>
+
+                            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+                                {school.photos.map((photo, index) => (
+                                    <motion.div
+                                        key={index}
+                                        className="relative aspect-square overflow-hidden rounded-xl cursor-pointer group"
+                                        whileHover={{ scale: 1.02 }}
+                                        onClick={() => openImage(photo, index)}
+                                    >
+                                        <img
+                                            src={photo}
+                                            alt={`${school.name} - Photo ${index + 1}`}
+                                            className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+                                        />
+                                        <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                                    </motion.div>
+                                ))}
+                            </div>
+
+                            <p className="text-sm text-gray-500 mt-4 text-center">
+                                Click on any photo to view in full size
+                            </p>
                         </div>
                     </motion.div>
 
@@ -265,7 +344,7 @@ const SchoolDetails = () => {
                     </motion.div>
                 </div>
 
-                {/* Right Column - Fixed Form (Now with White Background) */}
+                {/* Right Column - Fixed Form */}
                 <motion.div
                     className="w-full lg:w-1/3 lg:sticky lg:top-[140px] self-start pt-2"
                     initial={{ opacity: 0, x: 20 }}
@@ -417,35 +496,49 @@ const SchoolDetails = () => {
                 </div>
             </motion.div>
 
-            {/* Call to Action */}
-            {/* <motion.div
-                className="bg-gradient-to-r from-orange-600 to-amber-600 mt-16 py-12 px-4"
-                initial={{ opacity: 0 }}
-                whileInView={{ opacity: 1 }}
-                transition={{ duration: 0.6 }}
-                viewport={{ once: true }}
-            >
-                <div className="max-w-4xl mx-auto text-center">
-                    <h2 className="text-3xl md:text-4xl font-bold text-white mb-4">Ready to Find the Perfect School?</h2>
-                    <p className="text-xl text-amber-100 mb-8">Our education experts are here to help you make the right choice for your child's future.</p>
-                    <div className="flex flex-col sm:flex-row justify-center gap-4">
-                        <motion.button
-                            whileHover={{ scale: 1.05, boxShadow: '0 4px 15px rgba(0, 0, 0, 0.2)' }}
-                            whileTap={{ scale: 0.98 }}
-                            className="bg-white text-orange-600 font-bold py-3 px-8 rounded-full shadow-lg"
-                        >
-                            Book Free Consultation
-                        </motion.button>
-                        <motion.button
-                            whileHover={{ scale: 1.05, boxShadow: '0 4px 15px rgba(0, 0, 0, 0.2)' }}
-                            whileTap={{ scale: 0.98 }}
-                            className="bg-transparent border-2 border-white text-white font-bold py-3 px-8 rounded-full shadow-lg"
-                        >
-                            Browse All Schools
-                        </motion.button>
+            {/* Image Modal */}
+            {selectedImage && (
+                <motion.div
+                    className="fixed inset-0 bg-black/90 z-50 flex items-center justify-center p-4"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                >
+                    <button
+                        className="absolute top-4 right-4 text-white text-3xl"
+                        onClick={closeImage}
+                    >
+                        <FaTimes />
+                    </button>
+
+                    <button
+                        className="absolute left-4 text-white text-3xl bg-black/50 rounded-full p-2"
+                        onClick={() => navigateImages('prev')}
+                    >
+                        <FaChevronLeft />
+                    </button>
+
+                    <motion.img
+                        src={selectedImage}
+                        alt={`${school.name} - Photo ${currentImageIndex + 1}`}
+                        className="max-w-full max-h-screen object-contain"
+                        initial={{ scale: 0.9 }}
+                        animate={{ scale: 1 }}
+                        exit={{ scale: 0.9 }}
+                    />
+
+                    <button
+                        className="absolute right-4 text-white text-3xl bg-black/50 rounded-full p-2"
+                        onClick={() => navigateImages('next')}
+                    >
+                        <FaChevronRight />
+                    </button>
+
+                    <div className="absolute bottom-4 left-0 right-0 text-center text-white">
+                        Photo {currentImageIndex + 1} of {school.photos.length}
                     </div>
-                </div>
-            </motion.div> */}
+                </motion.div>
+            )}
         </div>
     );
 };

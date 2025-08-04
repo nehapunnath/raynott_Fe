@@ -9,52 +9,61 @@ function Header() {
   const dropdownItems = {
     schools: [
       { label: 'Day School', subItems: [
-        { name: 'Schools in Bangalore', path: '/listed' },
-        { name: 'Schools in Mumbai', path: '/listed?location=mumbai' }
+        { name: 'Schools in Bangalore', path: '/listing' },
+        { name: 'Schools in Mumbai', path: '/listing' }
       ] },
       { label: 'Boarding School', subItems: [
         { name: 'Residential Schools', path: '/listed?type=residential' },
-        { name: 'International Schools', path: '/listed?type=international' }
+        { name: 'International Schools', path: '/listed' }
       ] }
     ],
     colleges: [
       { label: 'Engineering', subItems: [
-        { name: 'Bangalore Colleges', path: '/colleges?location=bangalore' },
-        { name: 'Pune Colleges', path: '/colleges?location=pune' }
+        { name: 'Bangalore Colleges', path: '/colleges' },
+        { name: 'Pune Colleges', path: '/colleges' }
       ] },
       { label: 'Medical', subItems: [
-        { name: 'MBBS Colleges', path: '/colleges?type=medical' },
-        { name: 'Dental Colleges', path: '/colleges?type=dental' }
-      ] }
+        { name: 'Banglore Colleges', path: '/colleges' },
+        { name: 'Pune Colleges', path: '/colleges' }
+      ] },
+      { label: 'MBA', subItems: [
+        { name: 'Banglore Colleges', path: '/colleges' },
+        { name: 'Pune Colleges', path: '/colleges' }
+      ] },
+        { label: 'Architecture', subItems: [
+        { name: 'Banglore Colleges', path: '/colleges' },
+        { name: 'Pune Colleges', path: '/colleges' }
+      ] },
+      
     ],
     pu: [
       { label: 'Plus One', subItems: [
-        { name: 'Science', path: '/pu-colleges?stream=science' },
-        { name: 'Commerce', path: '/pu-colleges?stream=commerce' }
+        { name: 'Pu Colleges in Banglore', path: '/pu-colleges' },
+        // { name: 'Pu Colleges in Banglore', path: '/pu-colleges' }
       ] },
       { label: 'Plus Two', subItems: [
-        { name: 'Arts', path: '/pu-colleges?stream=arts' },
-        { name: 'Vocational', path: '/pu-colleges?stream=vocational' }
+        { name: 'Pu Colleges in Banglore', path: '/pu-colleges' },
+        // { name: 'Pu Colleges in Banglore', path: '/pu-colleges' }
       ] }
     ],
     coaching: [
       { label: 'Entrance Exams', subItems: [
-        { name: 'JEE Coaching', path: '/coaching?exam=jee' },
-        { name: 'NEET Coaching', path: '/coaching?exam=neet' }
+        { name: 'Coaching in Banglore', path: '/coaching' },
+        // { name: 'Coaching Banglore', path: '/coaching' }
       ] },
       { label: 'Others', subItems: [
-        { name: 'UPSC', path: '/coaching?exam=upsc' },
-        { name: 'SSC', path: '/coaching?exam=ssc' }
+        { name: 'Coaching in Banglore', path: '/coaching' },
+        // { name: 'Coaching in Banglore', path: '/coaching' }
       ] }
     ],
     tuition: [
       { label: 'Home Tutors', subItems: [
-        { name: 'Maths', path: '/tuition?subject=maths' },
-        { name: 'Science', path: '/tuition?subject=science' }
+        { name: 'Tutors in Banglore', path: '/tuition' },
+        // { name: 'Tutors in Banglore', path: '/tuition' }
       ] },
       { label: 'Online Tutors', subItems: [
-        { name: 'CBSE', path: '/tuition?board=cbse' },
-        { name: 'ICSE', path: '/tuition?board=icse' }
+        { name: 'Tutors in Banglore', path: '/tuition' },
+        // { name: 'Tutors in Banglore', path: '/tuition' }
       ] }
     ]
   };
@@ -107,6 +116,8 @@ function Header() {
             {activeDropdown === key && renderDropdown(key)}
           </div>
         ))}
+
+        <Link to="/register" className="hover:text-orange-400 transition">Register Now</Link>
 
         <Link to="/contact" className="hover:text-orange-400 transition">Contact Us</Link>
       </nav>

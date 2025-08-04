@@ -68,6 +68,7 @@ function Home() {
     return (
         <div className="bg-gradient-to-b from-amber-50 to-blue-50 relative">
             <Header />
+            
 
             {/* Scrolling Announcement */}
             <div className="w-full overflow-hidden bg-gradient-to-r from-orange-600 via-amber-500 to-orange-600 py-4 shadow-xl bg-[length:200%_auto] animate-gradient-x">
