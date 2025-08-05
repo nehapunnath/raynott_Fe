@@ -4,54 +4,55 @@ import { useNavigate } from "react-router-dom";
 import { ArrowLeft, ArrowRight } from "lucide-react";
 import { motion } from "framer-motion";
 
-const colleges = [
+const tuitionCenters = [
   {
-    name: "New Horizon College of Engineering",
-    image: "https://images.unsplash.com/photo-1523050854058-8df90110c9f1?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=800&q=80",
-    id: "abc-college",
-    rating: 4.5,
+    name: "Brilliant Minds Tuition",
+    image: "https://images.unsplash.com/photo-1588072432836-e10032774350?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=800&q=80",
+    id: "brilliant-minds",
+    rating: 4.9,
     location: "Bangalore",
-    courses: ["BE", "BTech", "ME"]
-
+    subjects: ["Math", "Science", "English"],
   },
   {
-    name: "National Engineering Institute",
-    image: "https://images.unsplash.com/photo-1523240795612-9a054b0db644?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=800&q=80",
-    id: "national-engineering",
+    name: "Concept Builders",
+    image: "https://images.unsplash.com/photo-1523050854058-8df90110c9f1?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=800&q=80",
+    id: "concept-builders",
     rating: 4.7,
     location: "Mumbai",
-    courses: ["BE", "BTech", "ME"]
+    subjects: ["Physics", "Chemistry", "Biology"],
   },
   {
-    name: "Bright Future College",
-    image: "https://images.unsplash.com/photo-1522202176988-66273c2fd55f?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=800&q=80",
-    id: "bright-future",
-    rating: 4.3,
+    name: "Excel Learning Hub",
+    image: "https://images.unsplash.com/photo-1523240795612-9a054b0db644?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=800&q=80",
+    id: "excel-learning",
+    rating: 4.8,
     location: "Delhi",
-    courses: ["BCom", "MCom", "BBA"]
+    subjects: ["All Subjects", "CBSE", "ICSE"],
   },
   {
-    name: "Global Science College",
-    image: "https://images.unsplash.com/photo-1549861833-c5932fd19229?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=800&q=80",
-    id: "global-science",
+    name: "Scholar's Den",
+    image: "https://images.unsplash.com/photo-1522202176988-66273c2fd55f?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=800&q=80",
+    id: "scholars-den",
     rating: 4.6,
     location: "Hyderabad",
-    courses: ["BSc", "MSc", "PhD"]
+    subjects: ["Math", "Computer Science"],
+    results: "100% passing rate"
   },
   {
-    name: "Prestige Medical College",
-    image: "https://images.unsplash.com/photo-1581093450021-4a7360e9a6a3?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=800&q=80",
-    id: "prestige-medical",
-    rating: 4.8,
+    name: "Young Genius Academy",
+    image: "https://images.unsplash.com/photo-1549861833-c5932fd19229?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=800&q=80",
+    id: "young-genius",
+    rating: 4.5,
     location: "Chennai",
-    courses: ["MBBS", "BDS", "MD"]
+    subjects: ["Languages", "Social Studies"],
+    results: "85% A grades"
   }
 ];
 
 const NextArrow = ({ onClick }) => (
   <motion.div
     onClick={onClick}
-    className="absolute right-4 top-1/2 -translate-y-1/2 z-10 bg-white text-indigo-600 rounded-full p-3 cursor-pointer shadow-lg hover:shadow-xl hover:bg-indigo-600 hover:text-white transition-all"
+    className="absolute right-4 top-1/2 -translate-y-1/2 z-10 bg-white text-blue-600 rounded-full p-3 cursor-pointer shadow-lg hover:shadow-xl hover:bg-blue-600 hover:text-white transition-all"
     whileHover={{ scale: 1.1 }}
     whileTap={{ scale: 0.9 }}
     initial={{ opacity: 0.7 }}
@@ -65,7 +66,7 @@ const NextArrow = ({ onClick }) => (
 const PrevArrow = ({ onClick }) => (
   <motion.div
     onClick={onClick}
-    className="absolute left-4 top-1/2 -translate-y-1/2 z-10 bg-white text-indigo-600 rounded-full p-3 cursor-pointer shadow-lg hover:shadow-xl hover:bg-indigo-600 hover:text-white transition-all"
+    className="absolute left-4 top-1/2 -translate-y-1/2 z-10 bg-white text-blue-600 rounded-full p-3 cursor-pointer shadow-lg hover:shadow-xl hover:bg-blue-600 hover:text-white transition-all"
     whileHover={{ scale: 1.1 }}
     whileTap={{ scale: 0.9 }}
     initial={{ opacity: 0.7 }}
@@ -76,7 +77,7 @@ const PrevArrow = ({ onClick }) => (
   </motion.div>
 );
 
-export default function Colleges() {
+export default function Tuition() {
   const navigate = useNavigate();
 
   const settings = {
@@ -116,22 +117,22 @@ export default function Colleges() {
   };
 
   return (
-    <div className="relative max-w-screen-2xl mx-auto px-6 py-12 bg-gradient-to-b from-indigo-50 to-white">
+    <div className="relative max-w-screen-2xl mx-auto px-6 py-12 bg-gradient-to-b from-blue-50 to-white">
       <motion.div 
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5 }}
         className="text-center mb-12"
       >
-        <h2 className="text-4xl font-bold text-gray-800 mb-3">Featured Colleges</h2>
+        <h2 className="text-4xl font-bold text-gray-800 mb-3">Premium Tuition Centers</h2>
         <p className="text-lg text-gray-600 max-w-2xl mx-auto">
-          Discover premier institutions for higher education and specialized courses
+          Expert tutors for academic excellence and concept mastery
         </p>
       </motion.div>
 
       <div className="relative px-10">
         <Slider {...settings}>
-          {colleges.map((college, idx) => (
+          {tuitionCenters.map((center, idx) => (
             <motion.div 
               key={idx} 
               className="px-3"
@@ -140,44 +141,43 @@ export default function Colleges() {
               transition={{ delay: idx * 0.1 }}
             >
               <motion.div
-                onClick={() => navigate(`/college-details`)}
+                onClick={() => navigate(`/tuition-details`)}
                 className="bg-white rounded-xl overflow-hidden shadow-md hover:shadow-xl transition-all duration-300 cursor-pointer group"
                 whileHover={{ y: -10 }}
               >
                 <div className="relative h-48 overflow-hidden">
                   <img
-                    src={college.image}
-                    alt={college.name}
+                    src={center.image}
+                    alt={center.name}
                     className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                   />
                   <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent p-4">
                     <div className="flex items-center justify-between">
                       <div className="bg-yellow-400 text-yellow-900 font-bold px-2 py-1 rounded-md text-sm flex items-center">
-                        ⭐ {college.rating}
+                        ⭐ {center.rating}
                       </div>
-                      <span className="text-white text-sm">{college.location}</span>
+                      <span className="text-white text-sm">{center.location}</span>
                     </div>
                   </div>
                 </div>
                 <div className="p-5">
-                  <h3 className="text-xl font-bold text-gray-800 mb-1">{college.name}</h3>
-                  <div className="flex flex-wrap gap-1 mt-2 mb-4">
-                    {college.courses.slice(0, 3).map((course, i) => (
-                      <span key={i} className="text-xs bg-indigo-100 text-indigo-800 px-2 py-1 rounded">
-                        {course}
+                  <h3 className="text-xl font-bold text-gray-800 mb-1">{center.name}</h3>
+                  <div className="flex flex-wrap gap-1 mt-2">
+                    {center.subjects.map((subject, i) => (
+                      <span key={i} className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded">
+                        {subject}
                       </span>
                     ))}
-                  
                   </div>
-
+                  {/* <p className="text-sm text-gray-600 mt-3">
+                    <span className="font-medium">Results:</span> {center.results}
+                  </p> */}
                 </div>
               </motion.div>
             </motion.div>
           ))}
         </Slider>
       </div>
-
-      
     </div>
   );
 }

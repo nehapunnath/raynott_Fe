@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { FaSchool, FaCheckCircle, FaChalkboardTeacher, FaUsers, FaSearchLocation } from "react-icons/fa";
 import { motion } from 'framer-motion';
 import Header from '../components/Header';
+import Footer from '../components/Footer';
 
 function Register() {
   const navigate = useNavigate();
@@ -276,6 +277,7 @@ function Register() {
           </motion.button>
         </div>
       </div>
+      {/* <Footer/> */}
     </div>
   );
 }

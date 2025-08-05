@@ -3,6 +3,8 @@ import DatePicker from 'react-datepicker';
 import TimePicker from 'react-time-picker';
 import 'react-datepicker/dist/react-datepicker.css';
 import 'react-time-picker/dist/TimePicker.css';
+import Footer from '../components/Footer';
+import StickyButton from '../components/StickyButton';
 
 const BookaDemo = () => {
   const [date, setDate] = useState(new Date());
@@ -121,6 +123,8 @@ const BookaDemo = () => {
           </div>
         </div>
       </div>
+      {/* <Footer/> */}
+          {/* <StickyButton/> */}
     </div>
   );
 };

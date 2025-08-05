@@ -12,12 +12,15 @@ import {
     FaTimes
 } from 'react-icons/fa';
 import { IoMdTime } from 'react-icons/io';
-import BasicInfo from '../components/BasicInfo';
-import FeesStructure from '../components/FeesStructure';
-import Contact from '../components/Contact';
-import Review from '../components/Review';
+import BasicInfo from '../components/School/BasicInfo';
+import FeesStructure from '../components/School/FeesStructure';
+import Contact from '../components/School/Contact';
+import Review from '../components/School/Review';
 import { useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import StickyButton from '../components/StickyButton';
+import Footer from '../components/Footer';
+import { FaHeart, FaRegHeart } from 'react-icons/fa';
 
 const SchoolDetails = () => {
     const [selectedImage, setSelectedImage] = useState(null);
@@ -88,54 +91,54 @@ const SchoolDetails = () => {
     return (
         <div className="min-h-screen bg-gradient-to-b from-orange-50 to-white">
             {/* Header */}
-            <motion.header
-                initial={{ y: -100 }}
-                animate={{ y: 0 }}
-                transition={{ type: 'spring', stiffness: 120 }}
-                className="bg-gradient-to-r from-orange-600 to-amber-600 shadow-lg sticky top-0 z-50 py-2"
-            >
-                <div className="max-w-7xl mx-auto px-4 flex flex-col md:flex-row items-center justify-between">
-
-                    <motion.div
-                        className="flex items-center"
-                        whileHover={{ scale: 1.03 }}
-                    >
-                        <Link to="/" className="text-2xl font-extrabold text-white tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-white to-amber-100">
-                            Raynott
-                        </Link>
-                    </motion.div>
-
-
-                    <div className="relative w-full max-w-2xl mx-2 my-2 md:my-0">
-                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                            <FaSearch className="h-4 w-4 text-orange-300" />
-                        </div>
-                        <motion.input
-                            whileFocus={{ scale: 1.02, boxShadow: '0 0 0 2px rgba(249, 115, 22, 0.5)' }}
-                            type="text"
-                            placeholder="Search schools..."
-                            className="block w-full pl-10 pr-3 py-2 text-sm border border-transparent rounded-full bg-white/90 text-gray-800 placeholder-gray-500 focus:outline-none focus:bg-white focus:ring-2 focus:ring-orange-400 focus:border-transparent shadow-lg transition-all duration-300"
-                        />
-                    </div>
-
-                    <div className="hidden md:flex space-x-2">
-                        <motion.button
-                            whileHover={{ y: -2, boxShadow: '0 2px 4px -1px rgba(0, 0, 0, 0.1)' }}
-                            whileTap={{ scale: 0.98 }}
-                            className="bg-white text-orange-600 text-sm font-semibold py-1 px-4 rounded-full flex items-center shadow-md hover:shadow-sm transition-all duration-300"
-                        >
-                            <FaBookOpen className="mr-1 h-3 w-3" /> Add School
-                        </motion.button>
-                        <motion.button
-                            whileHover={{ y: -2, boxShadow: '0 2px 4px -1px rgba(0, 0, 0, 0.1)' }}
-                            whileTap={{ scale: 0.98 }}
-                            className="bg-amber-700 text-white text-sm font-semibold py-1 px-4 rounded-full shadow-md hover:shadow-sm transition-all duration-300"
-                        >
-                            Book Demo
-                        </motion.button>
-                    </div>
-                </div>
-            </motion.header>
+           <header className="bg-orange-600 shadow-lg sticky top-0 z-50 ">
+                   <div className="max-w-7xl mx-auto px-4  md:py-6 flex flex-col md:flex-row items-center justify-between">
+                     <div className="flex w-full md:w-auto justify-between items-center mb-4 md:mb-0">
+                       <Link to="/" className="text-3xl font-extrabold text-white">
+                         <motion.span whileHover={{ scale: 1.05 }}>
+                           Raynott
+                         </motion.span>
+                       </Link>
+           
+                       <div className="md:hidden flex space-x-2">
+                         <motion.button
+                           className="bg-white text-orange-600 font-semibold py-2 px-4 rounded-full transition duration-300"
+                           whileHover={{ scale: 1.05 }}
+                           whileTap={{ scale: 0.95 }}
+                         >
+                           Demo
+                         </motion.button>
+                         <motion.button
+                           className="bg-white text-orange-600 font-semibold py-2 px-4 rounded-full transition duration-300"
+                           whileHover={{ scale: 1.05 }}
+                           whileTap={{ scale: 0.95 }}
+                         >
+                           <FaBookOpen />
+                         </motion.button>
+                       </div>
+                     </div>
+           
+                     <div className="relative w-full max-w-2xl md:max-w-xl flex-grow md:ml-8">
+                       <FaSearch className="absolute left-4 top-1/2 transform -translate-y-1/2 text-orange-400" />
+                       <input
+                         type="text"
+                         placeholder="Search Schools, Locations in Bengaluru..."
+                         className="pl-12 pr-4 py-3 rounded-full bg-white border border-transparent text-gray-800 focus:outline-none w-full focus:ring-2 focus:ring-orange-200 focus:border-transparent shadow-sm"
+                       />
+                     </div>
+           
+                     <div className="hidden md:flex space-x-4 ml-8">
+                       <motion.button
+                         className="bg-white border border-white text-orange-600 hover:bg-orange-100 font-semibold py-2 px-4 rounded-full transition duration-300"
+                         whileHover={{ scale: 1.05 }}
+                         whileTap={{ scale: 0.95 }}
+                         onClick={() => nav('/bookdemo')}
+                       >
+                         Book A Demo
+                       </motion.button>
+                     </div>
+                   </div>
+                 </header>
 
             {/* Hero Banner */}
             <motion.div
@@ -183,6 +186,7 @@ const SchoolDetails = () => {
                             </div>
                             <p className="text-xl font-semibold text-white">{school.fees}</p>
                         </div>
+                        
 
                         <motion.a
                             href={`tel:${school.phone}`}
@@ -539,6 +543,8 @@ const SchoolDetails = () => {
                     </div>
                 </motion.div>
             )}
+            {/* <Footer/> */}
+    <StickyButton/>
         </div>
     );
 };

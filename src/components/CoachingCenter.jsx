@@ -6,7 +6,7 @@ import { motion } from "framer-motion";
 
 const coachingCenters = [
   {
-    name: "Elite IIT Academy",
+    name: "Brilliant Minds Coaching Centerite IIT Academy",
     image: "https://images.unsplash.com/photo-1523050854058-8df90110c9f1?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=800&q=80",
     id: "elite-iit",
     rating: 4.8,
@@ -144,7 +144,7 @@ export default function CoachingCenter() {
               transition={{ delay: idx * 0.1 }}
             >
               <motion.div
-                onClick={() => navigate(`/coaching-centers/${center.id}`)}
+                onClick={() => navigate(`/coaching-details`)}
                 className="bg-white rounded-xl overflow-hidden shadow-md hover:shadow-xl transition-all duration-300 cursor-pointer group"
                 whileHover={{ y: -10 }}
               >
@@ -172,12 +172,7 @@ export default function CoachingCenter() {
                       </span>
                     ))}
                   </div>
-                  <p className="text-sm text-gray-600 mt-3">
-                    <span className="font-medium">Success Rate:</span> {center.successRate}
-                  </p>
-                  {/* <button className="w-full mt-4 bg-red-600 hover:bg-red-700 text-white py-2 rounded-lg font-medium transition-colors">
-                    View Programs
-                  </button> */}
+                  
                 </div>
               </motion.div>
             </motion.div>

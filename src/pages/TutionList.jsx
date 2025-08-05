@@ -4,6 +4,8 @@ import { Link, useNavigate } from 'react-router-dom';
 import { FaChalkboardTeacher, FaSearch, FaFilter, FaBookOpen, FaTimes, FaHome } from "react-icons/fa";
 import { IoLocationSharp } from "react-icons/io5";
 import { BsFillCalendar2CheckFill } from "react-icons/bs";
+import Footer from '../components/Footer';
+import StickyButton from '../components/StickyButton';
 
 const listings = [
   {
@@ -201,7 +203,7 @@ function TutionList() {
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
               {section.items.map((item) => (
                 <Link
-                  to={`/tution-details`}
+                  to={`/tuition-details`}
                   key={item.id}
                   className="group"
                 >
@@ -401,6 +403,8 @@ function TutionList() {
           </motion.div>
         )}
       </AnimatePresence>
+    {/* <Footer/> */}
+    <StickyButton/>
     </div>
   );
 }

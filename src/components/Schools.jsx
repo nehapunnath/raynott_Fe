@@ -6,39 +6,49 @@ import { motion } from "framer-motion";
 
 const schools = [
   {
-    name: "Sunrise Public School",
+    name: "New Horizon International",
     image: "https://images.unsplash.com/photo-1588072432836-e10032774350?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=800&q=80",
     id: "sunrise-public",
     rating: 4.8,
-    location: "Bangalore"
+    location: "Bangalore",
+    boards: ["CBSE", "ICSE", "State Board"],
+    results: "98% pass rate"
   },
   {
     name: "Green Valley High",
     image: "https://images.unsplash.com/photo-1523050854058-8df90110c9f1?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=800&q=80",
     id: "green-valley",
     rating: 4.5,
-    location: "Mumbai"
+    location: "Mumbai",
+    boards: ["CBSE", "IB"],
+    results: "92% distinction rate"
   },
   {
     name: "St. Xavier's International",
     image: "https://images.unsplash.com/photo-1549861833-c5932fd19229?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=800&q=80",
     id: "st-xaviers",
     rating: 4.9,
-    location: "Delhi"
+    location: "Delhi",
+    boards: ["ICSE", "IB"],
+    results: "100% university acceptance"
   },
   {
     name: "Global Wisdom Academy",
     image: "https://images.unsplash.com/photo-1522202176988-66273c2fd55f?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=800&q=80",
     id: "global-wisdom",
     rating: 4.7,
-    location: "Hyderabad"
+    location: "Hyderabad",
+    boards: ["CBSE", "State Board"],
+    results: "95% first division"
   },
   {
     name: "Bright Future School",
     image: "https://images.unsplash.com/photo-1523240795612-9a054b0db644?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=800&q=80",
     id: "bright-future",
     rating: 4.6,
-    location: "Pune"
+    location: "Pune",
+    boards: ["CBSE", "ICSE", "IGCSE"],
+    results: "90% above 90% marks"
   },
 ];
 
@@ -117,9 +127,9 @@ export default function Schools() {
         transition={{ duration: 0.5 }}
         className="text-center mb-12"
       >
-        <h2 className="text-4xl font-bold text-gray-800 mb-3">Featured Schools</h2>
+        <h2 className="text-4xl font-bold text-gray-800 mb-3">Premium Schools</h2>
         <p className="text-lg text-gray-600 max-w-2xl mx-auto">
-          Discover top-rated educational institutions across the country
+          Top-rated educational institutions for comprehensive learning
         </p>
       </motion.div>
 
@@ -134,7 +144,7 @@ export default function Schools() {
               transition={{ delay: idx * 0.1 }}
             >
               <motion.div
-                onClick={() => navigate(`/details`)}
+                onClick={() => navigate(`/school-details`)}
                 className="bg-white rounded-xl overflow-hidden shadow-md hover:shadow-xl transition-all duration-300 cursor-pointer group"
                 whileHover={{ y: -10 }}
               >
@@ -145,26 +155,29 @@ export default function Schools() {
                     className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                   />
                   <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent p-4">
-                    <div className="flex items-center">
+                    <div className="flex items-center justify-between">
                       <div className="bg-yellow-400 text-yellow-900 font-bold px-2 py-1 rounded-md text-sm flex items-center">
                         ⭐ {school.rating}
                       </div>
-                      <span className="ml-2 text-white text-sm">{school.location}</span>
+                      <span className="text-white text-sm">{school.location}</span>
                     </div>
                   </div>
                 </div>
                 <div className="p-5">
                   <h3 className="text-xl font-bold text-gray-800 mb-1">{school.name}</h3>
-                  <p className="text-gray-600 text-sm">CBSE, ICSE & State Board</p>
-                  
+                  <div className="flex flex-wrap gap-1 mt-2">
+                    {school.boards.map((board, i) => (
+                      <span key={i} className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded">
+                        {board}
+                      </span>
+                    ))}
+                  </div>
                 </div>
               </motion.div>
             </motion.div>
           ))}
         </Slider>
       </div>
-
-      
     </div>
   );
 }

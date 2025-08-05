@@ -4,6 +4,8 @@ import { Link, useNavigate } from 'react-router-dom';
 import { FaSchool, FaSearch, FaFilter, FaBookOpen, FaTimes, FaHome } from "react-icons/fa";
 import { IoLocationSharp } from "react-icons/io5";
 import { BsFillCalendar2CheckFill } from "react-icons/bs";
+import Footer from '../components/Footer';
+import StickyButton from '../components/StickyButton';
 
 const listings = [
   {
@@ -108,8 +110,8 @@ function Listing() {
   return (
     <div className="bg-orange-50 min-h-screen font-sans">
       {/* Header */}
-      <header className="bg-orange-600 shadow-md sticky top-0 z-50">
-        <div className="max-w-7xl mx-auto px-4 py-4 md:py-6 flex flex-col md:flex-row items-center justify-between">
+      <header className="bg-orange-600 shadow-lg sticky top-0 z-50 ">
+        <div className="max-w-7xl mx-auto px-4  md:py-6 flex flex-col md:flex-row items-center justify-between">
           <div className="flex w-full md:w-auto justify-between items-center mb-4 md:mb-0">
             <Link to="/" className="text-3xl font-extrabold text-white">
               <motion.span whileHover={{ scale: 1.05 }}>
@@ -201,7 +203,7 @@ function Listing() {
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
               {section.items.map((item) => (
                 <Link
-                  to={`/details`}
+                  to={`/school-details`}
                   key={item.id}
                   className="group"
                 >
@@ -406,6 +408,8 @@ function Listing() {
           </motion.div>
         )}
       </AnimatePresence>
+      {/* <Footer/> */}
+    <StickyButton/>
     </div>
   );
 }

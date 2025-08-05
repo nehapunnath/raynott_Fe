@@ -30,40 +30,33 @@ function Header() {
         { name: 'Banglore Colleges', path: '/colleges' },
         { name: 'Pune Colleges', path: '/colleges' }
       ] },
-        { label: 'Architecture', subItems: [
+      { label: 'Architecture', subItems: [
         { name: 'Banglore Colleges', path: '/colleges' },
         { name: 'Pune Colleges', path: '/colleges' }
       ] },
-      
     ],
     pu: [
       { label: 'Plus One', subItems: [
         { name: 'Pu Colleges in Banglore', path: '/pu-colleges' },
-        // { name: 'Pu Colleges in Banglore', path: '/pu-colleges' }
       ] },
       { label: 'Plus Two', subItems: [
         { name: 'Pu Colleges in Banglore', path: '/pu-colleges' },
-        // { name: 'Pu Colleges in Banglore', path: '/pu-colleges' }
       ] }
     ],
     coaching: [
       { label: 'Entrance Exams', subItems: [
         { name: 'Coaching in Banglore', path: '/coaching' },
-        // { name: 'Coaching Banglore', path: '/coaching' }
       ] },
       { label: 'Others', subItems: [
         { name: 'Coaching in Banglore', path: '/coaching' },
-        // { name: 'Coaching in Banglore', path: '/coaching' }
       ] }
     ],
     tuition: [
       { label: 'Home Tutors', subItems: [
         { name: 'Tutors in Banglore', path: '/tuition' },
-        // { name: 'Tutors in Banglore', path: '/tuition' }
       ] },
       { label: 'Online Tutors', subItems: [
         { name: 'Tutors in Banglore', path: '/tuition' },
-        // { name: 'Tutors in Banglore', path: '/tuition' }
       ] }
     ]
   };
@@ -72,9 +65,9 @@ function Header() {
     <div className="absolute top-full left-0 w-auto bg-white text-gray-900 rounded shadow-lg py-3 z-40">
       <div className="flex">
         {dropdownItems[category].map((group, index) => (
-          <div key={index} className="px-4 py-2 min-w-[200px] border-r last:border-r-0 border-gray-200">
-            <h4 className="font-semibold text-sm text-orange-500 mb-2">{group.label}</h4>
-            <ul className="space-y-2">
+          <div key={index} className="px-6 py-4 min-w-[220px] border-r last:border-r-0 border-gray-200">
+            <h4 className="font-semibold text-sm text-orange-500 mb-3">{group.label}</h4> {/* Increased mb-2 to mb-3 */}
+            <ul className="space-y-3"> {/* Increased space-y-2 to space-y-3 */}
               {group.subItems.map((item, i) => (
                 <li key={i}>
                   <Link 
@@ -97,12 +90,12 @@ function Header() {
     <header className="bg-gray-900 text-white px-6 h-20 flex items-center justify-between relative z-50">
       {/* Logo */}
       <Link to="/" className="flex items-center space-x-3">
-        <img src="/logo.png" alt="Raynott Logo" className="w-10 h-10" />
+        {/* <img src="/logo.png" alt="Raynott Logo" className="w-10 h-10" /> */}
         <span className="text-2xl font-bold text-orange-500" style={{ fontFamily: 'Cinzel, serif' }}>Raynott</span>
       </Link>
 
       {/* Desktop Nav */}
-      <nav className="hidden md:flex space-x-6 text-lg font-medium relative">
+      <nav className="hidden md:flex space-x-8 text-lg font-medium relative"> {/* Increased space-x-6 to space-x-8 */}
         {['schools', 'colleges', 'pu', 'coaching', 'tuition'].map((key) => (
           <div
             key={key}
@@ -110,16 +103,16 @@ function Header() {
             onMouseEnter={() => setActiveDropdown(key)}
             onMouseLeave={() => setActiveDropdown(null)}
           >
-            <span className="cursor-pointer capitalize hover:text-orange-400">
+            <span className="cursor-pointer capitalize hover:text-orange-400 px-2 py-1"> {/* Added padding */}
               {key === 'pu' ? 'PU College' : key === 'coaching' ? 'Coaching Center' : key === 'tuition' ? 'Tuition Center' : key.charAt(0).toUpperCase() + key.slice(1)}
             </span>
             {activeDropdown === key && renderDropdown(key)}
           </div>
         ))}
 
-        <Link to="/register" className="hover:text-orange-400 transition">Register Now</Link>
+        <Link to="/register" className="hover:text-orange-400 transition px-2 py-1">Register Now</Link> {/* Added padding */}
 
-        <Link to="/contact" className="hover:text-orange-400 transition">Contact Us</Link>
+        <Link to="/contact" className="hover:text-orange-400 transition px-2 py-1">Contact Us</Link> {/* Added padding */}
       </nav>
 
       {/* Login Button - Desktop */}
@@ -139,20 +132,20 @@ function Header() {
 
       {/* Mobile Menu */}
       {menuOpen && (
-        <div className="absolute top-20 left-0 w-full bg-gray-900 text-white flex flex-col py-4 space-y-4 md:hidden z-50 px-6">
+        <div className="absolute top-20 left-0 w-full bg-gray-900 text-white flex flex-col py-6 space-y-6 md:hidden z-50 px-6"> {/* Increased py-4 to py-6 and space-y-4 to space-y-6 */}
           {Object.keys(dropdownItems).map((key, idx) => (
-            <div key={idx} className="flex flex-col space-y-2">
-              <span className="font-semibold text-orange-400">{key === 'pu' ? 'PU College' : key === 'coaching' ? 'Coaching Center' : key === 'tuition' ? 'Tuition Center' : key.charAt(0).toUpperCase() + key.slice(1)}</span>
+            <div key={idx} className="flex flex-col space-y-4"> {/* Increased space-y-2 to space-y-4 */}
+              <span className="font-semibold text-orange-400 text-lg">{key === 'pu' ? 'PU College' : key === 'coaching' ? 'Coaching Center' : key === 'tuition' ? 'Tuition Center' : key.charAt(0).toUpperCase() + key.slice(1)}</span>
               {dropdownItems[key].map((group, gidx) => (
                 <div key={gidx} className="ml-4">
-                  <h5 className="text-sm text-orange-300">{group.label}</h5>
-                  <ul className="ml-2 space-y-1">
+                  <h5 className="text-base text-orange-300 mb-2">{group.label}</h5> {/* Added mb-2 and increased text size */}
+                  <ul className="ml-2 space-y-2"> {/* Increased space-y-1 to space-y-2 */}
                     {group.subItems.map((item, iidx) => (
                       <li key={iidx}>
                         <Link 
                           to={item.path} 
                           onClick={() => setMenuOpen(false)} 
-                          className="text-sm block"
+                          className="text-sm block py-1" /* Added py-1 */
                         >
                           {item.name}
                         </Link>
@@ -163,12 +156,15 @@ function Header() {
               ))}
             </div>
           ))}
-          <Link to="/contact" onClick={() => setMenuOpen(false)} className="hover:text-orange-400">Contact Us</Link>
+          <div className="space-y-4"> {/* Added container with spacing */}
+            <Link to="/register" onClick={() => setMenuOpen(false)} className="hover:text-orange-400 block py-2">Register Now</Link> {/* Added padding */}
+            <Link to="/contact" onClick={() => setMenuOpen(false)} className="hover:text-orange-400 block py-2">Contact Us</Link> {/* Added padding */}
+          </div>
           {/* Login Button - Mobile */}
           <Link 
             to="/login" 
             onClick={() => setMenuOpen(false)} 
-            className="bg-white text-gray-900 px-6 py-3 rounded-lg hover:bg-orange-200 transition font-medium text-lg text-center"
+            className="bg-white text-gray-900 px-6 py-3 rounded-lg hover:bg-orange-200 transition font-medium text-lg text-center mt-4" /* Added mt-4 */
           >
             Login
           </Link>

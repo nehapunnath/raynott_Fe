@@ -6,13 +6,12 @@ import { motion } from "framer-motion";
 
 const puColleges = [
   {
-    name: "Excel PU College",
+    name: "New Horizon PU College",
     image: "https://images.unsplash.com/photo-1523050854058-8df90110c9f1?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=800&q=80",
     id: "excel-pu",
     rating: 4.7,
     location: "Bangalore",
     streams: ["Science", "Commerce", "Arts"],
-    results: "98% pass rate"
   },
   {
     name: "National PU College",
@@ -21,7 +20,6 @@ const puColleges = [
     rating: 4.5,
     location: "Mumbai",
     streams: ["Science", "Commerce"],
-    results: "95% pass rate"
   },
   {
     name: "Brilliant PU College",
@@ -30,7 +28,6 @@ const puColleges = [
     rating: 4.6,
     location: "Delhi",
     streams: ["Science", "Commerce", "Arts"],
-    results: "97% pass rate"
   },
   {
     name: "Global PU College",
@@ -39,7 +36,6 @@ const puColleges = [
     rating: 4.8,
     location: "Hyderabad",
     streams: ["Science", "Commerce"],
-    results: "99% pass rate"
   },
   {
     name: "Vidyarthi PU College",
@@ -48,7 +44,6 @@ const puColleges = [
     rating: 4.4,
     location: "Chennai",
     streams: ["Science", "Commerce", "Arts"],
-    results: "96% pass rate"
   }
 ];
 
@@ -144,7 +139,7 @@ export default function PuCollege() {
               transition={{ delay: idx * 0.1 }}
             >
               <motion.div
-                onClick={() => navigate(`/pu-colleges/${college.id}`)}
+                onClick={() => navigate(`/pucollege-details`)}
                 className="bg-white rounded-xl overflow-hidden shadow-md hover:shadow-xl transition-all duration-300 cursor-pointer group"
                 whileHover={{ y: -10 }}
               >
@@ -172,12 +167,8 @@ export default function PuCollege() {
                       </span>
                     ))}
                   </div>
-                  <p className="text-sm text-gray-600 mt-3">
-                    <span className="font-medium">Results:</span> {college.results}
-                  </p>
-                  {/* <button className="w-full mt-4 bg-purple-600 hover:bg-purple-700 text-white py-2 rounded-lg font-medium transition-colors">
-                    View Courses
-                  </button> */}
+                  
+            
                 </div>
               </motion.div>
             </motion.div>

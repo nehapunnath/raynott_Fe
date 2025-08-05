@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Link, useNavigate } from 'react-router-dom';
 import { FaSchool, FaSearch, FaFilter, FaBookOpen, FaTimes, FaHome } from "react-icons/fa";
@@ -57,12 +57,13 @@ const listings = [
   },
 ];
 
-function PuCollegeList() {
+function AllPuColleges() {
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const [filters, setFilters] = useState({
     feesRange: [0, 100000],
     streams: [],
     collegeType: [],
+    category: "PU Colleges",
     location: 'Bengaluru'
   });
 
@@ -104,6 +105,10 @@ function PuCollegeList() {
     setIsFilterOpen(false);
   };
 
+  useEffect(() => {
+          window.scrollTo(0, 0);
+      }, []);
+
   return (
     <div className="bg-orange-50 min-h-screen font-sans">
       {/* Header */}
@@ -116,22 +121,6 @@ function PuCollegeList() {
               </motion.span>
             </Link>
 
-            <div className="md:hidden flex space-x-2">
-              <motion.button
-                className="bg-white text-orange-600 font-semibold py-2 px-4 rounded-full transition duration-300"
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-              >
-                Demo
-              </motion.button>
-              <motion.button
-                className="bg-white text-orange-600 font-semibold py-2 px-4 rounded-full transition duration-300"
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-              >
-                <FaBookOpen />
-              </motion.button>
-            </div>
           </div>
 
           <div className="relative w-full max-w-2xl md:max-w-xl flex-grow md:ml-8">
@@ -167,10 +156,10 @@ function PuCollegeList() {
                 Home
               </Link>
               <span className="mx-2">»</span>
-              <span className="text-orange-600">{filters.location}</span>
+              <span className="text-orange-600">{filters.category}</span>
             </div>
             <h1 className="text-3xl md:text-4xl font-extrabold text-gray-800 mt-2">
-              PU Colleges In {filters.location} 2025 - 26
+                Top Pu Colleges in India - 2025-26 Academic Year
             </h1>
             <p className="text-lg text-gray-600 flex items-center mt-1">
               <BsFillCalendar2CheckFill className="mr-2 text-orange-500" />
@@ -388,4 +377,4 @@ function PuCollegeList() {
   );
 }
 
-export default PuCollegeList;
+export default AllPuColleges;

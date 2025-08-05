@@ -12,16 +12,17 @@ import {
     FaTimes
 } from 'react-icons/fa';
 import { IoMdTime } from 'react-icons/io';
-import BasicInfo from '../components/College/BasicInfo';
-import FeesStructure from '../components/College/FeeStructure';
-import Contact from '../components/College/Contact';
-import Review from '../components/College/Review';
+
 import { useEffect } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
+import BasicInfo from '../components/Coaching/BasicInfo';
+import FeeStructure from '../components/Coaching/FeeStructure';
+import Contact from '../components/Coaching/Contact';
+import Review from '../components/Coaching/Review';
 import Footer from '../components/Footer';
 import StickyButton from '../components/StickyButton';
 
-const CollegeDetails = () => {
+const CoachingDetail = () => {
     const [selectedImage, setSelectedImage] = useState(null);
     const [currentImageIndex, setCurrentImageIndex] = useState(0);
 
@@ -29,31 +30,28 @@ const CollegeDetails = () => {
         window.scrollTo(0, 0);
     }, []);
 
-    const college = {
-        name: 'New Horizon College of Engineering',
-        address: 'Outer Ring Road, Near Marathahalli, Bengaluru, Karnataka 560103',
-        fees: '₹2,85,000/year',
-        rating: 4.5,
-        affiliation: 'VTU',
+    const coachingCenter = {
+        name: 'Brilliant Minds Coaching Center',
+        address: 'Koramangala 5th Block, Bengaluru, Karnataka 560034',
+        fees: '₹1,20,000/year',
+        rating: 4.8,
         phone: '+91 9876543210',
-        image: 'https://images.unsplash.com/photo-1523050854058-8df90110c9f1?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=800&q=80',
-        established: 2001,
-        courses: ['B.Tech', 'M.Tech', 'MBA', 'MCA'],
-        streams: ['Computer Science', 'Electronics', 'Mechanical', 'Civil', 'Information Science'],
-        facilities: ['Hostel', 'Library', 'Sports Complex', 'Cafeteria', 'Auditorium', 'Labs'],
-        accreditation: 'NAAC A+',
+        image: 'https://images.unsplash.com/photo-1522202176988-66273c2fd55f?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=800&q=80',
+        established: 2015,
+        courses: ['JEE Main & Advanced', 'NEET', 'KVPY', 'Olympiads'],
+        batches: ['Regular', 'Weekend', 'Crash Course'],
+        facilities: ['Air-conditioned Classes', 'Test Series', 'Doubt Sessions', 'Study Material'],
         photos: [
-            'https://images.unsplash.com/photo-1523050854058-8df90110c9f1?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1470&q=80',
-            'https://images.unsplash.com/photo-1523240795612-9a054b0db644?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1470&q=80',
-            'https://images.unsplash.com/photo-1588072432836-e10032774350?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1470&q=80',
-            'https://images.unsplash.com/photo-1522202176988-66273c2fd55f?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1470&q=80'
+            'https://images.unsplash.com/photo-1549861833-c5932fd19229?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1470&q=80',
+            'https://images.unsplash.com/photo-1581093450021-4a7360e9a6a3?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1470&q=80',
+            'https://images.unsplash.com/photo-1588072432836-e10032774350?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1470&q=80'
         ]
     };
 
-    const similarColleges = [
-        { name: 'RV College of Engineering', address: 'Mysore Road, Bengaluru', rating: 4.6, image: 'https://images.unsplash.com/photo-1549861833-c5932fd19229?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1470&q=80', link: '/college/rvce' },
-        { name: 'PES University', address: 'Electronic City, Bengaluru', rating: 4.4, image: 'https://images.unsplash.com/photo-1581093450021-4a7360e9a6a3?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1470&q=80', link: '/college/pes' },
-        { name: 'BMS College of Engineering', address: 'Basavanagudi, Bengaluru', rating: 4.3, image: 'https://images.unsplash.com/photo-1523240795612-9a054b0db644?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1470&q=80', link: '/college/bmsce' },
+    const similarCoachingCenters = [
+        { name: 'Aakash Institute', address: 'Jayanagar', rating: 4.7, image: 'https://images.unsplash.com/photo-1523050854058-8df90110c9f1?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1470&q=80', link: '/coaching/aakash' },
+        { name: 'FIITJEE', address: 'Indiranagar', rating: 4.6, image: 'https://images.unsplash.com/photo-1523240795612-9a054b0db644?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1470&q=80', link: '/coaching/fiitjee' },
+        { name: 'Allen Career Institute', address: 'Whitefield', rating: 4.5, image: 'https://images.unsplash.com/photo-1588072432836-e10032774350?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1470&q=80', link: '/coaching/allen' },
     ];
 
     const scrollToSection = (id) => {
@@ -75,65 +73,65 @@ const CollegeDetails = () => {
     const navigateImages = (direction) => {
         let newIndex;
         if (direction === 'prev') {
-            newIndex = currentImageIndex === 0 ? college.photos.length - 1 : currentImageIndex - 1;
+            newIndex = currentImageIndex === 0 ? coachingCenter.photos.length - 1 : currentImageIndex - 1;
         } else {
-            newIndex = currentImageIndex === college.photos.length - 1 ? 0 : currentImageIndex + 1;
+            newIndex = currentImageIndex === coachingCenter.photos.length - 1 ? 0 : currentImageIndex + 1;
         }
-        setSelectedImage(college.photos[newIndex]);
+        setSelectedImage(coachingCenter.photos[newIndex]);
         setCurrentImageIndex(newIndex);
     };
 
     return (
         <div className="min-h-screen bg-gradient-to-b from-orange-50 to-white">
             {/* Header */}
-           <header className="bg-orange-600 shadow-lg sticky top-0 z-50 ">
-                   <div className="max-w-7xl mx-auto px-4  md:py-6 flex flex-col md:flex-row items-center justify-between">
-                     <div className="flex w-full md:w-auto justify-between items-center mb-4 md:mb-0">
-                       <Link to="/" className="text-3xl font-extrabold text-white">
-                         <motion.span whileHover={{ scale: 1.05 }}>
-                           Raynott
-                         </motion.span>
-                       </Link>
-           
-                       <div className="md:hidden flex space-x-2">
-                         <motion.button
-                           className="bg-white text-orange-600 font-semibold py-2 px-4 rounded-full transition duration-300"
-                           whileHover={{ scale: 1.05 }}
-                           whileTap={{ scale: 0.95 }}
-                         >
-                           Demo
-                         </motion.button>
-                         <motion.button
-                           className="bg-white text-orange-600 font-semibold py-2 px-4 rounded-full transition duration-300"
-                           whileHover={{ scale: 1.05 }}
-                           whileTap={{ scale: 0.95 }}
-                         >
-                           <FaBookOpen />
-                         </motion.button>
-                       </div>
-                     </div>
-           
-                     <div className="relative w-full max-w-2xl md:max-w-xl flex-grow md:ml-8">
-                       <FaSearch className="absolute left-4 top-1/2 transform -translate-y-1/2 text-orange-400" />
-                       <input
-                         type="text"
-                         placeholder="Search Schools, Locations in Bengaluru..."
-                         className="pl-12 pr-4 py-3 rounded-full bg-white border border-transparent text-gray-800 focus:outline-none w-full focus:ring-2 focus:ring-orange-200 focus:border-transparent shadow-sm"
-                       />
-                     </div>
-           
-                     <div className="hidden md:flex space-x-4 ml-8">
-                       <motion.button
-                         className="bg-white border border-white text-orange-600 hover:bg-orange-100 font-semibold py-2 px-4 rounded-full transition duration-300"
-                         whileHover={{ scale: 1.05 }}
-                         whileTap={{ scale: 0.95 }}
-                         onClick={() => nav('/bookdemo')}
-                       >
-                         Book A Demo
-                       </motion.button>
-                     </div>
-                   </div>
-                 </header>
+            <header className="bg-orange-600 shadow-lg sticky top-0 z-50 ">
+                    <div className="max-w-7xl mx-auto px-4  md:py-6 flex flex-col md:flex-row items-center justify-between">
+                      <div className="flex w-full md:w-auto justify-between items-center mb-4 md:mb-0">
+                        <Link to="/" className="text-3xl font-extrabold text-white">
+                          <motion.span whileHover={{ scale: 1.05 }}>
+                            Raynott
+                          </motion.span>
+                        </Link>
+            
+                        <div className="md:hidden flex space-x-2">
+                          <motion.button
+                            className="bg-white text-orange-600 font-semibold py-2 px-4 rounded-full transition duration-300"
+                            whileHover={{ scale: 1.05 }}
+                            whileTap={{ scale: 0.95 }}
+                          >
+                            Demo
+                          </motion.button>
+                          <motion.button
+                            className="bg-white text-orange-600 font-semibold py-2 px-4 rounded-full transition duration-300"
+                            whileHover={{ scale: 1.05 }}
+                            whileTap={{ scale: 0.95 }}
+                          >
+                            <FaBookOpen />
+                          </motion.button>
+                        </div>
+                      </div>
+            
+                      <div className="relative w-full max-w-2xl md:max-w-xl flex-grow md:ml-8">
+                        <FaSearch className="absolute left-4 top-1/2 transform -translate-y-1/2 text-orange-400" />
+                        <input
+                          type="text"
+                          placeholder="Search Schools, Locations in Bengaluru..."
+                          className="pl-12 pr-4 py-3 rounded-full bg-white border border-transparent text-gray-800 focus:outline-none w-full focus:ring-2 focus:ring-orange-200 focus:border-transparent shadow-sm"
+                        />
+                      </div>
+            
+                      <div className="hidden md:flex space-x-4 ml-8">
+                        <motion.button
+                          className="bg-white border border-white text-orange-600 hover:bg-orange-100 font-semibold py-2 px-4 rounded-full transition duration-300"
+                          whileHover={{ scale: 1.05 }}
+                          whileTap={{ scale: 0.95 }}
+                          onClick={() => nav('/bookdemo')}
+                        >
+                          Book A Demo
+                        </motion.button>
+                      </div>
+                    </div>
+                  </header>
 
             {/* Hero Banner */}
             <motion.div
@@ -144,8 +142,8 @@ const CollegeDetails = () => {
             >
                 <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/40 to-transparent z-10"></div>
                 <img
-                    src={college.image}
-                    alt={college.name}
+                    src={coachingCenter.image}
+                    alt={coachingCenter.name}
                     className="w-full h-[32rem] object-cover"
                 />
 
@@ -156,34 +154,30 @@ const CollegeDetails = () => {
                         animate={{ opacity: 1 }}
                         transition={{ delay: 0.2 }}
                     >
-                        {college.name}
+                        {coachingCenter.name}
                     </motion.h1>
 
                     <div className="flex flex-wrap items-center gap-4 mb-4">
                         <div className="flex items-center bg-white/20 backdrop-blur-sm px-3 py-1 rounded-full">
                             <FaMapMarkerAlt className="mr-1 text-orange-300" />
-                            <span>{college.address}</span>
-                        </div>
-                        <div className="flex items-center bg-white/20 backdrop-blur-sm px-3 py-1 rounded-full">
-                            <FaGraduationCap className="mr-1 text-orange-300" />
-                            <span>{college.affiliation}</span>
+                            <span>{coachingCenter.address}</span>
                         </div>
                         <div className="flex items-center bg-white/20 backdrop-blur-sm px-3 py-1 rounded-full">
                             <IoMdTime className="mr-1 text-orange-300" />
-                            <span>Est. {college.established}</span>
+                            <span>Est. {coachingCenter.established}</span>
                         </div>
                     </div>
 
                     <div className="flex flex-wrap items-center justify-between">
                         <div className="flex items-center space-x-6">
                             <div className="flex items-center text-amber-300 text-xl">
-                                <FaStar className="mr-1" /> {college.rating}
+                                <FaStar className="mr-1" /> {coachingCenter.rating}
                             </div>
-                            <p className="text-xl font-semibold text-white">{college.fees}</p>
+                            <p className="text-xl font-semibold text-white">{coachingCenter.fees}</p>
                         </div>
 
                         <motion.a
-                            href={`tel:${college.phone}`}
+                            href={`tel:${coachingCenter.phone}`}
                             whileHover={{ scale: 1.05 }}
                             whileTap={{ scale: 0.95 }}
                             className="bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 text-white font-semibold py-3 px-8 rounded-full flex items-center transition-all duration-300 shadow-lg"
@@ -203,7 +197,7 @@ const CollegeDetails = () => {
             >
                 <div className="bg-white rounded-xl shadow-lg overflow-hidden">
                     <div className="flex overflow-x-auto scrollbar-hide justify-center bg-gradient-to-r from-orange-50 to-amber-50 rounded-xl p-1 shadow-inner">
-                        {['Basic Info', 'Photos', 'Fee Structure', 'Contact', 'Reviews'].map((section) => (
+                        {['Basic Info', 'Courses', 'Fee Structure', 'Contact', 'Reviews'].map((section) => (
                             <motion.button
                                 key={section}
                                 onClick={() => scrollToSection(section.replace(/\s+/g, '').toLowerCase())}
@@ -242,15 +236,15 @@ const CollegeDetails = () => {
                         <div className="p-6">
                             <h2 className="text-2xl font-bold text-gray-800 mb-4 flex items-center">
                                 <span className="w-2 h-8 bg-orange-600 rounded-full mr-3"></span>
-                                College Information
+                                Coaching Center Information
                             </h2>
-                            <BasicInfo college={college} />
+                            <BasicInfo coachingCenter={coachingCenter} />
                         </div>
                     </motion.div>
 
-                    {/* Photos Section */}
+                    {/* Courses Section */}
                     <motion.div
-                        id="photos"
+                        id="courses"
                         className="bg-white rounded-2xl shadow-lg overflow-hidden"
                         initial={{ opacity: 0, y: 20 }}
                         whileInView={{ opacity: 1, y: 0 }}
@@ -260,30 +254,32 @@ const CollegeDetails = () => {
                         <div className="p-6">
                             <h2 className="text-2xl font-bold text-gray-800 mb-6 flex items-center">
                                 <span className="w-2 h-8 bg-orange-600 rounded-full mr-3"></span>
-                                College Gallery
+                                Courses & Batches
                             </h2>
-
-                            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
-                                {college.photos.map((photo, index) => (
-                                    <motion.div
-                                        key={index}
-                                        className="relative aspect-square overflow-hidden rounded-xl cursor-pointer group"
-                                        whileHover={{ scale: 1.02 }}
-                                        onClick={() => openImage(photo, index)}
-                                    >
-                                        <img
-                                            src={photo}
-                                            alt={`${college.name} - Photo ${index + 1}`}
-                                            className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
-                                        />
-                                        <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-                                    </motion.div>
-                                ))}
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <div>
+                                    <h3 className="font-semibold text-lg text-gray-700 mb-3">Courses Offered</h3>
+                                    <ul className="space-y-2">
+                                        {coachingCenter.courses.map((course, index) => (
+                                            <li key={index} className="flex items-center">
+                                                <span className="w-2 h-2 bg-orange-500 rounded-full mr-2"></span>
+                                                {course}
+                                            </li>
+                                        ))}
+                                    </ul>
+                                </div>
+                                <div>
+                                    <h3 className="font-semibold text-lg text-gray-700 mb-3">Batch Types</h3>
+                                    <ul className="space-y-2">
+                                        {coachingCenter.batches.map((batch, index) => (
+                                            <li key={index} className="flex items-center">
+                                                <span className="w-2 h-2 bg-orange-500 rounded-full mr-2"></span>
+                                                {batch}
+                                            </li>
+                                        ))}
+                                    </ul>
+                                </div>
                             </div>
-
-                            <p className="text-sm text-gray-500 mt-4 text-center">
-                                Click on any photo to view in full size
-                            </p>
                         </div>
                     </motion.div>
 
@@ -301,7 +297,7 @@ const CollegeDetails = () => {
                                 <span className="w-2 h-8 bg-orange-600 rounded-full mr-3"></span>
                                 Fee Structure
                             </h2>
-                            <FeesStructure college={college} />
+                            <FeeStructure coachingCenter={coachingCenter} />
                         </div>
                     </motion.div>
 
@@ -319,7 +315,7 @@ const CollegeDetails = () => {
                                 <span className="w-2 h-8 bg-orange-600 rounded-full mr-3"></span>
                                 Contact Details
                             </h2>
-                            <Contact college={college} />
+                            <Contact coachingCenter={coachingCenter} />
                         </div>
                     </motion.div>
 
@@ -337,7 +333,7 @@ const CollegeDetails = () => {
                                 <span className="w-2 h-8 bg-orange-600 rounded-full mr-3"></span>
                                 Student Reviews
                             </h2>
-                            <Review college={college} />
+                            <Review coachingCenter={coachingCenter} />
                         </div>
                     </motion.div>
                 </div>
@@ -372,9 +368,9 @@ const CollegeDetails = () => {
                                     whileFocus={{ scale: 1.02 }}
                                 >
                                     <option value="">Select Course</option>
-                                    <option value="engineering">Engineering</option>
-                                    <option value="mba">MBA</option>
-                                    <option value="mca">MCA</option>
+                                    <option value="jee">JEE Main & Advanced</option>
+                                    <option value="neet">NEET</option>
+                                    <option value="olympiad">Olympiads</option>
                                 </motion.select>
                                 <motion.textarea
                                     placeholder="Your Questions"
@@ -401,20 +397,11 @@ const CollegeDetails = () => {
                             <div className="space-y-3">
                                 <div className="flex items-center">
                                     <div className="p-2 bg-orange-100 rounded-full mr-3">
-                                        <FaGraduationCap className="text-orange-600" />
-                                    </div>
-                                    <div>
-                                        <p className="text-sm text-gray-500">Affiliation</p>
-                                        <p className="font-medium">{college.affiliation}</p>
-                                    </div>
-                                </div>
-                                <div className="flex items-center">
-                                    <div className="p-2 bg-orange-100 rounded-full mr-3">
                                         <IoMdTime className="text-orange-600" />
                                     </div>
                                     <div>
                                         <p className="text-sm text-gray-500">Established</p>
-                                        <p className="font-medium">{college.established}</p>
+                                        <p className="font-medium">{coachingCenter.established}</p>
                                     </div>
                                 </div>
                                 <div className="flex items-center">
@@ -422,17 +409,17 @@ const CollegeDetails = () => {
                                         <FaBookOpen className="text-orange-600" />
                                     </div>
                                     <div>
-                                        <p className="text-sm text-gray-500">Accreditation</p>
-                                        <p className="font-medium">{college.accreditation}</p>
+                                        <p className="text-sm text-gray-500">Courses</p>
+                                        <p className="font-medium">{coachingCenter.courses.join(', ')}</p>
                                     </div>
                                 </div>
                                 <div className="flex items-center">
                                     <div className="p-2 bg-orange-100 rounded-full mr-3">
-                                        <FaStar className="text-orange-600" />
+                                        <FaGraduationCap className="text-orange-600" />
                                     </div>
                                     <div>
-                                        <p className="text-sm text-gray-500">Courses</p>
-                                        <p className="font-medium">{college.courses.join(', ')}</p>
+                                        <p className="text-sm text-gray-500">Batch Types</p>
+                                        <p className="font-medium">{coachingCenter.batches.join(', ')}</p>
                                     </div>
                                 </div>
                             </div>
@@ -441,7 +428,7 @@ const CollegeDetails = () => {
                 </motion.div>
             </div>
 
-            {/* Similar Colleges */}
+            {/* Similar Coaching Centers */}
             <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 whileInView={{ opacity: 1, y: 0 }}
@@ -449,11 +436,11 @@ const CollegeDetails = () => {
                 viewport={{ once: true }}
                 className="max-w-7xl mx-auto mt-16 px-4 pb-4"
             >
-                <h2 className="text-3xl font-bold text-center text-gray-800 mb-2">Similar Colleges You Might Like</h2>
-                <p className="text-lg text-center text-gray-600 mb-8">Discover other great educational options in Bengaluru</p>
+                <h2 className="text-3xl font-bold text-center text-gray-800 mb-2">Similar Coaching Centers</h2>
+                <p className="text-lg text-center text-gray-600 mb-8">Discover other great coaching options in Bengaluru</p>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    {similarColleges.map((college, index) => (
+                    {similarCoachingCenters.map((center, index) => (
                         <motion.div
                             key={index}
                             whileHover={{ y: -8 }}
@@ -462,16 +449,16 @@ const CollegeDetails = () => {
                         >
                             <div className="relative h-48 overflow-hidden">
                                 <img
-                                    src={college.image}
-                                    alt={college.name}
+                                    src={center.image}
+                                    alt={center.name}
                                     className="w-full h-full object-cover transition-transform duration-500 hover:scale-105"
                                 />
                                 <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent p-4">
                                     <div className="flex justify-between items-center">
-                                        <h3 className="text-lg font-semibold text-white">{college.name}</h3>
+                                        <h3 className="text-lg font-semibold text-white">{center.name}</h3>
                                         <div className="flex items-center bg-white/90 text-amber-600 px-2 py-1 rounded-full">
                                             <FaStar className="mr-1" />
-                                            <span className="font-bold">{college.rating}</span>
+                                            <span className="font-bold">{center.rating}</span>
                                         </div>
                                     </div>
                                 </div>
@@ -479,10 +466,10 @@ const CollegeDetails = () => {
                             <div className="p-5">
                                 <p className="text-gray-600 mb-3 flex items-center">
                                     <FaMapMarkerAlt className="mr-2 text-orange-500" />
-                                    {college.address}
+                                    {center.address}
                                 </p>
                                 <motion.a
-                                    href={college.link}
+                                    href={center.link}
                                     whileHover={{ color: '#EA580C' }}
                                     className="inline-block text-orange-600 font-medium hover:underline"
                                 >
@@ -518,7 +505,7 @@ const CollegeDetails = () => {
 
                     <motion.img
                         src={selectedImage}
-                        alt={`${college.name} - Photo ${currentImageIndex + 1}`}
+                        alt={`${coachingCenter.name} - Photo ${currentImageIndex + 1}`}
                         className="max-w-full max-h-screen object-contain"
                         initial={{ scale: 0.9 }}
                         animate={{ scale: 1 }}
@@ -533,14 +520,14 @@ const CollegeDetails = () => {
                     </button>
 
                     <div className="absolute bottom-4 left-0 right-0 text-center text-white">
-                        Photo {currentImageIndex + 1} of {college.photos.length}
+                        Photo {currentImageIndex + 1} of {coachingCenter.photos.length}
                     </div>
                 </motion.div>
             )}
             {/* <Footer/> */}
-    <StickyButton/>
+                <StickyButton/>
         </div>
     );
 };
 
-export default CollegeDetails;
+export default CoachingDetail;

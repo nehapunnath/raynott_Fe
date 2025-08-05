@@ -19,6 +19,15 @@ import CoachingCenter from './components/CoachingCenter'
 import TutionList from './pages/TutionList'
 import PuCollegeList from './pages/PuCollegeList'
 import CoachingList from './pages/CoachingList'
+import CollegeDetails from './pages/CollegeDetails'
+import AllSchools from './pages/AllSchools'
+import AllColleges from './pages/AllColleges'
+import AllPuColleges from './pages/AllPuColleges'
+import AllCoaching from './pages/AllCoaching'
+import AllTuition from './pages/AllTuition'
+import TuitionDetails from './pages/TuitionDetails'
+import PUCollegeDetails from './pages/PuCollegeDetails'
+import CoachingDetail from './pages/CoachingDetail'
 
 function App() {
   const [count, setCount] = useState(0)
@@ -30,18 +39,32 @@ function App() {
       
       <Route path='/' element={<Home/>}/>
       <Route path='/listed' element={<Listedpage/>}/>
-      <Route path='/listing' element={<Listing/>}/>
+
+      <Route path='/listing' element={<Listing/>}/> {/**school listing */}
       <Route path='/colleges' element={<Colleges/>}/>
       <Route path='/pu-colleges' element={<PuCollegeList/>}/>
       <Route path='/coaching' element={<CoachingList/>}/>
       <Route path='/tuition' element={<TutionList/>}/>
+
+      {/*cateory wise listing */}
+      <Route path='/all-schools' element={<AllSchools/>}/>
+      <Route path='/all-colleges' element={<AllColleges/>}/>
+      <Route path='/all-pucolleges' element={<AllPuColleges/>}/>
+      <Route path='/all-coaching' element={<AllCoaching/>}/>
+      <Route path='/all-tuition' element={<AllTuition/>}/>
 
 
 
 
       <Route path='/login' element={<LoginPage/>}/>
       <Route path='/bookdemo' element={<BookaDemo/>}/>
-      <Route path='/details' element={<SchoolDetails/>}/>
+
+      <Route path='/school-details' element={<SchoolDetails/>}/>
+      <Route path='/college-details' element={<CollegeDetails/>}/>
+      <Route path='/pucollege-details' element={<PUCollegeDetails/>}/>
+      <Route path='/coaching-details' element={<CoachingDetail/>}/>
+      <Route path='/tuition-details' element={<TuitionDetails/>}/>
+
       <Route path='/register' element={<Register/>}/>
       <Route path='/register-form' element={<RegisterForm/>}/>
       <Route path='/contact' element={<ContactUs/>}/>

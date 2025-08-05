@@ -14,6 +14,8 @@ import {
 } from 'react-icons/fa';
 import { useNavigate } from 'react-router-dom';
 import Header from '../components/Header';
+import Footer from '../components/Footer';
+import StickyButton from '../components/StickyButton';
 
 const ContactUs = () => {
   const navigate = useNavigate();
@@ -263,6 +265,8 @@ const ContactUs = () => {
           </div>
         </motion.div>
       </div>
+      {/* <Footer/> */}
+          <StickyButton/>
     </div>
   );
 };

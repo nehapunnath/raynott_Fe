@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Link } from 'react-router-dom';
 import { 
@@ -14,6 +14,8 @@ import {
 } from "react-icons/fa";
 import { IoLocationSharp } from "react-icons/io5";
 import { BsFillCalendar2CheckFill } from "react-icons/bs";
+import Footer from '../components/Footer';
+import StickyButton from '../components/StickyButton';
 
 const listings = [
   {
@@ -224,6 +226,10 @@ function Listedpage() {
     setIsFilterOpen(false);
   };
 
+  useEffect(() => {
+          window.scrollTo(0, 0);
+      }, []);
+
   return (
     <div className="bg-orange-50 min-h-screen font-sans">
       {/* Header */}
@@ -236,22 +242,7 @@ function Listedpage() {
             >
               Raynott
             </motion.span>
-            <div className="md:hidden flex space-x-2">
-              <motion.button
-                className="bg-white text-orange-600 font-semibold py-2 px-4 rounded-full transition duration-300"
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-              >
-                Demo
-              </motion.button>
-              <motion.button
-                className="bg-white text-orange-600 font-semibold py-2 px-4 rounded-full transition duration-300"
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-              >
-                <FaBookOpen />
-              </motion.button>
-            </div>
+            
           </div>
           
           <div className="relative w-full max-w-2xl md:max-w-xl flex-grow md:ml-8">
@@ -264,14 +255,7 @@ function Listedpage() {
           </div>
 
           <div className="hidden md:flex space-x-4 ml-8">
-            <motion.button 
-              className="bg-orange-700 hover:bg-orange-800 text-white font-semibold py-2 px-4 rounded-full transition duration-300 flex items-center"
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-            >
-              <FaBookOpen className="mr-2" />
-              Add Institution for Free
-            </motion.button>
+            
             <motion.button 
               className="bg-white border border-white text-orange-600 hover:bg-orange-100 font-semibold py-2 px-4 rounded-full transition duration-300"
               whileHover={{ scale: 1.05 }}
@@ -327,7 +311,7 @@ function Listedpage() {
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
               {section.items.map((item) => (
                 <Link 
-                  to={`/details/${section.category.toLowerCase()}/${item.id}`} 
+                  to={`/school-details`} 
                   key={item.id}
                   className="group"
                 >
@@ -358,15 +342,15 @@ function Listedpage() {
                       <p className="text-xs font-semibold text-orange-500 uppercase tracking-wide">
                         {item.board || item.type || item.streams || item.courses}
                       </p>
-                      <h3 className="text-lg font-bold text-gray-900 mt-1 line-clamp-2">{item.name}</h3>
-                      <p className="text-sm text-gray-500 flex items-center mt-1">
+                      <h3 className="text-lg font-bold text-gray-900 mt-1 line-clamp-2 min-h-[4rem]">{item.name}</h3>
+                      <p className="text-sm text-gray-500 flex items-center mt-2">
                         <IoLocationSharp className="mr-1 text-orange-400" />
                         <span className="line-clamp-1">{item.location}</span>
                       </p>
                       
                       <div className="mt-3">
                         <p className="text-base font-bold text-gray-700">{item.fees}</p>
-                        <p className="text-xs text-gray-500 mt-1">{item.views}</p>
+                        {/* <p className="text-xs text-gray-500 mt-1">{item.views}</p> */}
                       </div>
                       
                       <div className="mt-auto pt-4">
@@ -389,9 +373,7 @@ function Listedpage() {
                           </motion.button>
                         </div>
                         
-                        <button className="block text-center text-xs text-orange-600 hover:underline mt-2 w-full">
-                          View More
-                        </button>
+                        
                       </div>
                     </div>
                   </motion.div>
@@ -534,6 +516,8 @@ function Listedpage() {
           </motion.div>
         )}
       </AnimatePresence>
+      {/* <Footer/> */}
+          <StickyButton/>
     </div>
   );
 }

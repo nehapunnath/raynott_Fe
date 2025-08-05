@@ -5,7 +5,7 @@ import Header from '../components/Header';
 import Location from '../components/Location';
 import '../styles/Home.css';
 import Categories from '../components/Categories';
-import { FaMapMarkerAlt, FaChalkboardTeacher, FaFileAlt, FaGraduationCap } from "react-icons/fa";
+import { FaMapMarkerAlt, FaChalkboardTeacher, FaFileAlt, FaGraduationCap ,FaEye,FaSchool,FaUsers} from "react-icons/fa";
 import "slick-carousel/slick/slick.css";
 import "slick-carousel/slick/slick-theme.css";
 import Schools from '../components/Schools';
@@ -13,6 +13,10 @@ import Colleges from '../components/Colleges';
 import PuCollege from '../components/PuCollege';
 import CoachingCenter from '../components/CoachingCenter';
 import About from '../components/About';
+import Tuition from '../components/Tuition';
+import Footer from '../components/Footer';
+import StickyButton from '../components/StickyButton';
+
 
 function Home() {
     const navigate = useNavigate(); 
@@ -200,58 +204,56 @@ function Home() {
             <Colleges />
             <PuCollege />
             <CoachingCenter />
+            <Tuition/>
             <About />
 
             {/* Stats Section */}
-            <div className="relative max-w-4xl mx-auto px-4 my-16 overflow-hidden">
-                <div className="absolute -top-16 -left-16 w-56 h-56 bg-gradient-to-r from-orange-500 to-amber-500 rounded-full filter blur-3xl opacity-20"></div>
-                <div className="absolute -bottom-16 -right-16 w-56 h-56 bg-gradient-to-r from-amber-500 to-orange-500 rounded-full filter blur-3xl opacity-20"></div>
-                <motion.div
-                    className="flex flex-wrap justify-center gap-4 md:gap-8 p-6 md:p-8 rounded-3xl shadow-2xl"
-                    style={{
-                        background: 'linear-gradient(135deg, rgba(234,88,12,0.9) 0%, rgba(251,146,60,0.9) 100%)',
-                        border: '2px solid rgba(255,255,255,0.2)',
-                        backdropFilter: 'blur(10px)',
-                    }}
-                    initial={{ opacity: 0, y: 50 }}
-                    whileInView={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.8 }}
-                    viewport={{ once: true }}
-                >
-                    {[
-                        { number: "2500+", text: "Schools Listed", delay: 0.2 },
-                        { number: "20K+", text: "Schools Viewed", delay: 0.4 },
-                        { number: "1L+", text: "Parents Served", delay: 0.6 },
-                    ].map((item, index) => (
-                        <motion.div
-                            key={index}
-                            className="text-center bg-white/10 backdrop-blur-sm p-4 rounded-xl border border-white/20 flex-1 min-w-[150px] max-w-[200px]"
-                            initial={{ opacity: 0, scale: 0.7, y: 20 }}
-                            animate={{ opacity: 1, scale: 1, y: 0 }}
-                            transition={{
-                                type: "spring",
-                                stiffness: 100,
-                                damping: 10,
-                                delay: item.delay
-                            }}
-                            whileHover={{
-                                y: -8,
-                                scale: 1.05,
-                                backgroundColor: 'rgba(255,255,255,0.15)'
-                            }}
-                        >
-                            <p className="text-4xl font-extrabold text-white drop-shadow-lg mb-1">
-                                {item.number}
-                            </p>
-                            <p className="text-base text-amber-100 font-semibold">
-                                {item.text}
-                            </p>
-                        </motion.div>
-                    ))}
-                </motion.div>
-            </div>
-
-           
+    <div className="relative py-20 overflow-hidden bg-gradient-to-br from-orange-500 to-amber-600">
+  {/* Decorative elements */}
+  <div className="absolute top-0 left-0 w-full h-full opacity-10">
+    <div className="absolute top-20 left-10 w-40 h-40 bg-white rounded-full mix-blend-overlay"></div>
+    <div className="absolute bottom-10 right-20 w-60 h-60 bg-white rounded-full mix-blend-overlay"></div>
+  </div>
+  
+  <div className="max-w-7xl mx-auto px-6 relative z-10">
+    <div className="grid md:grid-cols-3 gap-8">
+      {/* Stat 1 */}
+      <div className="bg-white/10 backdrop-blur-sm p-8 rounded-2xl border border-white/20 hover:bg-white/15 transition-all duration-300 group">
+        <div className="text-6xl font-extrabold mb-3 text-white drop-shadow-lg group-hover:text-amber-100 transition-colors duration-300">
+          2500+
+        </div>
+        <div className="text-xl font-medium text-amber-100 tracking-wide">
+          Schools
+        </div>
+        <div className="mt-4 h-1 w-16 bg-amber-300 rounded-full group-hover:w-24 transition-all duration-500"></div>
+      </div>
+      
+      {/* Stat 2 */}
+      <div className="bg-white/10 backdrop-blur-sm p-8 rounded-2xl border border-white/20 hover:bg-white/15 transition-all duration-300 group">
+        <div className="text-6xl font-extrabold mb-3 text-white drop-shadow-lg group-hover:text-amber-100 transition-colors duration-300">
+          20K+
+        </div>
+        <div className="text-xl font-medium text-amber-100 tracking-wide">
+          Schools Viewed
+        </div>
+        <div className="mt-4 h-1 w-16 bg-amber-300 rounded-full group-hover:w-24 transition-all duration-500"></div>
+      </div>
+      
+      {/* Stat 3 */}
+      <div className="bg-white/10 backdrop-blur-sm p-8 rounded-2xl border border-white/20 hover:bg-white/15 transition-all duration-300 group">
+        <div className="text-6xl font-extrabold mb-3 text-white drop-shadow-lg group-hover:text-amber-100 transition-colors duration-300">
+          1L+
+        </div>
+        <div className="text-xl font-medium text-amber-100 tracking-wide">
+          Parents Served
+        </div>
+        <div className="mt-4 h-1 w-16 bg-amber-300 rounded-full group-hover:w-24 transition-all duration-500"></div>
+      </div>
+    </div>
+  </div>
+</div>       
+{/* <Footer/> */}
+    <StickyButton/>
         </div>
     );
 }

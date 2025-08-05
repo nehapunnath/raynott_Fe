@@ -1,7 +1,7 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Link, useNavigate } from 'react-router-dom';
-import { FaSchool, FaSearch, FaFilter, FaBookOpen, FaTimes, FaHome } from "react-icons/fa";
+import { FaChalkboardTeacher, FaSearch, FaFilter, FaBookOpen, FaTimes, FaHome } from "react-icons/fa";
 import { IoLocationSharp } from "react-icons/io5";
 import { BsFillCalendar2CheckFill } from "react-icons/bs";
 import Footer from '../components/Footer';
@@ -9,65 +9,70 @@ import StickyButton from '../components/StickyButton';
 
 const listings = [
   {
-    category: "PU Colleges",
-    icon: <FaSchool className="text-white" />,
+    category: "Tuition Centers",
+    icon: <FaChalkboardTeacher className="text-white" />,
     place: "Bengaluru",
     items: [
       {
         id: 1,
-        name: "Expert PU College",
-        location: "Malleswaram",
-        fees: "₹35,000 - ₹45,000",
-        views: "8.2K Views",
-        streams: "Science, Commerce",
+        name: "Brilliant Minds Tutorials",
+        location: "Indiranagar",
+        fees: "₹1,500 - ₹3,000 per month",
+        views: "5.2K Views",
+        subjects: "All Subjects",
         rating: 4.6,
-        image: "https://images.unsplash.com/photo-1523050854058-8df90110c9f1?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=800&q=80",
+        image: "https://images.unsplash.com/photo-1588072432836-e10032774350?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=800&q=80",
       },
       {
         id: 2,
-        name: "Vidya Mandir PU College",
-        location: "Rajajinagar",
-        fees: "₹30,000 - ₹40,000",
-        views: "7.5K Views",
-        streams: "Science, Commerce, Arts",
+        name: "Math & Science Excellence Center",
+        location: "Koramangala",
+        fees: "₹2,000 - ₹4,000 per month",
+        views: "4.8K Views",
+        subjects: "Math & Science",
+        rating: 4.7,
+        image: "https://images.unsplash.com/photo-1523050854058-8df90110c9f1?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=800&q=80",
+      },
+      {
+        id: 3,
+        name: "Language Learning Hub",
+        location: "Whitefield",
+        fees: "₹1,800 - ₹3,500 per month",
+        views: "3.5K Views",
+        subjects: "Languages",
         rating: 4.5,
         image: "https://images.unsplash.com/photo-1523240795612-9a054b0db644?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=800&q=80",
       },
       {
-        id: 3,
-        name: "Alvas PU College",
-        location: "Vijayanagar",
-        fees: "₹40,000 - ₹50,000",
-        views: "6.8K Views",
-        streams: "Science, Commerce",
-        rating: 4.7,
-        image: "https://images.unsplash.com/photo-1549861833-c5932fd19229?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=800&q=80",
-      },
-      {
         id: 4,
-        name: "Base PU College",
+        name: "Competitive Exam Prep Center",
         location: "Jayanagar",
-        fees: "₹45,000 - ₹55,000",
-        views: "9.1K Views",
-        streams: "Science",
+        fees: "₹2,500 - ₹5,000 per month",
+        views: "6.1K Views",
+        subjects: "Competitive Exams",
         rating: 4.8,
-        image: "https://images.unsplash.com/photo-1588072432836-e10032774350?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=800&q=80",
+        image: "https://images.unsplash.com/photo-1549861833-c5932fd19229?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=800&q=80",
       },
     ],
   },
 ];
 
-function PuCollegeList() {
+
+
+function AllTuition() {
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const [filters, setFilters] = useState({
-    feesRange: [0, 100000],
-    streams: [],
-    collegeType: [],
-    location: 'Bengaluru'
+    feesRange: [0, 5000],
+    subjects: [],
+    classRange: [],
+    teachingMode: [],
+    category: "Tuition Centers",
+    location: 'Bengaluru',
   });
 
-  const streamsOptions = ['Science', 'Commerce', 'Arts'];
-  const collegeTypeOptions = ['Government', 'Private', 'Composite'];
+  const subjectOptions = ['Math', 'Science', 'English', 'Languages', 'Competitive Exams', 'All Subjects'];
+  const classRangeOptions = ['Primary (1-5)', 'Middle (6-8)', 'High (9-10)', 'PUC (11-12)', 'College'];
+  const teachingModeOptions = ['Offline', 'Online', 'Hybrid'];
 
   const nav = useNavigate()
 
@@ -92,9 +97,10 @@ function PuCollegeList() {
 
   const resetFilters = () => {
     setFilters({
-      feesRange: [0, 100000],
-      streams: [],
-      collegeType: [],
+      feesRange: [0, 5000],
+      subjects: [],
+      classRange: [],
+      teachingMode: [],
       location: 'Bengaluru'
     });
   };
@@ -103,6 +109,10 @@ function PuCollegeList() {
     console.log('Applied filters:', filters);
     setIsFilterOpen(false);
   };
+
+  useEffect(() => {
+        window.scrollTo(0, 0);
+    }, []);
 
   return (
     <div className="bg-orange-50 min-h-screen font-sans">
@@ -116,29 +126,14 @@ function PuCollegeList() {
               </motion.span>
             </Link>
 
-            <div className="md:hidden flex space-x-2">
-              <motion.button
-                className="bg-white text-orange-600 font-semibold py-2 px-4 rounded-full transition duration-300"
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-              >
-                Demo
-              </motion.button>
-              <motion.button
-                className="bg-white text-orange-600 font-semibold py-2 px-4 rounded-full transition duration-300"
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-              >
-                <FaBookOpen />
-              </motion.button>
-            </div>
+         
           </div>
 
           <div className="relative w-full max-w-2xl md:max-w-xl flex-grow md:ml-8">
             <FaSearch className="absolute left-4 top-1/2 transform -translate-y-1/2 text-orange-400" />
             <input
               type="text"
-              placeholder="Search PU Colleges, Locations in Bengaluru..."
+              placeholder="Search Tuition Centers, Locations in Bengaluru..."
               className="pl-12 pr-4 py-3 rounded-full bg-white border border-transparent text-gray-800 focus:outline-none w-full focus:ring-2 focus:ring-orange-200 focus:border-transparent shadow-sm"
             />
           </div>
@@ -167,14 +162,14 @@ function PuCollegeList() {
                 Home
               </Link>
               <span className="mx-2">»</span>
-              <span className="text-orange-600">{filters.location}</span>
+              <span className="text-orange-600">{filters.category}</span>
             </div>
             <h1 className="text-3xl md:text-4xl font-extrabold text-gray-800 mt-2">
-              PU Colleges In {filters.location} 2025 - 26
+                Top Tuition Centers in India - 2025-26 Academic Year
             </h1>
             <p className="text-lg text-gray-600 flex items-center mt-1">
               <BsFillCalendar2CheckFill className="mr-2 text-orange-500" />
-              1246 PU Colleges | List Updated on Aug 1, 2025
+              1846 Tuition Centers | List Updated on Aug 1, 2025
             </p>
           </div>
           <motion.button
@@ -200,7 +195,7 @@ function PuCollegeList() {
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
               {section.items.map((item) => (
                 <Link
-                  to={`/pucollege-details`}
+                  to={`/tuition-details`}
                   key={item.id}
                   className="group"
                 >
@@ -218,7 +213,7 @@ function PuCollegeList() {
                         className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
                       />
                       <div className="absolute top-4 left-4 bg-yellow-500 text-dark text-xs font-bold px-3 py-1 rounded-full shadow-lg">
-                        Admissions Open
+                        New Batches Starting
                       </div>
                       <div className="absolute top-4 right-4 flex items-center bg-white/90 text-orange-600 px-3 py-1 rounded-full shadow-lg backdrop-blur-sm">
                         <span className="font-bold mr-1">{item.rating}</span>
@@ -228,7 +223,7 @@ function PuCollegeList() {
                       </div>
                     </div>
                     <div className="p-4 flex flex-col flex-grow h-64">
-                      <p className="text-xs font-semibold text-orange-500 uppercase tracking-wide">{item.streams}</p>
+                      <p className="text-xs font-semibold text-orange-500 uppercase tracking-wide">{item.subjects}</p>
                       <h3 className="text-lg font-bold text-gray-900 mt-1 line-clamp-2 min-h-[4rem]">{item.name}</h3>
                       <p className="text-sm text-gray-500 flex items-center mt-2">
                         <IoLocationSharp className="mr-1 text-orange-400" />
@@ -286,7 +281,7 @@ function PuCollegeList() {
             >
               <div className="p-6">
                 <div className="flex justify-between items-center border-b pb-4 mb-4">
-                  <h2 className="text-2xl font-bold text-gray-800">Filter PU Colleges</h2>
+                  <h2 className="text-2xl font-bold text-gray-800">Filter Tuition Centers</h2>
                   <button
                     onClick={() => setIsFilterOpen(false)}
                     className="text-gray-500 hover:text-gray-700"
@@ -297,20 +292,20 @@ function PuCollegeList() {
 
                 {/* Fees Range Filter */}
                 <div className="mb-6">
-                  <h3 className="text-lg font-semibold mb-3 text-gray-700">Fees Range (per year)</h3>
+                  <h3 className="text-lg font-semibold mb-3 text-gray-700">Fees Range (per month)</h3>
                   <div className="px-2">
                     <input
                       type="range"
                       min="0"
-                      max="100000"
-                      step="5000"
+                      max="5000"
+                      step="500"
                       value={filters.feesRange[1]}
                       onChange={(e) => handleFilterChange('feesRange', [filters.feesRange[0], parseInt(e.target.value)])}
                       className="w-full h-2 bg-orange-200 rounded-lg appearance-none cursor-pointer"
                     />
                     <div className="flex justify-between mt-2">
                       <span className="text-sm text-gray-600">₹0</span>
-                      <span className="text-sm text-gray-600">₹1,00,000+</span>
+                      <span className="text-sm text-gray-600">₹5,000+</span>
                     </div>
                     <div className="mt-2 text-center font-medium text-orange-600">
                       ₹{filters.feesRange[0].toLocaleString()} - ₹{filters.feesRange[1].toLocaleString()}
@@ -318,37 +313,55 @@ function PuCollegeList() {
                   </div>
                 </div>
 
-                {/* Streams Filter */}
+                {/* Subjects Filter */}
                 <div className="mb-6">
-                  <h3 className="text-lg font-semibold mb-3 text-gray-700">Streams</h3>
+                  <h3 className="text-lg font-semibold mb-3 text-gray-700">Subjects</h3>
                   <div className="grid grid-cols-2 gap-3">
-                    {streamsOptions.map((stream) => (
-                      <label key={stream} className="flex items-center">
+                    {subjectOptions.map((subject) => (
+                      <label key={subject} className="flex items-center">
                         <input
                           type="checkbox"
-                          checked={filters.streams.includes(stream)}
-                          onChange={() => handleFilterChange('streams', stream)}
+                          checked={filters.subjects.includes(subject)}
+                          onChange={() => handleFilterChange('subjects', subject)}
                           className="h-4 w-4 text-orange-600 focus:ring-orange-500 border-gray-300 rounded"
                         />
-                        <span className="ml-2 text-gray-700">{stream}</span>
+                        <span className="ml-2 text-gray-700">{subject}</span>
                       </label>
                     ))}
                   </div>
                 </div>
 
-                {/* College Type Filter */}
+                {/* Class Range Filter */}
                 <div className="mb-6">
-                  <h3 className="text-lg font-semibold mb-3 text-gray-700">College Type</h3>
+                  <h3 className="text-lg font-semibold mb-3 text-gray-700">Class Range</h3>
                   <div className="grid grid-cols-2 gap-3">
-                    {collegeTypeOptions.map((type) => (
-                      <label key={type} className="flex items-center">
+                    {classRangeOptions.map((classRange) => (
+                      <label key={classRange} className="flex items-center">
                         <input
                           type="checkbox"
-                          checked={filters.collegeType.includes(type)}
-                          onChange={() => handleFilterChange('collegeType', type)}
+                          checked={filters.classRange.includes(classRange)}
+                          onChange={() => handleFilterChange('classRange', classRange)}
                           className="h-4 w-4 text-orange-600 focus:ring-orange-500 border-gray-300 rounded"
                         />
-                        <span className="ml-2 text-gray-700">{type}</span>
+                        <span className="ml-2 text-gray-700">{classRange}</span>
+                      </label>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Teaching Mode Filter */}
+                <div className="mb-6">
+                  <h3 className="text-lg font-semibold mb-3 text-gray-700">Teaching Mode</h3>
+                  <div className="grid grid-cols-2 gap-3">
+                    {teachingModeOptions.map((mode) => (
+                      <label key={mode} className="flex items-center">
+                        <input
+                          type="checkbox"
+                          checked={filters.teachingMode.includes(mode)}
+                          onChange={() => handleFilterChange('teachingMode', mode)}
+                          className="h-4 w-4 text-orange-600 focus:ring-orange-500 border-gray-300 rounded"
+                        />
+                        <span className="ml-2 text-gray-700">{mode}</span>
                       </label>
                     ))}
                   </div>
@@ -383,9 +396,9 @@ function PuCollegeList() {
         )}
       </AnimatePresence>
       {/* <Footer/> */}
-    <StickyButton/>
+          <StickyButton/>
     </div>
   );
 }
 
-export default PuCollegeList;
+export default AllTuition;
