@@ -15,11 +15,12 @@ import { IoMdTime } from 'react-icons/io';
 
 import { useEffect } from 'react';
 import { Link } from 'react-router-dom';
+
+import StickyButton from '../components/StickyButton';
 import BasicInfo from '../components/PuCollege/BasicInfo';
 import FeeStructure from '../components/PuCollege/FeeStructure';
-import Contact from '../components/PuCollege/Contact';
 import Review from '../components/PuCollege/Review';
-import StickyButton from '../components/StickyButton';
+import Contact from '../components/PuCollege/Contact';
 
 const PUCollegeDetails = () => {
     const [selectedImage, setSelectedImage] = useState(null);
