@@ -17,10 +17,11 @@ import { useEffect } from 'react';
 import { Link } from 'react-router-dom';
 
 import StickyButton from '../components/StickyButton';
-import BasicInfo from '../components/PuCollege/BasicInfo';
-import FeeStructure from '../components/PuCollege/FeeStructure';
-import Review from '../components/PuCollege/Review';
-import Contact from '../components/PuCollege/Contact';
+
+import Contact from '../components/School/Contact';
+import Review from '../components/School/Review';
+import FeeStructure from '../components/College/FeeStructure';
+import BasicInfo from '../components/School/BasicInfo';
 
 const PUCollegeDetails = () => {
     const [selectedImage, setSelectedImage] = useState(null);
