@@ -9,12 +9,17 @@ import StickyButton from '../components/StickyButton';
 const BookaDemo = () => {
   const [date, setDate] = useState(new Date());
   const [time, setTime] = useState('10:00');
+  const [name, setName] = useState('');
+  const [phone, setPhone] = useState('');
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    alert(`Demo booked for ${date.toDateString()} at ${time}. You'll receive a confirmation email shortly.`);
+    if (!name || !phone) {
+      alert('Please fill in all required fields');
+      return;
+    }
+    alert(`Demo booked for ${name} (${phone}) on ${date.toDateString()} at ${time}. You'll receive a confirmation email shortly.`);
   };
-  
 
   return (
     <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4 py-8">
@@ -32,8 +37,8 @@ const BookaDemo = () => {
                   </svg>
                 </div>
                 <div>
-                  <h3 className="font-semibold text-lg">India's Largest School Search Platform</h3>
-                  <p className="text-orange-100">Join thousands of schools already benefiting from our platform</p>
+                  <h3 className="font-semibold text-lg">India's largest education  Platform</h3>
+                  <p className="text-orange-100">Thousands of institutions trust our platform—join them today.</p>
                 </div>
               </div>
 
@@ -45,7 +50,7 @@ const BookaDemo = () => {
                 </div>
                 <div>
                   <h3 className="font-semibold text-lg">Direct Parent Connections</h3>
-                  <p className="text-orange-100">Showcase your school to thousands of searching parents</p>
+                  <p className="text-orange-100">Showcase your institution to thousands of searching parents</p>
                 </div>
               </div>
 
@@ -77,27 +82,53 @@ const BookaDemo = () => {
           </div>
 
           <div className="bg-orange-50 border-l-4 border-orange-500 p-4 text-left mb-6">
-            <p className="text-gray-800 font-medium mb-2">Dear School Owner,</p>
+            <p className="text-gray-800 font-medium mb-2">Dear Education Professional,</p>
             <p className="text-gray-700 text-sm">
-              We are proud to be India's largest school search engine, dedicated to bridging the gap between schools and parents. 
-              To learn more about how we can help your institution, please select a convenient time slot below.
+              We are proud to be India's largest education platform, dedicated to bridging the gap between institutions and students. 
+              To learn more about how we can help your institution, please fill in your details and select a convenient time slot below.
             </p>
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-6">
             <div>
-              <label className="block font-semibold text-gray-800 mb-2">Select Date</label>
+              <label className="block font-semibold text-gray-800 mb-2">Your Name <span className="text-red-500">*</span></label>
+              <input
+                type="text"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                placeholder="Enter your full name"
+                className="w-full border-2 border-gray-200 p-3 rounded-lg focus:border-orange-500 focus:ring-2 focus:ring-orange-200 transition"
+                required
+              />
+            </div>
+
+            <div>
+              <label className="block font-semibold text-gray-800 mb-2">Phone Number <span className="text-red-500">*</span></label>
+              <input
+                type="tel"
+                value={phone}
+                onChange={(e) => setPhone(e.target.value)}
+                placeholder="Enter your 10-digit mobile number"
+                className="w-full border-2 border-gray-200 p-3 rounded-lg focus:border-orange-500 focus:ring-2 focus:ring-orange-200 transition"
+                required
+                pattern="[0-9]{10}"
+              />
+            </div>
+
+            <div>
+              <label className="block font-semibold text-gray-800 mb-2">Select Date <span className="text-red-500">*</span></label>
               <DatePicker
                 selected={date}
                 onChange={(date) => setDate(date)}
                 className="w-full border-2 border-gray-200 p-3 rounded-lg focus:border-orange-500 focus:ring-2 focus:ring-orange-200 transition"
                 dateFormat="MMMM d, yyyy"
                 minDate={new Date()}
+                required
               />
             </div>
 
             <div>
-              <label className="block font-semibold text-gray-800 mb-2">Select Time</label>
+              <label className="block font-semibold text-gray-800 mb-2">Select Time <span className="text-red-500">*</span></label>
               <div className="border-2 border-gray-200 rounded-lg p-1 focus-within:border-orange-500 focus-within:ring-2 focus-within:ring-orange-200 transition">
                 <TimePicker
                   onChange={setTime}
@@ -105,6 +136,7 @@ const BookaDemo = () => {
                   className="w-full border-none p-2"
                   disableClock={true}
                   clearIcon={null}
+                  required
                 />
               </div>
             </div>
@@ -123,8 +155,7 @@ const BookaDemo = () => {
           </div>
         </div>
       </div>
-      {/* <Footer/> */}
-          {/* <StickyButton/> */}
+     
     </div>
   );
 };

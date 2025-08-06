@@ -403,7 +403,6 @@ function TutionList() {
           </motion.div>
         )}
       </AnimatePresence>
-    {/* <Footer/> */}
     <StickyButton/>
     </div>
   );

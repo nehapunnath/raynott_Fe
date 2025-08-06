@@ -19,7 +19,7 @@ const coachingCenters = [
     image: "https://images.unsplash.com/photo-1523240795612-9a054b0db644?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=800&q=80",
     id: "champion-neet",
     rating: 4.7,
-    location: "Mumbai",
+    location: "Bangalore",
     courses: ["NEET", "AIIMS"],
     successRate: "95% selection rate"
   },
@@ -28,7 +28,7 @@ const coachingCenters = [
     image: "https://images.unsplash.com/photo-1522202176988-66273c2fd55f?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=800&q=80",
     id: "future-ias",
     rating: 4.9,
-    location: "Delhi",
+    location: "Bangalore",
     courses: ["UPSC", "State PSC"],
     successRate: "210+ selections"
   },
@@ -37,7 +37,7 @@ const coachingCenters = [
     image: "https://images.unsplash.com/photo-1549861833-c5932fd19229?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=800&q=80",
     id: "global-gate",
     rating: 4.6,
-    location: "Hyderabad",
+    location: "Bangalored",
     courses: ["GATE", "IES"],
     successRate: "85% success rate"
   },
@@ -46,7 +46,7 @@ const coachingCenters = [
     image: "https://images.unsplash.com/photo-1581093450021-4a7360e9a6a3?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=800&q=80",
     id: "bright-cat",
     rating: 4.5,
-    location: "Chennai",
+    location: "Bangalore",
     courses: ["CAT", "XAT"],
     successRate: "90%ile+ achievers"
   }
@@ -127,7 +127,7 @@ export default function CoachingCenter() {
         transition={{ duration: 0.5 }}
         className="text-center mb-12"
       >
-        <h2 className="text-4xl font-bold text-gray-800 mb-3">Top Coaching Centers</h2>
+        <h2 className="text-4xl font-bold text-gray-800 mb-3">Top Coaching / Tuition Centers</h2>
         <p className="text-lg text-gray-600 max-w-2xl mx-auto">
           Premier institutes for competitive exam preparation with proven results
         </p>

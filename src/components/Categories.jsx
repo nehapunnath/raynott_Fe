@@ -7,7 +7,9 @@ import {
   FaChalkboardTeacher,
   FaGraduationCap,
   FaBookOpen,
-  FaUserTie
+  FaUserTie,
+  FaTrophy,
+  FaStar
 } from "react-icons/fa";
 
 const categories = [
@@ -38,24 +40,33 @@ const categories = [
     textColor: "text-purple-700",
     delay: 0.3
   },
-
   {
-    name: "Coaching Center",
+    name: "Coaching / Tuition Center",
     icon: <FaChalkboardTeacher />,
-    link: "/all-coaching",
+    link: "/coaching",
     bg: "bg-gradient-to-br from-rose-50 to-pink-50",
     iconBg: "bg-gradient-to-r from-rose-500 to-pink-600",
     textColor: "text-rose-700",
     delay: 0.5
   },
   {
-    name: "Tuition Centers",
+    name: "All Teachers",
     icon: <FaUserTie />,
-    link: "/all-tuition",
+    link: "/all-teachers",
     bg: "bg-gradient-to-br from-violet-50 to-indigo-50",
     iconBg: "bg-gradient-to-r from-violet-500 to-indigo-600",
     textColor: "text-violet-700",
     delay: 0.6
+  },
+  {
+    name: "Best Sellers",
+    icon: <FaTrophy />,
+    link: "/best-sellers",
+    bg: "bg-gradient-to-br from-yellow-50 to-amber-50",
+    iconBg: "bg-gradient-to-r from-yellow-500 to-amber-600",
+    textColor: "text-yellow-700",
+    delay: 0.7,
+    isSpecial: true
   },
 ];
 
@@ -64,7 +75,7 @@ const CategoryCard = ({ category, index }) => {
   
   return (
     <motion.div
-      className={`group relative rounded-3xl p-8 ${category.bg} flex flex-col items-center justify-center shadow-lg hover:shadow-xl transition-all duration-300 cursor-pointer overflow-hidden`}
+      className={`group relative rounded-3xl p-8 ${category.bg} flex flex-col items-center justify-center shadow-lg hover:shadow-xl transition-all duration-300 cursor-pointer overflow-hidden ${category.isSpecial ? 'border-2 border-yellow-400' : ''}`}
       initial={{ opacity: 0, y: 30 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: category.delay, duration: 0.5 }}
@@ -73,6 +84,13 @@ const CategoryCard = ({ category, index }) => {
     >
       {/* Background pattern */}
       <div className="absolute inset-0 opacity-10 bg-[url('https://grainy-gradients.vercel.app/noise.svg')]"></div>
+      
+      {/* Special badge for best sellers */}
+      {category.isSpecial && (
+        <div className="absolute top-4 right-4 bg-yellow-500 text-white text-xs font-bold px-2 py-1 rounded-full flex items-center">
+          <FaStar className="mr-1" /> Popular
+        </div>
+      )}
       
       {/* Icon container */}
       <motion.div 
@@ -88,6 +106,13 @@ const CategoryCard = ({ category, index }) => {
       <h3 className={`font-bold text-xl text-center ${category.textColor} relative z-10`}>
         {category.name}
       </h3>
+      
+      {/* Additional text for best sellers */}
+      {category.isSpecial && (
+        <p className="text-yellow-600 text-sm mt-2 text-center">
+          Top-rated educational institutions
+        </p>
+      )}
       
       {/* Hover effect */}
       <motion.div 
@@ -121,8 +146,6 @@ export default function Categories() {
           <CategoryCard key={index} category={category} index={index} />
         ))}
       </div>
-
-      
     </section>
   );
 }

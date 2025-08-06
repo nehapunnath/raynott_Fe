@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Link } from 'react-router-dom';
 
 const locations = [
-  { name: 'Bengaluru', icon: '🏙️', color: 'from-indigo-500 to-purple-600', link: '/listed' },
+  { name: 'Bengaluru', icon: '🏙️', color: 'from-indigo-500 to-purple-600' },
   { name: 'Hyderabad', icon: '🏰', color: 'from-amber-500 to-orange-600' },
   { name: 'Pune', icon: '🏛️', color: 'from-emerald-500 to-teal-600' },
   { name: 'Mumbai', icon: '🌆', color: 'from-rose-500 to-pink-600' },

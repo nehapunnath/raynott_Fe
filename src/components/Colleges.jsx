@@ -19,7 +19,7 @@ const colleges = [
     image: "https://images.unsplash.com/photo-1523240795612-9a054b0db644?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=800&q=80",
     id: "national-engineering",
     rating: 4.7,
-    location: "Mumbai",
+    location: "Bangalore",
     courses: ["BE", "BTech", "ME"]
   },
   {
@@ -27,7 +27,7 @@ const colleges = [
     image: "https://images.unsplash.com/photo-1522202176988-66273c2fd55f?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=800&q=80",
     id: "bright-future",
     rating: 4.3,
-    location: "Delhi",
+    location: "Bangalore",
     courses: ["BCom", "MCom", "BBA"]
   },
   {
@@ -35,7 +35,7 @@ const colleges = [
     image: "https://images.unsplash.com/photo-1549861833-c5932fd19229?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=800&q=80",
     id: "global-science",
     rating: 4.6,
-    location: "Hyderabad",
+    location: "Bangalore",
     courses: ["BSc", "MSc", "PhD"]
   },
   {
@@ -43,7 +43,7 @@ const colleges = [
     image: "https://images.unsplash.com/photo-1581093450021-4a7360e9a6a3?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=800&q=80",
     id: "prestige-medical",
     rating: 4.8,
-    location: "Chennai",
+    location: "Bangalore",
     courses: ["MBBS", "BDS", "MD"]
   }
 ];

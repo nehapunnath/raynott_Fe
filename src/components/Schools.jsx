@@ -19,7 +19,7 @@ const schools = [
     image: "https://images.unsplash.com/photo-1523050854058-8df90110c9f1?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=800&q=80",
     id: "green-valley",
     rating: 4.5,
-    location: "Mumbai",
+    location: "Bangalore",
     boards: ["CBSE", "IB"],
     results: "92% distinction rate"
   },
@@ -28,7 +28,7 @@ const schools = [
     image: "https://images.unsplash.com/photo-1549861833-c5932fd19229?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=800&q=80",
     id: "st-xaviers",
     rating: 4.9,
-    location: "Delhi",
+    location: "Bangalore",
     boards: ["ICSE", "IB"],
     results: "100% university acceptance"
   },
@@ -37,14 +37,14 @@ const schools = [
     image: "https://images.unsplash.com/photo-1522202176988-66273c2fd55f?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=800&q=80",
     id: "global-wisdom",
     rating: 4.7,
-    location: "Hyderabad",
+    location: "Bangalore",
     boards: ["CBSE", "State Board"],
     results: "95% first division"
   },
   {
     name: "Bright Future School",
     image: "https://images.unsplash.com/photo-1523240795612-9a054b0db644?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=800&q=80",
-    id: "bright-future",
+    id: "Bangalore",
     rating: 4.6,
     location: "Pune",
     boards: ["CBSE", "ICSE", "IGCSE"],

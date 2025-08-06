@@ -32,7 +32,7 @@ const PUCollegeDetails = () => {
     }, []);
 
     const puCollege = {
-        name: 'New Horizon PU College',
+        name: 'Narayana PU College',
         address: 'Hennur Main Road, Bengaluru, Karnataka 560077',
         fees: '₹85,000/year',
         rating: 4.6,

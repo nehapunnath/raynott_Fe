@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Link, useNavigate } from 'react-router-dom';
 import { FaChalkboardTeacher, FaSearch, FaFilter, FaBookOpen, FaTimes, FaHome } from "react-icons/fa";
@@ -153,6 +153,10 @@ function CoachingList() {
     console.log('Applied filters:', filters);
     setIsFilterOpen(false);
   };
+
+  useEffect(() => {
+              window.scrollTo(0, 0);
+          }, []);
 
   return (
     <div className="bg-orange-50 min-h-screen font-sans">

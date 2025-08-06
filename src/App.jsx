@@ -28,6 +28,10 @@ import AllTuition from './pages/AllTuition'
 import TuitionDetails from './pages/TuitionDetails'
 import PUCollegeDetails from './pages/PuCollegeDetails'
 import CoachingDetail from './pages/CoachingDetail'
+import AllTeachers from './pages/AllTeachers'
+import TeachersList from './pages/TeachersList'
+import TeachersDetails from './pages/TeachersDetails'
+import BestSellers from './pages/BestSellers'
 
 function App() {
   const [count, setCount] = useState(0)
@@ -45,6 +49,10 @@ function App() {
       <Route path='/pu-colleges' element={<PuCollegeList/>}/>
       <Route path='/coaching' element={<CoachingList/>}/>
       <Route path='/tuition' element={<TutionList/>}/>
+      <Route path='/teachers' element={<TeachersList/>}/>
+
+
+
 
       {/*cateory wise listing */}
       <Route path='/all-schools' element={<AllSchools/>}/>
@@ -52,6 +60,10 @@ function App() {
       <Route path='/all-pucolleges' element={<AllPuColleges/>}/>
       <Route path='/all-coaching' element={<AllCoaching/>}/>
       <Route path='/all-tuition' element={<AllTuition/>}/>
+      <Route path='/all-teachers' element={<AllTeachers/>}/>
+      <Route path='/best-sellers' element={<BestSellers/>}/>
+
+
 
 
 
@@ -64,6 +76,8 @@ function App() {
       <Route path='/pucollege-details' element={<PUCollegeDetails/>}/>
       <Route path='/coaching-details' element={<CoachingDetail/>}/>
       <Route path='/tuition-details' element={<TuitionDetails/>}/>
+      <Route path='/teachers-details' element={<TeachersDetails/>}/>
+
 
       <Route path='/register' element={<Register/>}/>
       <Route path='/register-form' element={<RegisterForm/>}/>

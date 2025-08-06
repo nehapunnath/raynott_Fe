@@ -1,11 +1,11 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { useNavigate } from 'react-router-dom'; 
+import { useNavigate } from 'react-router-dom';
 import Header from '../components/Header';
 import Location from '../components/Location';
 import '../styles/Home.css';
 import Categories from '../components/Categories';
-import { FaMapMarkerAlt, FaChalkboardTeacher, FaFileAlt, FaGraduationCap ,FaEye,FaSchool,FaUsers} from "react-icons/fa";
+import { FaMapMarkerAlt, FaChalkboardTeacher, FaFileAlt, FaGraduationCap, FaEye, FaSchool, FaUsers } from "react-icons/fa";
 import "slick-carousel/slick/slick.css";
 import "slick-carousel/slick/slick-theme.css";
 import Schools from '../components/Schools';
@@ -16,63 +16,65 @@ import About from '../components/About';
 import Tuition from '../components/Tuition';
 import Footer from '../components/Footer';
 import StickyButton from '../components/StickyButton';
+import Teachers from '../components/Teachers';
 
 
 function Home() {
-    const navigate = useNavigate(); 
+    const navigate = useNavigate();
 
-    const services = [
-        {
-            title: "Pan India Presence",
-            description: "With a presence across most of the cities in India, Edustoke has listed schools spread across the length and breadth of the country.",
-            icon: <FaMapMarkerAlt className="text-4xl group-hover:scale-110 transition-all duration-500" />,
-            border: "border-gradient-to-r from-amber-500 to-orange-600",
-            bg: "bg-gradient-to-br from-amber-50 to-orange-50",
-            iconBg: "bg-gradient-to-r from-amber-400 to-orange-500",
-            textColor: "text-amber-700"
-        },
-        {
-            title: "All Boards",
-            description: "Be it CBSE, ICSE, IB or state boards, Edustoke has listed schools with their diverse approaches and curriculum for parents to choose.",
-            icon: <FaFileAlt className="text-4xl group-hover:scale-110 transition-all duration-500" />,
-            border: "border-gradient-to-r from-teal-500 to-emerald-600",
-            bg: "bg-gradient-to-br from-teal-50 to-emerald-50",
-            iconBg: "bg-gradient-to-r from-teal-400 to-emerald-500",
-            textColor: "text-teal-700"
-        },
-        {
-            title: "Counselling Team",
-            description: "Our dedicated team of expert counsellors listen to you and comprehend your need and suggest to you unbiased options that suit your requirement.",
-            icon: <FaChalkboardTeacher className="text-4xl group-hover:scale-110 transition-all duration-500" />,
-            border: "border-gradient-to-r from-blue-500 to-indigo-600",
-            bg: "bg-gradient-to-br from-blue-50 to-indigo-50",
-            iconBg: "bg-gradient-to-r from-blue-400 to-indigo-500",
-            textColor: "text-blue-700"
-        },
-        {
-            title: "From Play School To University",
-            description: "Edustoke as a platform, caters to all parents be it seeking admission in preschool, day-school, boarding school or even pre-universities.",
-            icon: <FaGraduationCap className="text-4xl group-hover:scale-110 transition-all duration-500" />,
-            border: "border-gradient-to-r from-purple-500 to-fuchsia-600",
-            bg: "bg-gradient-to-br from-purple-50 to-fuchsia-50",
-            iconBg: "bg-gradient-to-r from-purple-400 to-fuchsia-500",
-            textColor: "text-purple-700"
-        },
-    ];
+const services = [
+    {
+        title: "Service In All India",
+        description: "Raynott offers nationwide services, connecting students and parents with institutions across every major city and region in India.",
+        icon: <FaMapMarkerAlt className="text-4xl group-hover:scale-110 transition-all duration-500" />,
+        border: "border-gradient-to-r from-amber-500 to-orange-600",
+        bg: "bg-gradient-to-br from-amber-50 to-orange-50",
+        iconBg: "bg-gradient-to-r from-amber-400 to-orange-500",
+        textColor: "text-amber-700"
+    },
+    {
+        title: "All Boards / Type Of Courses",
+        description: "Raynott features institutions offering CBSE, ICSE, IB, State Boards, and more — helping you explore diverse curricula and educational paths.",
+        icon: <FaFileAlt className="text-4xl group-hover:scale-110 transition-all duration-500" />,
+        border: "border-gradient-to-r from-teal-500 to-emerald-600",
+        bg: "bg-gradient-to-br from-teal-50 to-emerald-50",
+        iconBg: "bg-gradient-to-r from-teal-400 to-emerald-500",
+        textColor: "text-teal-700"
+    },
+    {
+        title: "Dedicated Counselling Team",
+        description: "Our expert counsellors at Raynott guide you with personalized, unbiased advice to help you find the right institution for your child's future.",
+        icon: <FaChalkboardTeacher className="text-4xl group-hover:scale-110 transition-all duration-500" />,
+        border: "border-gradient-to-r from-blue-500 to-indigo-600",
+        bg: "bg-gradient-to-br from-blue-50 to-indigo-50",
+        iconBg: "bg-gradient-to-r from-blue-400 to-indigo-500",
+        textColor: "text-blue-700"
+    },
+    {
+        title: "Day School To University",
+        description: "Raynott supports your educational journey from day school to higher education with listings that include day schools, boarding, and universities.",
+        icon: <FaGraduationCap className="text-4xl group-hover:scale-110 transition-all duration-500" />,
+        border: "border-gradient-to-r from-purple-500 to-fuchsia-600",
+        bg: "bg-gradient-to-br from-purple-50 to-fuchsia-50",
+        iconBg: "bg-gradient-to-r from-purple-400 to-fuchsia-500",
+        textColor: "text-purple-700"
+    },
+];
+
 
     const handleCategoryChange = (e) => {
         const selected = e.target.value;
-        if (selected === 'Schools') ;
-        else if (selected === 'College') ;
+        if (selected === 'Schools');
+        else if (selected === 'College');
         else if (selected === 'PU College');
-        else if (selected === 'Coaching Center') ;
-        else if (selected === 'Tuition Center') ;
+        else if (selected === 'Coaching Center');
+        else if (selected === 'Tuition Center');
     };
 
     return (
         <div className="bg-gradient-to-b from-amber-50 to-blue-50 relative">
             <Header />
-            
+
 
             {/* Scrolling Announcement */}
             <div className="w-full overflow-hidden bg-gradient-to-r from-orange-600 via-amber-500 to-orange-600 py-4 shadow-xl bg-[length:200%_auto] animate-gradient-x">
@@ -112,10 +114,25 @@ function Home() {
                     animate={{ opacity: 1 }}
                     transition={{ delay: 1.5, duration: 1 }}
                 />
+                <motion.div
+                    className="mb-2 mt-6"
+                    initial={{ y: 20, opacity: 0 }}
+                    animate={{ y: 0, opacity: 1 }}
+                    transition={{ delay: 0.6, duration: 0.8 }}
+                >
+                    <button
+                        onClick={() => navigate('/register')}
+                        className="bg-gradient-to-r from-orange-500 to-amber-600 text-white font-bold py-3 px-6 rounded-full shadow-lg hover:from-orange-600 hover:to-amber-700 transition-all duration-300 hover:shadow-xl"
+                    >
+                        Register Now
+                    </button>
+                </motion.div>
             </div>
 
-            {/* Search Bar */}
-            <div className="flex justify-center -mt-12 px-8 relative z-20">
+            {/* Search Bar Container */}
+            <div className="flex flex-col items-center px-8 relative z-30 -mt-8">                
+
+                {/* Search Bar */}
                 <motion.div
                     className="bg-white shadow-2xl rounded-3xl flex items-center w-full max-w-4xl overflow-hidden border-4 border-orange-500 hover:shadow-3xl transition-all duration-500"
                     initial={{ y: 50, opacity: 0 }}
@@ -204,56 +221,56 @@ function Home() {
             <Colleges />
             <PuCollege />
             <CoachingCenter />
-            <Tuition/>
+            <Teachers/>
+            {/* <Tuition /> */}
             <About />
 
             {/* Stats Section */}
-    <div className="relative py-20 overflow-hidden bg-gradient-to-br from-orange-500 to-amber-600">
-  {/* Decorative elements */}
-  <div className="absolute top-0 left-0 w-full h-full opacity-10">
-    <div className="absolute top-20 left-10 w-40 h-40 bg-white rounded-full mix-blend-overlay"></div>
-    <div className="absolute bottom-10 right-20 w-60 h-60 bg-white rounded-full mix-blend-overlay"></div>
-  </div>
-  
-  <div className="max-w-7xl mx-auto px-6 relative z-10">
-    <div className="grid md:grid-cols-3 gap-8">
-      {/* Stat 1 */}
-      <div className="bg-white/10 backdrop-blur-sm p-8 rounded-2xl border border-white/20 hover:bg-white/15 transition-all duration-300 group">
-        <div className="text-6xl font-extrabold mb-3 text-white drop-shadow-lg group-hover:text-amber-100 transition-colors duration-300">
-          2500+
-        </div>
-        <div className="text-xl font-medium text-amber-100 tracking-wide">
-          Schools
-        </div>
-        <div className="mt-4 h-1 w-16 bg-amber-300 rounded-full group-hover:w-24 transition-all duration-500"></div>
-      </div>
-      
-      {/* Stat 2 */}
-      <div className="bg-white/10 backdrop-blur-sm p-8 rounded-2xl border border-white/20 hover:bg-white/15 transition-all duration-300 group">
-        <div className="text-6xl font-extrabold mb-3 text-white drop-shadow-lg group-hover:text-amber-100 transition-colors duration-300">
-          20K+
-        </div>
-        <div className="text-xl font-medium text-amber-100 tracking-wide">
-          Schools Viewed
-        </div>
-        <div className="mt-4 h-1 w-16 bg-amber-300 rounded-full group-hover:w-24 transition-all duration-500"></div>
-      </div>
-      
-      {/* Stat 3 */}
-      <div className="bg-white/10 backdrop-blur-sm p-8 rounded-2xl border border-white/20 hover:bg-white/15 transition-all duration-300 group">
-        <div className="text-6xl font-extrabold mb-3 text-white drop-shadow-lg group-hover:text-amber-100 transition-colors duration-300">
-          1L+
-        </div>
-        <div className="text-xl font-medium text-amber-100 tracking-wide">
-          Parents Served
-        </div>
-        <div className="mt-4 h-1 w-16 bg-amber-300 rounded-full group-hover:w-24 transition-all duration-500"></div>
-      </div>
-    </div>
-  </div>
-</div>       
-{/* <Footer/> */}
-    <StickyButton/>
+            <div className="relative py-20 overflow-hidden bg-gradient-to-br from-orange-500 to-amber-600">
+                {/* Decorative elements */}
+                <div className="absolute top-0 left-0 w-full h-full opacity-10">
+                    <div className="absolute top-20 left-10 w-40 h-40 bg-white rounded-full mix-blend-overlay"></div>
+                    <div className="absolute bottom-10 right-20 w-60 h-60 bg-white rounded-full mix-blend-overlay"></div>
+                </div>
+
+                <div className="max-w-7xl mx-auto px-6 relative z-10">
+                    <div className="grid md:grid-cols-3 gap-8">
+                        {/* Stat 1 */}
+                        <div className="bg-white/10 backdrop-blur-sm p-8 rounded-2xl border border-white/20 hover:bg-white/15 transition-all duration-300 group">
+                            <div className="text-6xl font-extrabold mb-3 text-white drop-shadow-lg group-hover:text-amber-100 transition-colors duration-300">
+                                2500+
+                            </div>
+                            <div className="text-xl font-medium text-amber-100 tracking-wide">
+                                Schools
+                            </div>
+                            <div className="mt-4 h-1 w-16 bg-amber-300 rounded-full group-hover:w-24 transition-all duration-500"></div>
+                        </div>
+
+                        {/* Stat 2 */}
+                        <div className="bg-white/10 backdrop-blur-sm p-8 rounded-2xl border border-white/20 hover:bg-white/15 transition-all duration-300 group">
+                            <div className="text-6xl font-extrabold mb-3 text-white drop-shadow-lg group-hover:text-amber-100 transition-colors duration-300">
+                                20K+
+                            </div>
+                            <div className="text-xl font-medium text-amber-100 tracking-wide">
+                                Schools Viewed
+                            </div>
+                            <div className="mt-4 h-1 w-16 bg-amber-300 rounded-full group-hover:w-24 transition-all duration-500"></div>
+                        </div>
+
+                        {/* Stat 3 */}
+                        <div className="bg-white/10 backdrop-blur-sm p-8 rounded-2xl border border-white/20 hover:bg-white/15 transition-all duration-300 group">
+                            <div className="text-6xl font-extrabold mb-3 text-white drop-shadow-lg group-hover:text-amber-100 transition-colors duration-300">
+                                1L+
+                            </div>
+                            <div className="text-xl font-medium text-amber-100 tracking-wide">
+                                Parents Served
+                            </div>
+                            <div className="mt-4 h-1 w-16 bg-amber-300 rounded-full group-hover:w-24 transition-all duration-500"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <StickyButton />
         </div>
     );
 }

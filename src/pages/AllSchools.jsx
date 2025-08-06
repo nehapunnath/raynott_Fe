@@ -398,7 +398,6 @@ function AllSchools() {
                     </motion.div>
                 )}
             </AnimatePresence>
-            {/* <Footer/> */}
                 <StickyButton/>
         </div>
     );
