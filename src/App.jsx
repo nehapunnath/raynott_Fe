@@ -32,6 +32,7 @@ import AllTeachers from './pages/AllTeachers'
 import TeachersList from './pages/TeachersList'
 import TeachersDetails from './pages/TeachersDetails'
 import BestSellers from './pages/BestSellers'
+import AdminDashboard from './pages/Admin/AdminDashboard'
 
 function App() {
   const [count, setCount] = useState(0)
@@ -83,13 +84,17 @@ function App() {
       <Route path='/register-form' element={<RegisterForm/>}/>
       <Route path='/contact' element={<ContactUs/>}/>
 
+      <Route path='/admin/dashboard' element={<AdminDashboard/>}/>
+      
+
+
 
 
 
 
     </Routes>
     {/* <StickyButton/> */}
-    <Footer/>
+    {/* <Footer/> */}
 
     </>
   )
