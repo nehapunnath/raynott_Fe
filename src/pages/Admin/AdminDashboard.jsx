@@ -8,6 +8,7 @@ import AddColleges from './AddColleges';
 import AddPucollege from './AddPucollege';
 import AddCoaching from './AddCoaching';
 import AddTeachers from './AddTeachers';
+import SuperAdmin from './SuperAdmin';
 
 
 const AdminDashboard = () => {
@@ -271,6 +272,9 @@ const AdminDashboard = () => {
       case 'add-teachers':
         return <AddTeachers />;
 
+        case('create-superadmin'):
+           return <SuperAdmin/>
+
  
     }
   };
@@ -284,10 +288,19 @@ const AdminDashboard = () => {
         setActiveTab={setActiveTab} 
       />
 
-      
+       <div
+    className={`flex-1 transition-all duration-300 ${
+      sidebarOpen ? 'ml-64' : 'ml-20'
+    }`}
+  >
 
         {renderContent()}
-      </div>
+
+  </div>
+</div>
+
+      
+
   );
 };
 

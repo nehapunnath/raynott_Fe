@@ -16,11 +16,11 @@ const NavItem = ({ icon, text, active, onClick, sidebarOpen }) => {
 
 const Sidebar = ({ sidebarOpen, setSidebarOpen, activeTab, setActiveTab }) => {
   return (
-    <motion.div 
-      className={`bg-orange-600 text-white ${sidebarOpen ? 'w-64' : 'w-20'} transition-all duration-300 flex flex-col`}
-      initial={{ width: 256 }}
-      animate={{ width: sidebarOpen ? 256 : 80 }}
-    >
+   <motion.div 
+  className={`fixed top-0 left-0 h-screen bg-orange-600 text-white ${sidebarOpen ? 'w-64' : 'w-20'} transition-all duration-300 flex flex-col z-50`}
+  initial={{ width: 256 }}
+  animate={{ width: sidebarOpen ? 256 : 80 }}
+>
       <div className="p-4 flex items-center justify-between border-b border-orange-500">
         {sidebarOpen ? (
           <h1 className="text-2xl font-bold">Raynott Admin</h1>
@@ -78,13 +78,13 @@ const Sidebar = ({ sidebarOpen, setSidebarOpen, activeTab, setActiveTab }) => {
           onClick={() => setActiveTab('teachers')}
           sidebarOpen={sidebarOpen}
         />
-        {/* <NavItem 
+        <NavItem 
           icon={<FaCog />} 
-          text="Settings" 
-          active={activeTab === 'settings'} 
-          onClick={() => setActiveTab('settings')}
+          text="Create Super Admin" 
+          active={activeTab === 'create-superadmin'} 
+          onClick={() => setActiveTab('create-superadmin')}
           sidebarOpen={sidebarOpen}
-        /> */}
+        />
       </nav>
 
       <div className="p-4 border-t border-orange-500">
@@ -95,7 +95,7 @@ const Sidebar = ({ sidebarOpen, setSidebarOpen, activeTab, setActiveTab }) => {
           {sidebarOpen && (
             <div>
               <p className="font-medium">Admin User</p>
-              <p className="text-xs text-orange-200">admin@raynott.com</p>
+              {/* <p className="text-xs text-orange-200">admin@raynott.com</p> */}
             </div>
           )}
         </div>

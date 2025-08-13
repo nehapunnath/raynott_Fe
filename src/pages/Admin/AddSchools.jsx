@@ -8,11 +8,11 @@
         const AddSchools = () => {
             const [formData, setFormData] = useState({
                 name: '',
-                typeOfSchool: 'Day School',
-                affiliation: 'CBSE',
-                grade: 'Nursery to 12th',
-                ageForAdmission: '3 Years',
-                language: 'English',
+                typeOfSchool: '',
+                affiliation: '',
+                grade: '',
+                ageForAdmission: '',
+                language: '',
                 establishmentYear: '',
                 facilities: [],
                 totalAnnualFee: '',
@@ -28,14 +28,14 @@
                 googleMapsEmbedUrl: '',
                 campusSize: '',
                 classrooms: '',
-                laboratories: 'No',
-                library: 'No',
-                playground: 'No',
-                auditorium: 'No',
-                smartBoards: 'No',
-                cctv: 'No',
-                medicalRoom: 'No',
-                wifi: 'No',
+                laboratories: '',
+                library: '',
+                playground: '',
+                auditorium: '',
+                smartBoards: '',
+                cctv: '',
+                medicalRoom: '',
+                wifi: '',
                 admissionLink: '',
                 admissionProcess: '',
                 schoolImage: '',
@@ -92,14 +92,14 @@
             };
 
             return (
-                <div className="min-h-screen bg-gradient-to-b from-orange-50 to-white">
+                <div className="min-h-screen w-full bg-gradient-to-b from-orange-50 to-white">
 
                     {/* Form */}
                     <motion.div
                         initial={{ opacity: 0, y: 20 }}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ duration: 0.6 }}
-                        className="max-w-7xl mx-auto mt-8 px-4 pb-8"
+                        className="w-full px-6 py-8"
                     >
                         <h1 className="text-4xl font-bold text-center text-gray-800 mb-8">Add New School</h1>
                         <div className="bg-white rounded-2xl shadow-xl p-8 border border-orange-100">

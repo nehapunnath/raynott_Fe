@@ -1,7 +1,7 @@
 import { useState } from 'react'
+import { Route, Routes, useLocation } from 'react-router-dom'
 
 import './App.css'
-import { Route, Routes } from 'react-router-dom'
 import Home from './pages/Home'
 import Footer from './components/Footer'
 import Listedpage from './pages/Listedpage'
@@ -35,67 +35,55 @@ import BestSellers from './pages/BestSellers'
 import AdminDashboard from './pages/Admin/AdminDashboard'
 
 function App() {
-  const [count, setCount] = useState(0)
+  const location = useLocation()
+
+  // Paths where footer should be hidden
+  const hideFooterPaths = ['/login', '/admin/dashboard']
+
+  const shouldShowFooter = !hideFooterPaths.includes(location.pathname)
 
   return (
     <>
-    {/* <Header/> */}
-    <Routes>
-      
-      <Route path='/' element={<Home/>}/>
-      <Route path='/listed' element={<Listedpage/>}/>
+      {/* <Header /> */}
+      <Routes>
+        <Route path='/' element={<Home/>}/>
+        <Route path='/listed' element={<Listedpage/>}/>
 
-      <Route path='/listing' element={<Listing/>}/> {/**school listing */}
-      <Route path='/colleges' element={<Colleges/>}/>
-      <Route path='/pu-colleges' element={<PuCollegeList/>}/>
-      <Route path='/coaching' element={<CoachingList/>}/>
-      <Route path='/tuition' element={<TutionList/>}/>
-      <Route path='/teachers' element={<TeachersList/>}/>
+        <Route path='/listing' element={<Listing/>}/> 
+        <Route path='/colleges' element={<Colleges/>}/>
+        <Route path='/pu-colleges' element={<PuCollegeList/>}/>
+        <Route path='/coaching' element={<CoachingList/>}/>
+        <Route path='/tuition' element={<TutionList/>}/>
+        <Route path='/teachers' element={<TeachersList/>}/>
 
+        {/* category wise listing */}
+        <Route path='/all-schools' element={<AllSchools/>}/>
+        <Route path='/all-colleges' element={<AllColleges/>}/>
+        <Route path='/all-pucolleges' element={<AllPuColleges/>}/>
+        <Route path='/all-coaching' element={<AllCoaching/>}/>
+        <Route path='/all-tuition' element={<AllTuition/>}/>
+        <Route path='/all-teachers' element={<AllTeachers/>}/>
+        <Route path='/best-sellers' element={<BestSellers/>}/>
 
+        <Route path='/login' element={<LoginPage/>}/>
+        <Route path='/bookdemo' element={<BookaDemo/>}/>
 
+        <Route path='/school-details' element={<SchoolDetails/>}/>
+        <Route path='/college-details' element={<CollegeDetails/>}/>
+        <Route path='/pucollege-details' element={<PUCollegeDetails/>}/>
+        <Route path='/coaching-details' element={<CoachingDetail/>}/>
+        <Route path='/tuition-details' element={<TuitionDetails/>}/>
+        <Route path='/teachers-details' element={<TeachersDetails/>}/>
 
-      {/*cateory wise listing */}
-      <Route path='/all-schools' element={<AllSchools/>}/>
-      <Route path='/all-colleges' element={<AllColleges/>}/>
-      <Route path='/all-pucolleges' element={<AllPuColleges/>}/>
-      <Route path='/all-coaching' element={<AllCoaching/>}/>
-      <Route path='/all-tuition' element={<AllTuition/>}/>
-      <Route path='/all-teachers' element={<AllTeachers/>}/>
-      <Route path='/best-sellers' element={<BestSellers/>}/>
+        <Route path='/register' element={<Register/>}/>
+        <Route path='/register-form' element={<RegisterForm/>}/>
+        <Route path='/contact' element={<ContactUs/>}/>
 
+        <Route path='/admin/dashboard' element={<AdminDashboard/>}/>
+      </Routes>
 
-
-
-
-
-      <Route path='/login' element={<LoginPage/>}/>
-      <Route path='/bookdemo' element={<BookaDemo/>}/>
-
-      <Route path='/school-details' element={<SchoolDetails/>}/>
-      <Route path='/college-details' element={<CollegeDetails/>}/>
-      <Route path='/pucollege-details' element={<PUCollegeDetails/>}/>
-      <Route path='/coaching-details' element={<CoachingDetail/>}/>
-      <Route path='/tuition-details' element={<TuitionDetails/>}/>
-      <Route path='/teachers-details' element={<TeachersDetails/>}/>
-
-
-      <Route path='/register' element={<Register/>}/>
-      <Route path='/register-form' element={<RegisterForm/>}/>
-      <Route path='/contact' element={<ContactUs/>}/>
-
-      <Route path='/admin/dashboard' element={<AdminDashboard/>}/>
-      
-
-
-
-
-
-
-    </Routes>
-    {/* <StickyButton/> */}
-    {/* <Footer/> */}
-
+      {/* Only show footer if path is not in hideFooterPaths */}
+      {shouldShowFooter && <Footer />}
     </>
   )
 }
