@@ -33,12 +33,14 @@ import TeachersList from './pages/TeachersList'
 import TeachersDetails from './pages/TeachersDetails'
 import BestSellers from './pages/BestSellers'
 import AdminDashboard from './pages/Admin/AdminDashboard'
+import EditSchool from './pages/Admin/EditSchool'
+import ViewSchool from './pages/Admin/ViewSchool'
 
 function App() {
   const location = useLocation()
 
   // Paths where footer should be hidden
-  const hideFooterPaths = ['/login', '/admin/dashboard']
+  const hideFooterPaths = ['/login', '/admin/dashboard','/admin/edit-school/:id','/admin/view-school/:id']
 
   const shouldShowFooter = !hideFooterPaths.includes(location.pathname)
 
@@ -80,6 +82,10 @@ function App() {
         <Route path='/contact' element={<ContactUs/>}/>
 
         <Route path='/admin/dashboard' element={<AdminDashboard/>}/>
+        <Route path='/admin/edit-school/:id' element={<EditSchool/>}/>
+        <Route path='/admin/school-details/:id' element={<ViewSchool/>}/>
+
+
       </Routes>
 
       {/* Only show footer if path is not in hideFooterPaths */}

@@ -5,17 +5,17 @@ import { Link } from 'react-router-dom';
 const locations = [
   { name: 'Bengaluru', icon: '🏙️', color: 'from-indigo-500 to-purple-600' },
   { name: 'Hyderabad', icon: '🏰', color: 'from-amber-500 to-orange-600' },
-  { name: 'Pune', icon: '🏛️', color: 'from-emerald-500 to-teal-600' },
+  // { name: 'Pune', icon: '🏛️', color: 'from-emerald-500 to-teal-600' },
   { name: 'Mumbai', icon: '🌆', color: 'from-rose-500 to-pink-600' },
   { name: 'Kolkata', icon: '🕌', color: 'from-blue-500 to-cyan-600' },
   { name: 'Delhi', icon: '🏯', color: 'from-violet-500 to-fuchsia-600' },
   { name: 'Chennai', icon: '🛕', color: 'from-green-500 to-lime-600' },
-  { name: 'Vizag', icon: '⛩️', color: 'from-red-500 to-amber-600' },
-  { name: 'Noida', icon: '🏗️', color: 'from-purple-500 to-indigo-600' },
-  { name: 'Gurugram', icon: '🏢', color: 'from-cyan-500 to-sky-600' },
-  { name: 'Faridabad', icon: '🏚️', color: 'from-yellow-500 to-amber-600' },
-  { name: 'Online Schools', icon: '💻', color: 'from-gray-500 to-slate-600' },
-  { name: 'Boarding Schools', icon: '🏫', color: 'from-amber-500 to-rose-600' },
+  // { name: 'Vizag', icon: '⛩️', color: 'from-red-500 to-amber-600' },
+  // { name: 'Noida', icon: '🏗️', color: 'from-purple-500 to-indigo-600' },
+  // { name: 'Gurugram', icon: '🏢', color: 'from-cyan-500 to-sky-600' },
+  // { name: 'Faridabad', icon: '🏚️', color: 'from-yellow-500 to-amber-600' },
+  // { name: 'Online Schools', icon: '💻', color: 'from-gray-500 to-slate-600' },
+  // { name: 'Boarding Schools', icon: '🏫', color: 'from-amber-500 to-rose-600' },
 ];
 
 function Location() {

@@ -7,7 +7,7 @@ export const authApis = {
   async adminLogin(email, password) {
     try {
       const result = await commonApis(
-        `${base_url}login`,
+        `${base_url}/login`,
         "POST",
         { "Content-Type": "application/json" },
         { email, password }

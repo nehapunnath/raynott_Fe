@@ -1,14 +1,15 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { FaBookOpen, FaSearch, FaMapMarkerAlt, FaGraduationCap, FaRupeeSign, FaSchool, FaFlask, FaBook, FaRunning, FaTheaterMasks, FaChalkboardTeacher, FaVideo, FaFirstAid, FaWifi, FaLink, FaClipboardList, FaPhone } from 'react-icons/fa';
 import { IoMdTime } from 'react-icons/io';
-import { Link } from 'react-router-dom';
+import { Link, useParams, useNavigate } from 'react-router-dom';
 import { schoolApi } from '../../services/schoolApi';
 
-const AddSchools = () => {
-    // List of cities for the dropdown
+const EditSchool = () => {
+    const { id } = useParams(); // Get school ID from URL
+    const navigate = useNavigate(); // For redirecting after successful update
     const cities = ['Bangalore', 'Hyderabad', 'Mumbai', 'Kolkata', 'Delhi', 'Chennai'];
-    
+
     const [formData, setFormData] = useState({
         name: '',
         typeOfSchool: '',
@@ -24,7 +25,7 @@ const AddSchools = () => {
         transportFee: '',
         booksUniformsFee: '',
         address: '',
-        city: '', // This will now be selected from dropdown
+        city: '',
         phone: '',
         email: '',
         website: '',
@@ -48,8 +49,72 @@ const AddSchools = () => {
 
     const [schoolImageFile, setSchoolImageFile] = useState(null);
     const [photoFiles, setPhotoFiles] = useState([]);
+    const [isLoading, setIsLoading] = useState(true);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [submitStatus, setSubmitStatus] = useState({ success: null, message: '' });
+
+    // Fetch school data when component mounts
+    useEffect(() => {
+        const fetchSchool = async () => {
+            try {
+                setIsLoading(true);
+                const response = await schoolApi.getSchool(id);
+                console.log('API Response:', response);
+                
+                if (response.success && response.data) {
+                    // Firebase returns data as an object with school ID as key
+                    const schoolData = response.data[id] || response.data;
+                    console.log('Processed school data:', schoolData);
+                    
+                    // Ensure all fields are properly formatted
+                    setFormData({
+                        name: schoolData.name || '',
+                        typeOfSchool: schoolData.typeOfSchool || '',
+                        affiliation: schoolData.affiliation || '',
+                        grade: schoolData.grade || '',
+                        ageForAdmission: schoolData.ageForAdmission || '',
+                        language: schoolData.language || '',
+                        establishmentYear: schoolData.establishmentYear || '',
+                        facilities: Array.isArray(schoolData.facilities) ? schoolData.facilities : [],
+                        totalAnnualFee: schoolData.totalAnnualFee || '',
+                        admissionFee: schoolData.admissionFee || '',
+                        tuitionFee: schoolData.tuitionFee || '',
+                        transportFee: schoolData.transportFee || '',
+                        booksUniformsFee: schoolData.booksUniformsFee || '',
+                        address: schoolData.address || '',
+                        city: schoolData.city || '',
+                        phone: schoolData.phone || '',
+                        email: schoolData.email || '',
+                        website: schoolData.website || '',
+                        socialMedia: schoolData.socialMedia || { facebook: '', twitter: '', instagram: '' },
+                        googleMapsEmbedUrl: schoolData.googleMapsEmbedUrl || '',
+                        campusSize: schoolData.campusSize || '',
+                        classrooms: schoolData.classrooms || '',
+                        laboratories: schoolData.laboratories || '',
+                        library: schoolData.library || '',
+                        playground: schoolData.playground || '',
+                        auditorium: schoolData.auditorium || '',
+                        smartBoards: schoolData.smartBoards || '',
+                        cctv: schoolData.cctv || '',
+                        medicalRoom: schoolData.medicalRoom || '',
+                        wifi: schoolData.wifi || '',
+                        admissionLink: schoolData.admissionLink || '',
+                        admissionProcess: schoolData.admissionProcess || '',
+                        schoolImage: schoolData.schoolImage || '',
+                        photos: Array.isArray(schoolData.photos) ? schoolData.photos : []
+                    });
+                } else {
+                    setSubmitStatus({ success: false, message: response.message || 'Failed to fetch school data' });
+                }
+            } catch (error) {
+                console.error('Error fetching school:', error);
+                setSubmitStatus({ success: false, message: error.message || 'Failed to fetch school data' });
+            } finally {
+                setIsLoading(false);
+            }
+        };
+        fetchSchool();
+    }, [id]);
 
     const handleInputChange = (e) => {
         const { name, value } = e.target;
@@ -97,96 +162,6 @@ const AddSchools = () => {
         }
     };
 
-    const handleSubmit = async () => {
-        setIsSubmitting(true);
-        setSubmitStatus({ success: null, message: '' });
-        
-        try {
-            // Create FormData object
-            const submitData = new FormData();
-            
-            // Append all form fields
-            Object.keys(formData).forEach(key => {
-                if (key === 'socialMedia') {
-                    submitData.append(key, JSON.stringify(formData[key]));
-                } else if (key === 'facilities') {
-                    submitData.append(key, JSON.stringify(formData[key]));
-                } else if (key !== 'schoolImage' && key !== 'photos') {
-                    submitData.append(key, formData[key]);
-                }
-            });
-            
-            // Append image files
-            if (schoolImageFile) {
-                submitData.append('schoolImage', schoolImageFile);
-            }
-            
-            if (photoFiles.length > 0) {
-                photoFiles.forEach(file => {
-                    submitData.append('photos', file);
-                });
-            }
-            
-            // Call the API
-            const response = await schoolApi.addSchool(submitData);
-            
-            setSubmitStatus({ 
-                success: true, 
-                message: 'School added successfully!' 
-            });
-            
-            // Reset form after successful submission
-            setFormData({
-                name: '',
-                typeOfSchool: '',
-                affiliation: '',
-                grade: '',
-                ageForAdmission: '',
-                language: '',
-                establishmentYear: '',
-                facilities: [],
-                totalAnnualFee: '',
-                admissionFee: '',
-                tuitionFee: '',
-                transportFee: '',
-                booksUniformsFee: '',
-                address: '',
-                city: '',
-                phone: '',
-                email: '',
-                website: '',
-                socialMedia: { facebook: '', twitter: '', instagram: '' },
-                googleMapsEmbedUrl: '',
-                campusSize: '',
-                classrooms: '',
-                laboratories: '',
-                library: '',
-                playground: '',
-                auditorium: '',
-                smartBoards: '',
-                cctv: '',
-                medicalRoom: '',
-                wifi: '',
-                admissionLink: '',
-                admissionProcess: '',
-                schoolImage: '',
-                photos: []
-            });
-            setSchoolImageFile(null);
-            setPhotoFiles([]);
-            
-        } catch (error) {
-            console.error('Error submitting form:', error);
-            setSubmitStatus({ 
-                success: false, 
-                message: error.message || 'Failed to submit school data' 
-            });
-        } finally {
-            setIsSubmitting(false);
-        }
-    };
-
-    // Remove a photo from gallery
     const removePhoto = (index) => {
         setFormData(prev => ({
             ...prev,
@@ -195,11 +170,79 @@ const AddSchools = () => {
         setPhotoFiles(prev => prev.filter((_, i) => i !== index));
     };
 
+    const handleSubmit = async () => {
+        // Client-side validation for required fields
+        if (!formData.name || !formData.typeOfSchool || !formData.affiliation || !formData.address || !formData.city) {
+            setSubmitStatus({ success: false, message: 'Please fill all required fields' });
+            return;
+        }
+
+        setIsSubmitting(true);
+        setSubmitStatus({ success: null, message: '' });
+
+        try {
+            const submitData = new FormData();
+            Object.keys(formData).forEach(key => {
+                if (key === 'socialMedia' || key === 'facilities') {
+                    submitData.append(key, JSON.stringify(formData[key]));
+                } else if (key !== 'schoolImage' && key !== 'photos') {
+                    submitData.append(key, formData[key]);
+                }
+            });
+
+            if (schoolImageFile) {
+                submitData.append('schoolImage', schoolImageFile);
+            }
+
+            if (photoFiles.length > 0) {
+                photoFiles.forEach(file => {
+                    submitData.append('photos', file);
+                });
+            }
+
+            const response = await schoolApi.updateSchool(id, submitData);
+
+            if (response.success) {
+                setSubmitStatus({ success: true, message: 'School updated successfully!' });
+                setTimeout(() => navigate('/admin/schools'), 2000); // Redirect to schools list after 2 seconds
+            } else {
+                setSubmitStatus({ success: false, message: response.message || 'Failed to update school' });
+            }
+        } catch (error) {
+            console.error('Error updating school:', error);
+            setSubmitStatus({ success: false, message: error.message || 'Failed to update school' });
+        } finally {
+            setIsSubmitting(false);
+        }
+    };
+
+    if (isLoading) {
+        return (
+            <div className="flex justify-center items-center h-64">
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-600"></div>
+            </div>
+        );
+    }
+
+    if (submitStatus.success === false && !formData.name) {
+        return (
+            <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded">
+                <p>Error: {submitStatus.message}</p>
+                <button
+                    onClick={() => navigate('/admin/dash')}
+                    className="mt-2 bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700"
+                >
+                    Back to Schools
+                </button>
+            </div>
+        );
+    }
+
     return (
         <div className="min-h-screen w-full bg-gradient-to-b from-orange-50 to-white">
             {/* Status Message */}
             {submitStatus.message && (
-                <motion.div 
+                <motion.div
                     initial={{ opacity: 0, y: -20 }}
                     animate={{ opacity: 1, y: 0 }}
                     className={`fixed top-4 right-4 p-4 rounded-lg shadow-lg z-50 ${
@@ -217,7 +260,7 @@ const AddSchools = () => {
                 transition={{ duration: 0.6 }}
                 className="w-full px-6 py-8"
             >
-                <h1 className="text-4xl font-bold text-center text-gray-800 mb-8">Add New School</h1>
+                <h1 className="text-4xl font-bold text-center text-gray-800 mb-8">Edit School</h1>
                 <div className="bg-white rounded-2xl shadow-xl p-8 border border-orange-100">
                     {/* Basic Information */}
                     <motion.div
@@ -250,9 +293,10 @@ const AddSchools = () => {
                                 required
                             >
                                 <option value="">Select School Type</option>
-                                <option value="Day School">Pre School</option>
-                                <option value="Boarding">Residential Schools</option>
-                                <option value="Pre School">International School</option>
+                                <option value="Day School">Day School</option>
+                                <option value="Boarding">Boarding</option>
+                                <option value="Pre School">Pre School</option>
+                                <option value="International School">International School</option>
                             </motion.select>
                             <motion.select
                                 name="affiliation"
@@ -373,7 +417,7 @@ const AddSchools = () => {
                             <motion.input
                                 type="text"
                                 name="booksUniformsFee"
-                                placeholder="Books & Uniforms Fee (e.e., ₹14,000)"
+                                placeholder="Books & Uniforms Fee (e.g., ₹14,000)"
                                 value={formData.booksUniformsFee}
                                 onChange={handleInputChange}
                                 className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
@@ -404,8 +448,6 @@ const AddSchools = () => {
                                 whileFocus={{ scale: 1.02 }}
                                 required
                             />
-                            
-                            {/* City Dropdown */}
                             <motion.select
                                 name="city"
                                 value={formData.city}
@@ -419,7 +461,6 @@ const AddSchools = () => {
                                     <option key={city} value={city}>{city}</option>
                                 ))}
                             </motion.select>
-                            
                             <motion.input
                                 type="tel"
                                 name="phone"
@@ -666,7 +707,7 @@ const AddSchools = () => {
                             isSubmitting ? 'opacity-70 cursor-not-allowed' : 'hover:from-orange-600 hover:to-amber-700'
                         }`}
                     >
-                        {isSubmitting ? 'Submitting...' : 'Submit School Details'}
+                        {isSubmitting ? 'Updating...' : 'Update School Details'}
                     </motion.button>
                 </div>
             </motion.div>
@@ -674,4 +715,4 @@ const AddSchools = () => {
     );
 };
 
-export default AddSchools;
+export default EditSchool;
