@@ -204,7 +204,7 @@ const EditSchool = () => {
 
             if (response.success) {
                 setSubmitStatus({ success: true, message: 'School updated successfully!' });
-                setTimeout(() => navigate('/admin/schools'), 2000); // Redirect to schools list after 2 seconds
+                setTimeout(() => navigate('/admin/dashboard'), 2000); // Redirect to schools list after 2 seconds
             } else {
                 setSubmitStatus({ success: false, message: response.message || 'Failed to update school' });
             }
@@ -229,7 +229,7 @@ const EditSchool = () => {
             <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded">
                 <p>Error: {submitStatus.message}</p>
                 <button
-                    onClick={() => navigate('/admin/dash')}
+                    onClick={() => navigate('/admin/dashboard')}
                     className="mt-2 bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700"
                 >
                     Back to Schools

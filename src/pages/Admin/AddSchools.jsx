@@ -24,7 +24,7 @@ const AddSchools = () => {
         transportFee: '',
         booksUniformsFee: '',
         address: '',
-        city: '', // This will now be selected from dropdown
+        city: '',
         phone: '',
         email: '',
         website: '',
@@ -105,16 +105,39 @@ const AddSchools = () => {
             // Create FormData object
             const submitData = new FormData();
             
-            // Append all form fields
-            Object.keys(formData).forEach(key => {
-                if (key === 'socialMedia') {
-                    submitData.append(key, JSON.stringify(formData[key]));
-                } else if (key === 'facilities') {
-                    submitData.append(key, JSON.stringify(formData[key]));
-                } else if (key !== 'schoolImage' && key !== 'photos') {
-                    submitData.append(key, formData[key]);
+            // Append all simple fields
+            const simpleFields = [
+                'name', 'typeOfSchool', 'affiliation', 'grade', 'ageForAdmission',
+                'language', 'establishmentYear', 'totalAnnualFee', 'admissionFee',
+                'tuitionFee', 'transportFee', 'booksUniformsFee', 'address', 'city',
+                'phone', 'email', 'website', 'googleMapsEmbedUrl', 'campusSize',
+                'classrooms', 'admissionLink', 'admissionProcess'
+            ];
+            
+            simpleFields.forEach(field => {
+                if (formData[field]) {
+                    submitData.append(field, formData[field]);
                 }
             });
+            
+            // Append JSON fields (facilities and socialMedia)
+            submitData.append('facilities', JSON.stringify(formData.facilities));
+            submitData.append('socialMedia', JSON.stringify(formData.socialMedia));
+            
+            // Append infrastructure boolean fields
+            const infrastructureFields = [
+                'laboratories', 'library', 'playground', 'auditorium',
+                'smartBoards', 'cctv', 'medicalRoom', 'wifi'
+            ];
+            
+            infrastructureFields.forEach(field => {
+                submitData.append(field, formData[field] || 'No');
+            });
+            
+            // Debug: Log all form data entries
+            for (let [key, value] of submitData.entries()) {
+                console.log(key, value);
+            }
             
             // Append image files
             if (schoolImageFile) {
@@ -177,9 +200,14 @@ const AddSchools = () => {
             
         } catch (error) {
             console.error('Error submitting form:', error);
+            const errorMessage = error.response?.data?.errors?.[0] || 
+                                error.response?.data?.message || 
+                                error.message || 
+                                'Failed to submit school data';
+            
             setSubmitStatus({ 
                 success: false, 
-                message: error.message || 'Failed to submit school data' 
+                message: errorMessage 
             });
         } finally {
             setIsSubmitting(false);
@@ -234,7 +262,7 @@ const AddSchools = () => {
                             <motion.input
                                 type="text"
                                 name="name"
-                                placeholder="School Name"
+                                placeholder="School Name *"
                                 value={formData.name}
                                 onChange={handleInputChange}
                                 className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
@@ -249,7 +277,7 @@ const AddSchools = () => {
                                 whileFocus={{ scale: 1.02 }}
                                 required
                             >
-                                <option value="">Select School Type</option>
+                                <option value="">Select School Type *</option>
                                 <option value="Day School">Pre School</option>
                                 <option value="Boarding">Residential Schools</option>
                                 <option value="Pre School">International School</option>
@@ -262,7 +290,7 @@ const AddSchools = () => {
                                 whileFocus={{ scale: 1.02 }}
                                 required
                             >
-                                <option value="">Select Affiliation</option>
+                                <option value="">Select Affiliation *</option>
                                 <option value="CBSE">CBSE</option>
                                 <option value="ICSE">ICSE</option>
                                 <option value="State Board">State Board</option>
@@ -397,7 +425,7 @@ const AddSchools = () => {
                             <motion.input
                                 type="text"
                                 name="address"
-                                placeholder="Address"
+                                placeholder="Address *"
                                 value={formData.address}
                                 onChange={handleInputChange}
                                 className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
@@ -414,7 +442,7 @@ const AddSchools = () => {
                                 whileFocus={{ scale: 1.02 }}
                                 required
                             >
-                                <option value="">Select City</option>
+                                <option value="">Select City *</option>
                                 {cities.map(city => (
                                     <option key={city} value={city}>{city}</option>
                                 ))}
@@ -594,10 +622,12 @@ const AddSchools = () => {
                                 whileFocus={{ scale: 1.02 }}
                             />
                             {['laboratories', 'library', 'playground', 'auditorium', 'smartBoards', 'cctv', 'medicalRoom', 'wifi'].map(field => (
-                                <div key={field} className="flex items-center space-x-4">
-                                    <label className="text-gray-700 capitalize">{field.replace(/([A-Z])/g, ' $1').trim()}</label>
+                                <div key={field} className="flex items-center justify-between space-x-4 p-2 border rounded-lg">
+                                    <label className="text-gray-700 capitalize font-medium">
+                                        {field.replace(/([A-Z])/g, ' $1').trim()}
+                                    </label>
                                     <div className="flex space-x-4">
-                                        <label>
+                                        <label className="flex items-center">
                                             <input
                                                 type="radio"
                                                 name={field}
@@ -608,12 +638,12 @@ const AddSchools = () => {
                                             />
                                             <span className="ml-2">Yes</span>
                                         </label>
-                                        <label>
+                                        <label className="flex items-center">
                                             <input
                                                 type="radio"
                                                 name={field}
                                                 value="No"
-                                                checked={formData[field] === 'No'}
+                                                checked={formData[field] === 'No' || !formData[field]}
                                                 onChange={handleRadioChange}
                                                 className="h-4 w-4 text-orange-600 focus:ring-orange-500"
                                             />
@@ -639,7 +669,7 @@ const AddSchools = () => {
                         <motion.input
                             type="url"
                             name="admissionLink"
-                            placeholder="Admission Link (e.g., https://example.com/admission)"
+                            placeholder="Admission Link (e.e., https://example.com/admission)"
                             value={formData.admissionLink}
                             onChange={handleInputChange}
                             className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
