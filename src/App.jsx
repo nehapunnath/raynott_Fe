@@ -35,6 +35,8 @@ import BestSellers from './pages/BestSellers'
 import AdminDashboard from './pages/Admin/AdminDashboard'
 import EditSchool from './pages/Admin/EditSchool'
 import ViewSchool from './pages/Admin/ViewSchool'
+import EditCollege from './pages/Admin/EditCollege'
+import ViewCollege from './pages/Admin/ViewCollege'
 
 function App() {
   const location = useLocation()
@@ -84,6 +86,9 @@ function App() {
         <Route path='/admin/dashboard' element={<AdminDashboard/>}/>
         <Route path='/admin/edit-school/:id' element={<EditSchool/>}/>
         <Route path='/admin/school-details/:id' element={<ViewSchool/>}/>
+
+         <Route path='/admin/edit-college/:id' element={<EditCollege/>}/>
+        <Route path='/admin/college-details/:id' element={<ViewCollege/>}/>
 
 
       </Routes>

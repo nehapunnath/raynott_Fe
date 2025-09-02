@@ -1,9 +1,12 @@
-
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
+import { useParams, useNavigate } from 'react-router-dom';
 import { collegeApi, collegeTypeApi } from '../../services/collegeApi';
 
-const AddColleges = () => {
+const EditCollege = () => {
+    const { id } = useParams();
+    const navigate = useNavigate();
+    
     // List of cities for the dropdown
     const cities = ['Bangalore', 'Hyderabad', 'Mumbai', 'Kolkata', 'Delhi', 'Chennai'];
     
@@ -50,7 +53,9 @@ const AddColleges = () => {
         admissionLink: '',
         admissionProcess: '',
         collegeImage: null,
+        existingCollegeImage: '',
         photos: [],
+        existingPhotos: [],
         facilities: []
     });
 
@@ -61,10 +66,11 @@ const AddColleges = () => {
     const [typeLoading, setTypeLoading] = useState(false);
     const [message, setMessage] = useState({ type: '', text: '' });
 
-    // Fetch college types on component mount
+    // Fetch college data and types on component mount
     useEffect(() => {
         fetchCollegeTypes();
-    }, []);
+        fetchCollegeData();
+    }, [id]);
 
     const fetchCollegeTypes = async () => {
         try {
@@ -82,6 +88,107 @@ const AddColleges = () => {
             });
         } finally {
             setTypeLoading(false);
+        }
+    };
+
+    const fetchCollegeData = async () => {
+        try {
+            setLoading(true);
+            const response = await collegeApi.getCollege(id);
+            if (response.success && response.data) {
+                const college = response.data;
+                
+                // Convert coursesOffered from string to array if needed
+                let coursesArray = [];
+                if (Array.isArray(college.coursesOffered)) {
+                    coursesArray = college.coursesOffered;
+                } else if (typeof college.coursesOffered === 'string') {
+                    coursesArray = college.coursesOffered.split(',').map(course => course.trim());
+                }
+                
+                // Parse socialMedia if it's a string
+                let socialMediaObj = { facebook: '', twitter: '', instagram: '' };
+                if (typeof college.socialMedia === 'string') {
+                    try {
+                        socialMediaObj = JSON.parse(college.socialMedia);
+                    } catch (e) {
+                        console.error('Error parsing social media:', e);
+                    }
+                } else if (college.socialMedia && typeof college.socialMedia === 'object') {
+                    socialMediaObj = college.socialMedia;
+                }
+                
+                // Parse facilities if it's a string
+                let facilitiesArray = [];
+                if (typeof college.facilities === 'string') {
+                    try {
+                        facilitiesArray = JSON.parse(college.facilities);
+                    } catch (e) {
+                        console.error('Error parsing facilities:', e);
+                    }
+                } else if (Array.isArray(college.facilities)) {
+                    facilitiesArray = college.facilities;
+                }
+                
+                setFormData({
+                    name: college.name || '',
+                    typeOfCollege: college.typeOfCollege || college.type || '',
+                    affiliation: college.affiliation || '',
+                    coursesOffered: coursesArray,
+                    duration: college.duration || '',
+                    language: college.language || '',
+                    establishmentYear: college.establishmentYear || college.establishedYear || '',
+                    accreditation: college.accreditation || '',
+                    studentTeacherRatio: college.studentTeacherRatio || '',
+                    transportation: college.transportation || '',
+                    placementStatistics: college.placementStatistics || '',
+                    totalAnnualFee: college.totalAnnualFee || '',
+                    admissionFee: college.admissionFee || '',
+                    tuitionFee: college.tuitionFee || '',
+                    transportFee: college.transportFee || '',
+                    booksUniformsFee: college.booksUniformsFee || '',
+                    address: college.address || '',
+                    city: college.city || '',
+                    state: college.state || '',
+                    phone: college.phone || '',
+                    email: college.email || '',
+                    website: college.website || '',
+                    socialMedia: socialMediaObj,
+                    googleMapsEmbedUrl: college.googleMapsEmbedUrl || '',
+                    campusSize: college.campusSize || '',
+                    classrooms: college.classrooms || '',
+                    laboratories: college.laboratories || '',
+                    library: college.library || '',
+                    playground: college.playground || '',
+                    auditorium: college.auditorium || '',
+                    smartBoards: college.smartBoards || '',
+                    cctv: college.cctv || '',
+                    medicalRoom: college.medicalRoom || '',
+                    wifi: college.wifi || '',
+                    hostel: college.hostel || '',
+                    sports: college.sports || '',
+                    admissionLink: college.admissionLink || '',
+                    admissionProcess: college.admissionProcess || '',
+                    collegeImage: null,
+                    existingCollegeImage: college.collegeImage || '',
+                    photos: [],
+                    existingPhotos: college.photos || [],
+                    facilities: facilitiesArray
+                });
+            } else {
+                setMessage({
+                    type: 'error',
+                    text: response.message || 'Failed to fetch college details'
+                });
+            }
+        } catch (error) {
+            console.error('Error fetching college:', error);
+            setMessage({
+                type: 'error',
+                text: error.message || 'Failed to fetch college details'
+            });
+        } finally {
+            setLoading(false);
         }
     };
 
@@ -178,11 +285,19 @@ const AddColleges = () => {
         }
     };
 
-    const removeGalleryImage = (index) => {
-        setFormData(prev => ({
-            ...prev,
-            photos: prev.photos.filter((_, i) => i !== index)
-        }));
+    const removeGalleryImage = (index, isExisting = false) => {
+        if (isExisting) {
+            // Mark existing photo for deletion on server
+            setFormData(prev => ({
+                ...prev,
+                existingPhotos: prev.existingPhotos.filter((_, i) => i !== index)
+            }));
+        } else {
+            setFormData(prev => ({
+                ...prev,
+                photos: prev.photos.filter((_, i) => i !== index)
+            }));
+        }
     };
 
     const handleSubmit = async () => {
@@ -194,14 +309,6 @@ const AddColleges = () => {
             setMessage({
                 type: 'error',
                 text: `Please fill in all required fields: ${missingFields.join(', ')}`
-            });
-            return;
-        }
-
-        if (!formData.collegeImage) {
-            setMessage({
-                type: 'error',
-                text: 'Please upload a college image'
             });
             return;
         }
@@ -227,7 +334,11 @@ const AddColleges = () => {
                     submitData.append('facilities', JSON.stringify(formData.facilities));
                 } else if (key === 'coursesOffered') {
                     submitData.append('coursesOffered', JSON.stringify(formData.coursesOffered));
-                } else if (formData[key] !== null && formData[key] !== undefined) {
+                } else if (key === 'existingPhotos') {
+                    // Send info about which existing photos to keep
+                    submitData.append('existingPhotos', JSON.stringify(formData.existingPhotos));
+                } else if (formData[key] !== null && formData[key] !== undefined && 
+                          key !== 'collegeImagePreview' && key !== 'existingCollegeImage') {
                     submitData.append(key, formData[key]);
                 }
             });
@@ -239,69 +350,37 @@ const AddColleges = () => {
                 }));
             }
 
-            // Call the API
-            const response = await collegeApi.addCollege(submitData);
+            // Call the API to update college
+            const response = await collegeApi.updateCollege(id, submitData);
             
             setMessage({
                 type: 'success',
-                text: response.message || 'College added successfully!'
+                text: response.message || 'College updated successfully!'
             });
 
-            // Reset form after successful submission
-            setFormData({
-                name: '',
-                typeOfCollege: '',
-                affiliation: '',
-                coursesOffered: [],
-                duration: '',
-                language: '',
-                establishmentYear: '',
-                accreditation: '',
-                studentTeacherRatio: '',
-                transportation: '',
-                placementStatistics: '',
-                totalAnnualFee: '',
-                admissionFee: '',
-                tuitionFee: '',
-                transportFee: '',
-                booksUniformsFee: '',
-                address: '',
-                city: '',
-                state: '',
-                phone: '',
-                email: '',
-                website: '',
-                socialMedia: { facebook: '', twitter: '', instagram: '' },
-                googleMapsEmbedUrl: '',
-                campusSize: '',
-                classrooms: '',
-                laboratories: '',
-                library: '',
-                playground: '',
-                auditorium: '',
-                smartBoards: '',
-                cctv: '',
-                medicalRoom: '',
-                wifi: '',
-                hostel: '',
-                sports: '',
-                admissionLink: '',
-                admissionProcess: '',
-                collegeImage: null,
-                photos: [],
-                facilities: []
-            });
+            // Redirect after successful update
+            setTimeout(() => {
+                navigate('/admin/dashboard');
+            }, 2000);
 
         } catch (error) {
-            console.error('Error adding college:', error);
+            console.error('Error updating college:', error);
             setMessage({
                 type: 'error',
-                text: error.message || 'Failed to add college. Please try again.'
+                text: error.message || 'Failed to update college. Please try again.'
             });
         } finally {
             setLoading(false);
         }
     };
+
+    if (loading && !formData.name) {
+        return (
+            <div className="flex justify-center items-center h-64">
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-600"></div>
+            </div>
+        );
+    }
 
     return (
         <div className="min-h-screen bg-gradient-to-b from-orange-50 to-white">
@@ -327,7 +406,7 @@ const AddColleges = () => {
                 transition={{ duration: 0.6 }}
                 className="max-w-7xl mx-auto mt-8 px-4 pb-8"
             >
-                <h1 className="text-4xl font-bold text-center text-gray-800 mb-8">Add New College</h1>
+                <h1 className="text-4xl font-bold text-center text-gray-800 mb-8">Edit College</h1>
                 <div className="bg-white rounded-2xl shadow-xl p-8 border border-orange-100">
                     {/* Basic Information */}
                     <motion.div
@@ -415,6 +494,7 @@ const AddColleges = () => {
                                 type="text"
                                 name="coursesOffered"
                                 placeholder="Courses Offered (comma separated, e.g., B.Tech, M.Tech, MBA)"
+                                value={formData.coursesOffered.join(', ')}
                                 onChange={handleCoursesChange}
                                 className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
                                 whileFocus={{ scale: 1.02 }}
@@ -679,8 +759,18 @@ const AddColleges = () => {
                     >
                         <h2 className="text-2xl font-bold text-gray-800 mb-4 flex items-center">
                             <span className="w-2 h-8 bg-orange-600 rounded-full mr-3"></span>
-                            College Image *
+                            College Image
                         </h2>
+                        {formData.existingCollegeImage && (
+                            <div className="mb-4">
+                                <p className="text-sm text-gray-600 mb-2">Current Image:</p>
+                                <img 
+                                    src={formData.existingCollegeImage} 
+                                    alt="Current college" 
+                                    className="w-48 h-48 object-cover rounded-lg"
+                                />
+                            </div>
+                        )}
                         <motion.input
                             type="file"
                             accept="image/*"
@@ -713,6 +803,36 @@ const AddColleges = () => {
                             <span className="w-2 h-8 bg-orange-600 rounded-full mr-3"></span>
                             College Gallery (Max 6 Images)
                         </h2>
+                        
+                        {/* Existing Gallery Images */}
+                        {formData.existingPhotos.length > 0 && (
+                            <div className="mb-4">
+                                <p className="text-sm text-gray-600 mb-2">Current Gallery Images:</p>
+                                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+                                    {formData.existingPhotos.map((photo, index) => (
+                                        <motion.div
+                                            key={index}
+                                            className="relative aspect-square overflow-hidden rounded-xl group"
+                                            whileHover={{ scale: 1.02 }}
+                                        >
+                                            <img
+                                                src={typeof photo === 'string' ? photo : photo.url}
+                                                alt={`Gallery ${index + 1}`}
+                                                className="w-full h-full object-cover"
+                                            />
+                                            <button
+                                                type="button"
+                                                onClick={() => removeGalleryImage(index, true)}
+                                                className="absolute top-2 right-2 bg-red-500 text-white p-1 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+                                            >
+                                                ×
+                                            </button>
+                                        </motion.div>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+                        
                         <motion.input
                             type="file"
                             accept="image/*"
@@ -853,7 +973,7 @@ const AddColleges = () => {
                                 : 'bg-gradient-to-r from-orange-500 to-amber-600 hover:from-orange-600 hover:to-amber-700 text-white'
                         }`}
                     >
-                        {loading ? 'Submitting...' : 'Submit College Details'}
+                        {loading ? 'Updating...' : 'Update College Details'}
                     </motion.button>
                 </div>
             </motion.div>
@@ -861,4 +981,4 @@ const AddColleges = () => {
     );
 };
 
-export default AddColleges;
+export default EditCollege;
