@@ -1,47 +1,194 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { FaChevronDown, FaChevronUp } from 'react-icons/fa';
+import { FaChevronDown, FaChevronUp, FaSpinner } from 'react-icons/fa';
+import { schoolApi } from '../../services/schoolApi'; // Adjust the path as needed
+import { useParams } from 'react-router-dom';
+
+// Separate component for FAQ items
+const FAQItem = ({ question, answer }) => {
+  const [isOpen, setIsOpen] = useState(false);
+
+  return (
+    <motion.div 
+      className="border-b border-orange-100"
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+    >
+      <motion.button
+        onClick={() => setIsOpen(!isOpen)}
+        className="w-full text-left py-4 px-3 flex justify-between items-center hover:bg-orange-50 rounded-lg transition-colors"
+        whileHover={{ backgroundColor: 'rgba(254, 215, 170, 0.3)' }}
+      >
+        <span className="font-medium text-gray-800">{question}</span>
+        {isOpen ? (
+          <FaChevronUp className="text-orange-500" />
+        ) : (
+          <FaChevronDown className="text-orange-500" />
+        )}
+      </motion.button>
+      
+      <motion.div
+        initial={{ height: 0, opacity: 0 }}
+        animate={isOpen ? { height: 'auto', opacity: 1 } : { height: 0, opacity: 0 }}
+        transition={{ duration: 0.3 }}
+        className="overflow-hidden"
+      >
+        <div className="px-3 pb-4 text-gray-700 font-medium">
+          {answer}
+        </div>
+      </motion.div>
+    </motion.div>
+  );
+};
 
 const BasicInfo = () => {
+  const { id } = useParams();
+  const [school, setSchool] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    const fetchSchoolData = async () => {
+      try {
+        setLoading(true);
+        const response = await schoolApi.getSchool(id);
+        setSchool(response.data);
+      } catch (err) {
+        setError(err.message || 'Failed to fetch school data');
+        console.error('Error fetching school data:', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    if (id) {
+      fetchSchoolData();
+    }
+  }, [id]);
+
+  // Safely parse facilities
+  const getFacilities = () => {
+    if (!school?.facilities) return [];
+    
+    if (Array.isArray(school.facilities)) {
+      return school.facilities;
+    }
+    
+    try {
+      if (typeof school.facilities === 'string') {
+        const parsed = JSON.parse(school.facilities);
+        return Array.isArray(parsed) ? parsed : [];
+      }
+    } catch (error) {
+      console.error('Error parsing facilities:', error);
+    }
+    
+    return [];
+  };
+
+  const facilities = getFacilities();
+
+  if (loading) {
+    return (
+      <div className="flex justify-center items-center py-12">
+        <FaSpinner className="animate-spin text-orange-600 text-3xl" />
+        <span className="ml-3 text-gray-600">Loading school information...</span>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="text-center py-12 text-red-600">
+        <p>Error loading school information: {error}</p>
+      </div>
+    );
+  }
+
+  if (!school) {
+    return (
+      <div className="text-center py-12 text-gray-600">
+        <p>No school data found.</p>
+      </div>
+    );
+  }
+
+  // Map the actual fields from your AddSchools form
   const info = {
-    typeOfSchool: 'Day School',
-    affiliation: 'CBSE',
-    grade: 'Nursery till Class 12',
-    ageForAdmission: '03 Year(s)',
-    language: 'English',
-    establishmentYear: '1965',
-    swimming: 'No',
-    indoorSports: 'Yes',
-    acClasses: 'No',
-    studentTeacherRatio: '30:1',
-    transportation: 'No',
-    outdoorSports: 'Yes',
-    maximumAge: 'NA',
+    typeOfSchool: school.typeOfSchool || 'Not specified',
+    affiliation: school.affiliation || 'Not specified',
+    grade: school.grade || 'Not specified',
+    ageForAdmission: school.ageForAdmission || 'Not specified',
+    language: school.language || 'Not specified',
+    establishmentYear: school.establishmentYear || 'Not specified',
+    // Infrastructure fields
+    laboratories: school.laboratories === 'Yes' ? 'Yes' : 'No',
+    library: school.library === 'Yes' ? 'Yes' : 'No',
+    playground: school.playground === 'Yes' ? 'Yes' : 'No',
+    auditorium: school.auditorium === 'Yes' ? 'Yes' : 'No',
+    smartBoards: school.smartBoards === 'Yes' ? 'Yes' : 'No',
+    cctv: school.cctv === 'Yes' ? 'Yes' : 'No',
+    medicalRoom: school.medicalRoom === 'Yes' ? 'Yes' : 'No',
+    wifi: school.wifi === 'Yes' ? 'Yes' : 'No',
+    campusSize: school.campusSize || 'Not specified',
+    classrooms: school.classrooms || 'Not specified',
+    // Transportation from fee field
+    transportation: school.transportFee ? 'Yes' : 'No'
   };
 
   const faqs = [
-    { question: 'When did the Arya Central School, Trivandrum start?', answer: '1965' },
-    { question: 'Which curriculum does the Arya Central School, Trivandrum follow?', answer: 'CBSE' },
-    { question: 'From which grade does the school begin?', answer: 'Nursery' },
-    { question: 'Till which grade is the school affiliated?', answer: 'Class 12' },
-    { question: 'Does the school have e-class facility?', answer: 'Yes' },
-    { question: 'Does the school have in-house medical facility?', answer: 'No' },
+    { 
+      question: `When did ${school.name} start?`, 
+      answer: school.establishmentYear || 'Not specified' 
+    },
+    { 
+      question: `Which curriculum does ${school.name} follow?`, 
+      answer: school.affiliation || 'Not specified' 
+    },
+    { 
+      question: 'From which grade does the school begin?', 
+      answer: school.grade ? school.grade.split(' ')[0] : 'Not specified' 
+    },
+    { 
+      question: 'Till which grade is the school affiliated?', 
+      answer: school.grade || 'Not specified' 
+    },
+    { 
+      question: 'Does the school have smart classes?', 
+      answer: school.smartBoards === 'Yes' ? 'Yes' : 'No' 
+    },
+    { 
+      question: 'Does the school have in-house medical facility?', 
+      answer: school.medicalRoom === 'Yes' ? 'Yes' : 'No' 
+    },
+    { 
+      question: 'Does the school provide transportation?', 
+      answer: school.transportFee ? 'Yes' : 'No' 
+    },
+    { 
+      question: 'Is the campus WiFi enabled?', 
+      answer: school.wifi === 'Yes' ? 'Yes' : 'No' 
+    }
   ];
 
   const infoItems = [
     { icon: '🏫', label: 'Type of School', value: info.typeOfSchool },
-    { icon: '📜', label: 'Affiliation / Examination Board', value: info.affiliation },
+    { icon: '📜', label: 'Affiliation / Board', value: info.affiliation },
     { icon: '📚', label: 'Grade', value: info.grade },
     { icon: '👶', label: 'Age for Admission', value: info.ageForAdmission },
     { icon: '🗣️', label: 'Language of Instruction', value: info.language },
     { icon: '🏢', label: 'Establishment Year', value: info.establishmentYear },
-    { icon: '🏊‍♂️', label: 'Swimming / Splash Pool', value: info.swimming },
-    { icon: '🏋️', label: 'Indoor Sports', value: info.indoorSports },
-    { icon: '❄️', label: 'AC Classes', value: info.acClasses },
-    { icon: '👩‍🏫', label: 'Student Teacher Ratio', value: info.studentTeacherRatio },
-    { icon: '🚌', label: 'Transportation', value: info.transportation },
-    { icon: '🌳', label: 'Outdoor Sports', value: info.outdoorSports },
-    { icon: '👴', label: 'Maximum Age', value: info.maximumAge },
+    { icon: '🏋️', label: 'Laboratories', value: info.laboratories },
+    { icon: '📖', label: 'Library', value: info.library },
+    { icon: '⚽', label: 'Playground', value: info.playground },
+    { icon: '🎭', label: 'Auditorium', value: info.auditorium },
+    { icon: '📺', label: 'Smart Boards', value: info.smartBoards },
+    { icon: '📹', label: 'CCTV Surveillance', value: info.cctv },
+    { icon: '🏥', label: 'Medical Room', value: info.medicalRoom },
+    { icon: '📶', label: 'WiFi', value: info.wifi },
+    { icon: '🏰', label: 'Campus Size', value: info.campusSize },
+    { icon: '🏫', label: 'Classrooms', value: info.classrooms },
+    { icon: '🚌', label: 'Transportation', value: info.transportation }
   ];
 
   return (
@@ -68,11 +215,36 @@ const BasicInfo = () => {
         ))}
       </motion.div>
 
+      {/* Facilities Section */}
+      {facilities.length > 0 && (
+        <motion.div 
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, delay: 0.1 }}
+          className="p-6 bg-white rounded-xl shadow-lg"
+        >
+          <h3 className="text-2xl font-bold text-center mb-6 bg-clip-text text-transparent bg-gradient-to-r from-orange-600 to-amber-600">
+            Facilities
+          </h3>
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+            {facilities.map((facility, index) => (
+              <motion.div
+                key={index}
+                whileHover={{ scale: 1.05 }}
+                className="bg-orange-100 text-orange-700 px-4 py-2 rounded-full text-center font-medium"
+              >
+                {facility}
+              </motion.div>
+            ))}
+          </div>
+        </motion.div>
+      )}
+
       {/* FAQ Section */}
       <motion.div 
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5, delay: 0.1 }}
+        transition={{ duration: 0.5, delay: 0.2 }}
         className="p-6 bg-white rounded-xl shadow-lg"
       >
         <h3 className="text-2xl font-bold text-center mb-6 bg-clip-text text-transparent bg-gradient-to-r from-orange-600 to-amber-600">
@@ -80,42 +252,13 @@ const BasicInfo = () => {
         </h3>
         
         <div className="space-y-2">
-          {faqs.map((faq, index) => {
-            const [isOpen, setIsOpen] = useState(false);
-            return (
-              <motion.div 
-                key={index}
-                className="border-b border-orange-100"
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ delay: index * 0.05 }}
-              >
-                <motion.button
-                  onClick={() => setIsOpen(!isOpen)}
-                  className="w-full text-left py-4 px-3 flex justify-between items-center hover:bg-orange-50 rounded-lg transition-colors"
-                  whileHover={{ backgroundColor: 'rgba(254, 215, 170, 0.3)' }}
-                >
-                  <span className="font-medium text-gray-800">{faq.question}</span>
-                  {isOpen ? (
-                    <FaChevronUp className="text-orange-500" />
-                  ) : (
-                    <FaChevronDown className="text-orange-500" />
-                  )}
-                </motion.button>
-                
-                <motion.div
-                  initial={{ height: 0, opacity: 0 }}
-                  animate={isOpen ? { height: 'auto', opacity: 1 } : { height: 0, opacity: 0 }}
-                  transition={{ duration: 0.3 }}
-                  className="overflow-hidden"
-                >
-                  <div className="px-3 pb-4 text-gray-700 font-medium">
-                    {faq.answer}
-                  </div>
-                </motion.div>
-              </motion.div>
-            );
-          })}
+          {faqs.map((faq, index) => (
+            <FAQItem
+              key={index}
+              question={faq.question}
+              answer={faq.answer}
+            />
+          ))}
         </div>
       </motion.div>
     </div>

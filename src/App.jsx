@@ -72,12 +72,12 @@ function App() {
         <Route path='/login' element={<LoginPage/>}/>
         <Route path='/bookdemo' element={<BookaDemo/>}/>
 
-        <Route path='/school-details' element={<SchoolDetails/>}/>
-        <Route path='/college-details' element={<CollegeDetails/>}/>
-        <Route path='/pucollege-details' element={<PUCollegeDetails/>}/>
-        <Route path='/coaching-details' element={<CoachingDetail/>}/>
+        <Route path='/school-details/:id' element={<SchoolDetails/>}/>
+        <Route path='/college-details/:id' element={<CollegeDetails/>}/>
+        <Route path='/pucollege-details/:id' element={<PUCollegeDetails/>}/>
+        <Route path='/coaching-details/:id' element={<CoachingDetail/>}/>
         <Route path='/tuition-details' element={<TuitionDetails/>}/>
-        <Route path='/teachers-details' element={<TeachersDetails/>}/>
+        <Route path='/teachers-details/:id' element={<TeachersDetails/>}/>
 
         <Route path='/register' element={<Register/>}/>
         <Route path='/register-form' element={<RegisterForm/>}/>

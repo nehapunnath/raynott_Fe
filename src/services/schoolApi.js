@@ -94,6 +94,14 @@ export const schoolApi = {
       throw new Error(error.response?.data?.message || 'Failed to delete school');
     }
   },
+  getSchoolsWithFilters: async (params) => {
+    try {
+      const response = await api.get('/getschools/filtered', { params });
+      return response.data;
+    } catch (error) {
+      throw new Error(error.response?.data?.message || 'Failed to fetch filtered schools');
+    }
+  },
 };
 
 export default schoolApi;

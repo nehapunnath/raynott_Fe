@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { 
   FaRupeeSign, FaSchool, FaFlask, FaBook, 
@@ -6,27 +6,111 @@ import {
   FaVideo, FaFirstAid, FaWifi, FaLink, FaClipboardList
 } from 'react-icons/fa';
 import { GiMoneyStack } from 'react-icons/gi';
+import { schoolApi } from '../../services/schoolApi';
+import { useParams } from 'react-router-dom';
+import { FaSpinner } from 'react-icons/fa';
 
 const FeesStructure = () => {
+  const { id } = useParams();
+  const [school, setSchool] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    const fetchSchoolData = async () => {
+      try {
+        setLoading(true);
+        const response = await schoolApi.getSchool(id);
+        setSchool(response.data);
+      } catch (err) {
+        setError(err.message || 'Failed to fetch school data');
+        console.error('Error fetching school data:', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    if (id) {
+      fetchSchoolData();
+    }
+  }, [id]);
+
+  if (loading) {
+    return (
+      <div className="flex justify-center items-center py-12">
+        <FaSpinner className="animate-spin text-orange-600 text-3xl" />
+        <span className="ml-3 text-gray-600">Loading fee structure...</span>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="text-center py-12 text-red-600">
+        <p>Error loading fee structure: {error}</p>
+      </div>
+    );
+  }
+
+  if (!school) {
+    return (
+      <div className="text-center py-12 text-gray-600">
+        <p>No school data found.</p>
+      </div>
+    );
+  }
+
+  // Format currency values
+  const formatCurrency = (value) => {
+    if (!value) return 'Not specified';
+    if (typeof value === 'number') {
+      return `₹${value.toLocaleString('en-IN')}`;
+    }
+    if (typeof value === 'string') {
+      return value.startsWith('₹') ? value : `₹${value}`;
+    }
+    return value;
+  };
+
   const feeDetails = [
-    { icon: <GiMoneyStack className="text-amber-700" />, label: 'Total Annual Fee', value: '₹1,54,000/year' },
-    { icon: <FaRupeeSign className="text-amber-600" />, label: 'Admission Fee', value: '₹25,000' },
-    { icon: <FaRupeeSign className="text-amber-600" />, label: 'Tuition Fee', value: '₹1,00,000' },
-    { icon: <FaRupeeSign className="text-amber-600" />, label: 'Transport Fee', value: '₹15,000 (optional)' },
-    { icon: <FaRupeeSign className="text-amber-600" />, label: 'Books & Uniforms', value: '₹14,000' }
+    { 
+      icon: <GiMoneyStack className="text-amber-700" />, 
+      label: 'Total Annual Fee', 
+      value: school.totalAnnualFee ? `₹${school.totalAnnualFee.toLocaleString('en-IN')}/year` : 'Not specified' 
+    },
+    { 
+      icon: <FaRupeeSign className="text-amber-600" />, 
+      label: 'Admission Fee', 
+      value: formatCurrency(school.admissionFee) 
+    },
+    { 
+      icon: <FaRupeeSign className="text-amber-600" />, 
+      label: 'Tuition Fee', 
+      value: formatCurrency(school.tuitionFee) 
+    },
+    { 
+      icon: <FaRupeeSign className="text-amber-600" />, 
+      label: 'Transport Fee', 
+      value: school.transportFee ? `${formatCurrency(school.transportFee)} (optional)` : 'Not available' 
+    },
+    { 
+      icon: <FaRupeeSign className="text-amber-600" />, 
+      label: 'Books & Uniforms', 
+      value: formatCurrency(school.booksUniformsFee) 
+    }
   ];
 
   const infrastructureDetails = [
-    { icon: <FaSchool className="text-amber-700" />, label: 'Campus Size', value: '10 acres' },
-    { icon: <FaSchool className="text-amber-700" />, label: 'Classrooms', value: '40+' },
-    { icon: <FaFlask className="text-amber-600" />, label: 'Laboratories', value: 'Yes' },
-    { icon: <FaBook className="text-amber-600" />, label: 'Library', value: 'Yes' },
-    { icon: <FaRunning className="text-amber-500" />, label: 'Playground', value: 'Yes' },
-    { icon: <FaTheaterMasks className="text-amber-500" />, label: 'Auditorium', value: 'Yes' },
-    { icon: <FaChalkboardTeacher className="text-amber-400" />, label: 'Smart Boards', value: 'Yes' },
-    { icon: <FaVideo className="text-amber-400" />, label: 'CCTV', value: 'Yes' },
-    { icon: <FaFirstAid className="text-amber-300" />, label: 'Medical Room', value: 'Yes' },
-    { icon: <FaWifi className="text-amber-300" />, label: 'Wi-Fi', value: 'Yes' }
+    { icon: <FaSchool className="text-amber-700" />, label: 'Campus Size', value: school.campusSize || 'Not specified' },
+    { icon: <FaSchool className="text-amber-700" />, label: 'Classrooms', value: school.classrooms || 'Not specified' },
+    { icon: <FaFlask className="text-amber-600" />, label: 'Laboratories', value: school.laboratories === 'Yes' ? 'Yes' : 'No' },
+    { icon: <FaBook className="text-amber-600" />, label: 'Library', value: school.library === 'Yes' ? 'Yes' : 'No' },
+    { icon: <FaRunning className="text-amber-500" />, label: 'Playground', value: school.playground === 'Yes' ? 'Yes' : 'No' },
+    { icon: <FaTheaterMasks className="text-amber-500" />, label: 'Auditorium', value: school.auditorium === 'Yes' ? 'Yes' : 'No' },
+    { icon: <FaChalkboardTeacher className="text-amber-400" />, label: 'Smart Boards', value: school.smartBoards === 'Yes' ? 'Yes' : 'No' },
+    { icon: <FaVideo className="text-amber-400" />, label: 'CCTV', value: school.cctv === 'Yes' ? 'Yes' : 'No' },
+    { icon: <FaFirstAid className="text-amber-300" />, label: 'Medical Room', value: school.medicalRoom === 'Yes' ? 'Yes' : 'No' },
+    { icon: <FaWifi className="text-amber-300" />, label: 'Wi-Fi', value: school.wifi === 'Yes' ? 'Yes' : 'No' }
   ];
 
   return (
@@ -122,38 +206,48 @@ const FeesStructure = () => {
           </div>
           
           <div className="space-y-8">
-            <div className="text-center">
-              <div className="flex items-center justify-center mb-4">
-                <div className="bg-amber-100 p-3 rounded-full mr-3">
-                  <FaLink className="text-2xl text-amber-700" />
+            {school.admissionLink && (
+              <div className="text-center">
+                <div className="flex items-center justify-center mb-4">
+                  <div className="bg-amber-100 p-3 rounded-full mr-3">
+                    <FaLink className="text-2xl text-amber-700" />
+                  </div>
+                  <h3 className="text-xl font-semibold text-gray-700">Admission Link</h3>
                 </div>
-                <h3 className="text-xl font-semibold text-gray-700">Admission Link</h3>
+                <motion.a
+                  href={school.admissionLink}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.98 }}
+                  className="inline-block bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 text-white font-semibold py-3 px-8 rounded-full transition-all shadow-lg"
+                >
+                  Apply Now
+                </motion.a>
               </div>
-              <motion.a
-                href="https://example.com/admission"
-                target="_blank"
-                rel="noopener noreferrer"
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.98 }}
-                className="inline-block bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 text-white font-semibold py-3 px-8 rounded-full transition-all shadow-lg"
-              >
-                Apply Now
-              </motion.a>
-            </div>
+            )}
             
-            <div>
-              <div className="flex items-center justify-center mb-4">
-                <div className="bg-amber-100 p-3 rounded-full mr-3">
-                  <FaClipboardList className="text-2xl text-amber-700" />
+            {school.admissionProcess && (
+              <div>
+                <div className="flex items-center justify-center mb-4">
+                  <div className="bg-amber-100 p-3 rounded-full mr-3">
+                    <FaClipboardList className="text-2xl text-amber-700" />
+                  </div>
+                  <h3 className="text-xl font-semibold text-gray-700">Admission Process</h3>
                 </div>
-                <h3 className="text-xl font-semibold text-gray-700">Admission Process</h3>
+                <div className="bg-gradient-to-r from-amber-100 to-orange-100 p-5 rounded-xl border border-amber-300">
+                  <p className="text-gray-700 text-center">
+                    {school.admissionProcess}
+                  </p>
+                </div>
               </div>
-              <div className="bg-gradient-to-r from-amber-100 to-orange-100 p-5 rounded-xl border border-amber-300">
-                <p className="text-gray-700 text-center">
-                  The admission process involves submitting an online application form, followed by an entrance test and an interview. Documents required include birth certificate, previous academic records, and identity proof.
-                </p>
+            )}
+
+            {!school.admissionLink && !school.admissionProcess && (
+              <div className="text-center text-gray-600">
+                <p>Admission details not available.</p>
               </div>
-            </div>
+            )}
           </div>
         </div>
       </motion.div>

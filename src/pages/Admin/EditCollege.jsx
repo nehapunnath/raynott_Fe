@@ -130,6 +130,25 @@ const EditCollege = () => {
                     facilitiesArray = college.facilities;
                 }
                 
+                // Handle placementStatistics - extract percentage if it exists
+                let placementStats = '';
+                if (college.placementStatistics) {
+                    if (typeof college.placementStatistics === 'object') {
+                        placementStats = college.placementStatistics.percentage || '';
+                    } else if (typeof college.placementStatistics === 'string') {
+                        // Try to parse if it's a stringified object
+                        try {
+                            const parsed = JSON.parse(college.placementStatistics);
+                            placementStats = parsed.percentage || '';
+                        } catch (e) {
+                            // If it's just a string, use it directly
+                            placementStats = college.placementStatistics;
+                        }
+                    } else {
+                        placementStats = college.placementStatistics;
+                    }
+                }
+                
                 setFormData({
                     name: college.name || '',
                     typeOfCollege: college.typeOfCollege || college.type || '',
@@ -141,7 +160,7 @@ const EditCollege = () => {
                     accreditation: college.accreditation || '',
                     studentTeacherRatio: college.studentTeacherRatio || '',
                     transportation: college.transportation || '',
-                    placementStatistics: college.placementStatistics || '',
+                    placementStatistics: placementStats,
                     totalAnnualFee: college.totalAnnualFee || '',
                     admissionFee: college.admissionFee || '',
                     tuitionFee: college.tuitionFee || '',
