@@ -248,7 +248,7 @@ const SchoolDetails = () => {
       >
         <div className="bg-white rounded-xl shadow-lg overflow-hidden">
           <div className="flex overflow-x-auto scrollbar-hide justify-center bg-gradient-to-r from-orange-50 to-amber-50 rounded-xl p-1 shadow-inner">
-            {['Basic Info', 'Photos', 'Fee Structure', 'Contact', 'Reviews'].map((section) => (
+            {['Basic Info', 'Photos', 'Fee Structure', 'Contact', ].map((section) => (
               <motion.button
                 key={section}
                 onClick={() => scrollToSection(section.replace(/\s+/g, '').toLowerCase())}
@@ -583,8 +583,7 @@ const SchoolDetails = () => {
         )}
       </AnimatePresence>
 
-      <StickyButton />
-      <Footer />
+      {/* <StickyButton /> */}
     </div>
   );
 };

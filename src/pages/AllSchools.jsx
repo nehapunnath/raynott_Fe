@@ -264,9 +264,9 @@ function AllSchools() {
                           alt={item.name}
                           className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
                         />
-                        <div className="absolute top-4 left-4 bg-yellow-500 text-dark text-xs font-bold px-3 py-1 rounded-full shadow-lg">
+                        {/* <div className="absolute top-4 left-4 bg-yellow-500 text-dark text-xs font-bold px-3 py-1 rounded-full shadow-lg">
                           Admissions Open
-                        </div>
+                        </div> */}
                         <div className="absolute top-4 right-4 flex items-center bg-white/90 text-orange-600 px-3 py-1 rounded-full shadow-lg backdrop-blur-sm">
                           <span className="font-bold mr-1">{item.rating}</span>
                           <svg className="w-4 h-4 fill-current" viewBox="0 0 20 20">
@@ -275,7 +275,7 @@ function AllSchools() {
                         </div>
                       </div>
                       <div className="p-4 flex flex-col flex-grow h-64">
-                        <p className="text-xs font-semibold text-orange-500 uppercase tracking-wide">{item.board}</p>
+                        <p className="text-xs font-semibold text-orange-500 uppercase tracking-wide">{item.affiliation}</p>
                         <h3 className="text-lg font-bold text-gray-900 mt-1 line-clamp-2 min-h-[4rem]">{item.name}</h3>
                         <p className="text-sm text-gray-500 flex items-center mt-2">
                           <IoLocationSharp className="mr-1 text-orange-400" />

@@ -146,7 +146,33 @@ export const collegeTypeApi = {
     } catch (error) {
       throw error.response?.data || error.message;
     }
-  }
+  },
+  getCollege: async (id) => {
+    try {
+      const response = await axios.get(`${base_url}/admin/getcolleges/${id}`);
+      return response.data;
+    } catch (error) {
+      throw error;
+    }
+  },
+  searchColleges: async (filters = {}) => {
+    try {
+      const response = await axios.get(`${base_url}/admin/searchcolleges`, { params: filters });
+      return response.data;
+    } catch (error) {
+      throw error;
+    }
+  },
+  getSimilarColleges: async (city = '', coursesOffered = '') => {
+    try {
+      const response = await axios.get(`${base_url}/admin/searchcolleges`, {
+        params: { city, coursesOffered },
+      });
+      return response.data;
+    } catch (error) {
+      throw error;
+    }
+  },
 };
 
 export default collegeApi;

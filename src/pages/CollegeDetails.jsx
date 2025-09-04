@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import {
   FaBookOpen,
   FaSearch,
@@ -12,10 +12,10 @@ import {
   FaTimes,
   FaHome,
   FaFilter,
-  FaUniversity
+  FaUniversity,
 } from 'react-icons/fa';
 import { IoMdTime } from 'react-icons/io';
-import { BsFillCalendar2CheckFill } from "react-icons/bs";
+import { BsFillCalendar2CheckFill } from 'react-icons/bs';
 import BasicInfo from '../components/College/BasicInfo';
 import FeesStructure from '../components/College/FeeStructure';
 import Contact from '../components/College/Contact';
@@ -32,50 +32,72 @@ const CollegeDetails = () => {
   const [similarColleges, setSimilarColleges] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  
+
   const navigate = useNavigate();
   const { id } = useParams();
 
   useEffect(() => {
     window.scrollTo(0, 0);
+    const fetchCollegeDetails = async () => {
+      setLoading(true);
+      setError(null);
+      try {
+        console.log(`Fetching college with ID: ${id}`);
+        const response = await collegeApi.getCollege(id);
+        console.log('College API response:', response);
+        const collegeData = response.data || {};
+
+        // Format college data
+        const formattedCollege = {
+          id: collegeData.id || id,
+          name: collegeData.name || 'Unnamed College',
+          address: collegeData.address || collegeData.city || 'Unknown Location',
+          fees: collegeData.totalAnnualFee
+            ? `₹${collegeData.totalAnnualFee.toLocaleString()}/year`
+            : 'Fees not available',
+          rating: collegeData.rating || 4.0,
+          affiliation: collegeData.affiliation || 'N/A',
+          phone: collegeData.phone || '+91 9876543210',
+          image: collegeData.collegeImage || 'https://via.placeholder.com/800x400',
+          established: collegeData.establishedYear || 2000,
+          courses: collegeData.coursesOffered || ['Course 1', 'Course 2'],
+          streams: collegeData.streams || ['Stream 1', 'Stream 2'],
+          facilities: collegeData.facilities || ['Facility 1', 'Facility 2'],
+          accreditation: collegeData.accreditation || 'NAAC A',
+          photos: collegeData.photos || [
+            'https://images.unsplash.com/photo-1523050854058-8df90110c9f1?ixlib=rb-4.0.3&auto=format&fit=crop&w=1470&q=80',
+            'https://images.unsplash.com/photo-1523240795612-9a054b0db644?ixlib=rb-4.0.3&auto=format&fit=crop&w=1470&q=80',
+          ],
+        };
+        setCollege(formattedCollege);
+
+        // Fetch similar colleges
+        console.log(`Fetching similar colleges for city: ${collegeData.city}`);
+        const similarResponse = await collegeApi.getSimilarColleges(collegeData.city, collegeData.coursesOffered);
+        console.log('Similar colleges API response:', similarResponse);
+        const similarCollegesData = (similarResponse.data || [])
+          .filter((c) => c.id !== id)
+          .slice(0, 5)
+          .map((c) => ({
+            name: c.name || 'Unnamed College',
+            address: c.address || c.city || 'Unknown Location',
+            rating: c.rating || 4.0,
+            image: c.collegeImage || 'https://via.placeholder.com/800x400',
+            link: `/college-details/${c.id}`,
+          }));
+        setSimilarColleges(similarCollegesData);
+      } catch (err) {
+        console.error('Error fetching college details:', err);
+        setError(err.response?.data?.message || err.message || 'Failed to fetch college details');
+        setCollege(null);
+        setSimilarColleges([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+
     fetchCollegeDetails();
   }, [id]);
-
-  const fetchCollegeDetails = async () => {
-    try {
-      setLoading(true);
-      const response = await collegeApi.getCollege(id);
-      
-      if (response.success) {
-        setCollege(response.data);
-        fetchSimilarColleges(response.data);
-      } else {
-        setError('Failed to fetch college details');
-      }
-    } catch (err) {
-      console.error('Error fetching college details:', err);
-      setError('Failed to load college details. Please try again later.');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const fetchSimilarColleges = async (currentCollege) => {
-    try {
-      const response = await collegeApi.getSimilarColleges(
-        currentCollege.city, 
-        currentCollege.coursesOffered
-      );
-      
-      if (response.success) {
-        // Filter out the current college from similar results
-        const filtered = response.data.filter(c => c.id !== currentCollege.id);
-        setSimilarColleges(filtered.slice(0, 3)); // Get top 3 similar colleges
-      }
-    } catch (err) {
-      console.error('Error fetching similar colleges:', err);
-    }
-  };
 
   const scrollToSection = (id) => {
     const section = document.getElementById(id);
@@ -94,19 +116,21 @@ const CollegeDetails = () => {
   };
 
   const navigateImages = (direction) => {
-    let newIndex;
-    if (direction === 'prev') {
-      newIndex = currentImageIndex === 0 ? college.photos.length - 1 : currentImageIndex - 1;
-    } else {
-      newIndex = currentImageIndex === college.photos.length - 1 ? 0 : currentImageIndex + 1;
-    }
+    if (!college || !college.photos) return;
+    let newIndex =
+      direction === 'prev'
+        ? currentImageIndex === 0
+          ? college.photos.length - 1
+          : currentImageIndex - 1
+        : currentImageIndex === college.photos.length - 1
+        ? 0
+        : currentImageIndex + 1;
     setSelectedImage(college.photos[newIndex]);
     setCurrentImageIndex(newIndex);
   };
 
   const handleCounsellingSubmit = (e) => {
     e.preventDefault();
-    // Handle form submission logic here
     alert('Thank you! Our counsellor will contact you shortly.');
   };
 
@@ -121,32 +145,15 @@ const CollegeDetails = () => {
     );
   }
 
-  if (error) {
+  if (error || !college) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-orange-50">
         <div className="text-center">
           <FaUniversity className="text-5xl text-gray-400 mx-auto mb-4" />
-          <p className="text-red-600 mb-4">{error}</p>
-          <button 
-            onClick={fetchCollegeDetails}
-            className="bg-orange-600 text-white px-4 py-2 rounded-lg hover:bg-orange-700"
-          >
-            Try Again
-          </button>
-        </div>
-      </div>
-    );
-  }
-
-  if (!college) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-orange-50">
-        <div className="text-center">
-          <FaUniversity className="text-5xl text-gray-400 mx-auto mb-4" />
-          <h3 className="text-xl font-semibold text-gray-700">College not found</h3>
+          <p className="text-red-600 mb-4">{error || 'College not found'}</p>
           <button
             onClick={() => navigate('/colleges')}
-            className="mt-4 bg-orange-600 text-white px-4 py-2 rounded-lg hover:bg-orange-700"
+            className="bg-orange-600 text-white px-4 py-2 rounded-lg hover:bg-orange-700"
           >
             Browse All Colleges
           </button>
@@ -155,26 +162,6 @@ const CollegeDetails = () => {
     );
   }
 
-  // Default college data structure if API doesn't provide all fields
-  const collegeData = {
-    name: college.name || 'College Name Not Available',
-    address: college.address || `${college.city || 'City'}, ${college.state || 'State'}`,
-    fees: college.totalAnnualFee ? `₹${college.totalAnnualFee.toLocaleString()}/year` : 'Fees Not Available',
-    rating: college.rating || 4.0,
-    affiliation: college.affiliation || 'University Affiliation',
-    phone: college.contactNumber || '+91 XXXXX XXXXX',
-    image: college.collegeImage || 'https://images.unsplash.com/photo-1523050854058-8df90110c9f1?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=800&q=80',
-    established: college.establishedYear || 2000,
-    courses: college.coursesOffered || ['Course 1', 'Course 2'],
-    streams: college.streams || ['Stream 1', 'Stream 2'],
-    facilities: college.facilities || ['Facility 1', 'Facility 2'],
-    accreditation: college.accreditation || 'NAAC A',
-    photos: college.photos || [
-      'https://images.unsplash.com/photo-1523050854058-8df90110c9f1?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1470&q=80',
-      'https://images.unsplash.com/photo-1523240795612-9a054b0db644?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1470&q=80'
-    ]
-  };
-
   return (
     <div className="min-h-screen bg-gradient-to-b from-orange-50 to-white">
       {/* Header */}
@@ -182,11 +169,8 @@ const CollegeDetails = () => {
         <div className="max-w-7xl mx-auto px-4 py-4 md:py-6 flex flex-col md:flex-row items-center justify-between">
           <div className="flex w-full md:w-auto justify-between items-center mb-4 md:mb-0">
             <Link to="/" className="text-3xl font-extrabold text-white">
-              <motion.span whileHover={{ scale: 1.05 }}>
-                Raynott
-              </motion.span>
+              <motion.span whileHover={{ scale: 1.05 }}>Raynott</motion.span>
             </Link>
-
             <div className="md:hidden flex space-x-2">
               <motion.button
                 className="bg-white text-orange-600 font-semibold py-2 px-4 rounded-full transition duration-300"
@@ -198,16 +182,14 @@ const CollegeDetails = () => {
               </motion.button>
             </div>
           </div>
-
           <div className="relative w-full max-w-2xl md:max-w-xl flex-grow md:ml-8">
             <FaSearch className="absolute left-4 top-1/2 transform -translate-y-1/2 text-orange-400" />
             <input
               type="text"
-              placeholder="Search Schools, Locations in Bengaluru..."
+              placeholder="Search Colleges, Locations..."
               className="pl-12 pr-4 py-3 rounded-full bg-white border border-transparent text-gray-800 focus:outline-none w-full focus:ring-2 focus:ring-orange-200 focus:border-transparent shadow-sm"
             />
           </div>
-
           <div className="hidden md:flex space-x-4 ml-8">
             <motion.button
               className="bg-white border border-white text-orange-600 hover:bg-orange-100 font-semibold py-2 px-4 rounded-full transition duration-300"
@@ -231,7 +213,7 @@ const CollegeDetails = () => {
           <span className="mx-2">»</span>
           <Link to="/colleges" className="hover:text-orange-600">Colleges</Link>
           <span className="mx-2">»</span>
-          <span className="text-orange-600">{collegeData.name}</span>
+          <span className="text-orange-600">{college.name}</span>
         </div>
       </div>
 
@@ -243,12 +225,7 @@ const CollegeDetails = () => {
         className="relative max-w-7xl mx-auto mt-4 rounded-3xl overflow-hidden shadow-2xl"
       >
         <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/40 to-transparent z-10"></div>
-        <img
-          src={collegeData.image}
-          alt={collegeData.name}
-          className="w-full h-[32rem] object-cover"
-        />
-
+        <img src={college.image} alt={college.name} className="w-full h-[32rem] object-cover" />
         <div className="absolute bottom-0 left-0 right-0 z-20 p-8 text-white">
           <motion.h1
             className="text-4xl md:text-5xl font-bold mb-2 drop-shadow-lg"
@@ -256,34 +233,31 @@ const CollegeDetails = () => {
             animate={{ opacity: 1 }}
             transition={{ delay: 0.2 }}
           >
-            {collegeData.name}
+            {college.name}
           </motion.h1>
-
           <div className="flex flex-wrap items-center gap-4 mb-4">
             <div className="flex items-center bg-white/20 backdrop-blur-sm px-3 py-1 rounded-full">
               <FaMapMarkerAlt className="mr-1 text-orange-300" />
-              <span>{collegeData.address}</span>
+              <span>{college.address}</span>
             </div>
             <div className="flex items-center bg-white/20 backdrop-blur-sm px-3 py-1 rounded-full">
               <FaGraduationCap className="mr-1 text-orange-300" />
-              <span>{collegeData.affiliation}</span>
+              <span>{college.affiliation}</span>
             </div>
             <div className="flex items-center bg-white/20 backdrop-blur-sm px-3 py-1 rounded-full">
               <IoMdTime className="mr-1 text-orange-300" />
-              <span>Est. {collegeData.established}</span>
+              <span>Est. {college.established}</span>
             </div>
           </div>
-
           <div className="flex flex-wrap items-center justify-between">
             <div className="flex items-center space-x-6">
               <div className="flex items-center text-amber-300 text-xl">
-                <FaStar className="mr-1" /> {collegeData.rating}
+                <FaStar className="mr-1" /> {college.rating}
               </div>
-              <p className="text-xl font-semibold text-white">{collegeData.fees}</p>
+              <p className="text-xl font-semibold text-white">{college.fees}</p>
             </div>
-
             <motion.a
-              href={`tel:${collegeData.phone}`}
+              href={`tel:${college.phone}`}
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
               className="bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 text-white font-semibold py-3 px-8 rounded-full flex items-center transition-all duration-300 shadow-lg"
@@ -337,14 +311,14 @@ const CollegeDetails = () => {
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5 }}
-            viewport={{ once: true, margin: "-100px" }}
+            viewport={{ once: true, margin: '-100px' }}
           >
             <div className="p-6">
               <h2 className="text-2xl font-bold text-gray-800 mb-4 flex items-center">
                 <span className="w-2 h-8 bg-orange-600 rounded-full mr-3"></span>
                 College Information
               </h2>
-              <BasicInfo  />
+              <BasicInfo college={college} />
             </div>
           </motion.div>
 
@@ -355,35 +329,43 @@ const CollegeDetails = () => {
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5 }}
-            viewport={{ once: true, margin: "-100px" }}
+            viewport={{ once: true, margin: '-100px' }}
           >
             <div className="p-6">
               <h2 className="text-2xl font-bold text-gray-800 mb-6 flex items-center">
                 <span className="w-2 h-8 bg-orange-600 rounded-full mr-3"></span>
                 College Gallery
               </h2>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
-                {collegeData.photos.map((photo, index) => (
-                  <motion.div
-                    key={index}
-                    className="relative aspect-square overflow-hidden rounded-xl cursor-pointer group"
-                    whileHover={{ scale: 1.02 }}
-                    onClick={() => openImage(photo, index)}
-                  >
-                    <img
-                      src={photo}
-                      alt={`${collegeData.name} - Photo ${index + 1}`}
-                      className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
-                    />
-                    <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-                  </motion.div>
-                ))}
-              </div>
-
-              <p className="text-sm text-gray-500 mt-4 text-center">
-                Click on any photo to view in full size
-              </p>
+              {college.photos && college.photos.length > 0 ? (
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+                  {college.photos.map((photo, index) => (
+                    <motion.div
+                      key={index}
+                      className="relative aspect-square overflow-hidden rounded-xl cursor-pointer group"
+                      whileHover={{ scale: 1.02 }}
+                      onClick={() => openImage(photo, index)}
+                    >
+                      <img
+                        src={photo}
+                        alt={`${college.name} - Photo ${index + 1}`}
+                        className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+                        loading="lazy"
+                        onError={(e) => {
+                          e.target.src = 'https://via.placeholder.com/300?text=Image+Not+Found';
+                        }}
+                      />
+                      <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                    </motion.div>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-gray-500 text-center">No photos available for this college.</p>
+              )}
+              {college.photos && college.photos.length > 0 && (
+                <p className="text-sm text-gray-500 mt-4 text-center">
+                  Click on any photo to view in full size
+                </p>
+              )}
             </div>
           </motion.div>
 
@@ -394,14 +376,14 @@ const CollegeDetails = () => {
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5 }}
-            viewport={{ once: true, margin: "-100px" }}
+            viewport={{ once: true, margin: '-100px' }}
           >
             <div className="p-6">
               <h2 className="text-2xl font-bold text-gray-800 mb-4 flex items-center">
                 <span className="w-2 h-8 bg-orange-600 rounded-full mr-3"></span>
                 Fee Structure
               </h2>
-              <FeesStructure college={collegeData} />
+              <FeesStructure college={college} />
             </div>
           </motion.div>
 
@@ -412,34 +394,34 @@ const CollegeDetails = () => {
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5 }}
-            viewport={{ once: true, margin: "-100px" }}
+            viewport={{ once: true, margin: '-100px' }}
           >
             <div className="p-6">
               <h2 className="text-2xl font-bold text-gray-800 mb-4 flex items-center">
                 <span className="w-2 h-8 bg-orange-600 rounded-full mr-3"></span>
                 Contact Details
               </h2>
-              <Contact college={collegeData} />
+              <Contact college={college} />
             </div>
           </motion.div>
 
-          {/* Reviews */}
-          <motion.div
+          {/* Reviews (Commented out, preserved for reference) */}
+          {/* <motion.div
             id="reviews"
             className="bg-white rounded-2xl shadow-lg overflow-hidden"
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5 }}
-            viewport={{ once: true, margin: "-100px" }}
+            viewport={{ once: true, margin: '-100px' }}
           >
             <div className="p-6">
               <h2 className="text-2xl font-bold text-gray-800 mb-4 flex items-center">
                 <span className="w-2 h-8 bg-orange-600 rounded-full mr-3"></span>
                 Student Reviews
               </h2>
-              <Review college={collegeData} />
+              <Review college={college} />
             </div>
-          </motion.div>
+          </motion.div> */}
         </div>
 
         {/* Right Column - Fixed Form */}
@@ -453,7 +435,6 @@ const CollegeDetails = () => {
             <div className="p-6">
               <h3 className="text-2xl font-bold mb-4 text-gray-800">Free Counselling</h3>
               <p className="mb-6 text-gray-600">Get personalized guidance from our education experts</p>
-
               <form onSubmit={handleCounsellingSubmit} className="space-y-4">
                 <motion.input
                   type="text"
@@ -475,7 +456,7 @@ const CollegeDetails = () => {
                   required
                 >
                   <option value="">Select Course</option>
-                  {collegeData.courses.map((course, index) => (
+                  {college.courses.map((course, index) => (
                     <option key={index} value={course}>{course}</option>
                   ))}
                 </motion.select>
@@ -496,8 +477,6 @@ const CollegeDetails = () => {
               </form>
             </div>
           </div>
-
-          {/* Quick Facts */}
           <div className="mt-6 bg-white rounded-2xl shadow-xl overflow-hidden border border-orange-100">
             <div className="p-6">
               <h3 className="text-xl font-bold text-gray-800 mb-4">Quick Facts</h3>
@@ -508,7 +487,7 @@ const CollegeDetails = () => {
                   </div>
                   <div>
                     <p className="text-sm text-gray-500">Affiliation</p>
-                    <p className="font-medium">{collegeData.affiliation}</p>
+                    <p className="font-medium">{college.affiliation}</p>
                   </div>
                 </div>
                 <div className="flex items-center">
@@ -517,7 +496,7 @@ const CollegeDetails = () => {
                   </div>
                   <div>
                     <p className="text-sm text-gray-500">Established</p>
-                    <p className="font-medium">{collegeData.established}</p>
+                    <p className="font-medium">{college.established}</p>
                   </div>
                 </div>
                 <div className="flex items-center">
@@ -526,7 +505,7 @@ const CollegeDetails = () => {
                   </div>
                   <div>
                     <p className="text-sm text-gray-500">Accreditation</p>
-                    <p className="font-medium">{collegeData.accreditation}</p>
+                    <p className="font-medium">{college.accreditation}</p>
                   </div>
                 </div>
                 <div className="flex items-center">
@@ -535,7 +514,7 @@ const CollegeDetails = () => {
                   </div>
                   <div>
                     <p className="text-sm text-gray-500">Courses</p>
-                    <p className="font-medium">{collegeData.courses.join(', ')}</p>
+                    <p className="font-medium">{college.courses.join(', ')}</p>
                   </div>
                 </div>
               </div>
@@ -544,7 +523,7 @@ const CollegeDetails = () => {
         </motion.div>
       </div>
 
-      {/* Similar Colleges */}
+      {/* Similar Colleges (Commented out, preserved for reference) */}
       {/* {similarColleges.length > 0 && (
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -555,7 +534,6 @@ const CollegeDetails = () => {
         >
           <h2 className="text-3xl font-bold text-center text-gray-800 mb-2">Similar Colleges You Might Like</h2>
           <p className="text-lg text-center text-gray-600 mb-8">Discover other great educational options</p>
-
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {similarColleges.map((college, index) => (
               <motion.div
@@ -566,7 +544,7 @@ const CollegeDetails = () => {
               >
                 <div className="relative h-48 overflow-hidden">
                   <img
-                    src={college.collegeImage || "https://images.unsplash.com/photo-1523050854058-8df90110c9f1?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=800&q=80"}
+                    src={college.image}
                     alt={college.name}
                     className="w-full h-full object-cover transition-transform duration-500 hover:scale-105"
                   />
@@ -575,7 +553,7 @@ const CollegeDetails = () => {
                       <h3 className="text-lg font-semibold text-white">{college.name}</h3>
                       <div className="flex items-center bg-white/90 text-amber-600 px-2 py-1 rounded-full">
                         <FaStar className="mr-1" />
-                        <span className="font-bold">{college.rating || 4.0}</span>
+                        <span className="font-bold">{college.rating}</span>
                       </div>
                     </div>
                   </div>
@@ -583,10 +561,10 @@ const CollegeDetails = () => {
                 <div className="p-5">
                   <p className="text-gray-600 mb-3 flex items-center">
                     <FaMapMarkerAlt className="mr-2 text-orange-500" />
-                    {college.city}, {college.state}
+                    {college.address}
                   </p>
                   <Link
-                    to={`/college-details/${college.id}`}
+                    to={college.link}
                     className="inline-block text-orange-600 font-medium hover:underline"
                   >
                     View Details →
@@ -599,50 +577,52 @@ const CollegeDetails = () => {
       )} */}
 
       {/* Image Modal */}
-      {selectedImage && (
-        <motion.div
-          className="fixed inset-0 bg-black/90 z-50 flex items-center justify-center p-4"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-        >
-          <button
-            className="absolute top-4 right-4 text-white text-3xl z-10"
-            onClick={closeImage}
+      <AnimatePresence>
+        {selectedImage && college.photos && college.photos.length > 0 && (
+          <motion.div
+            className="fixed inset-0 bg-black/90 z-50 flex items-center justify-center p-4"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
           >
-            <FaTimes />
-          </button>
+            <button
+              className="absolute top-4 right-4 text-white text-3xl"
+              onClick={closeImage}
+            >
+              <FaTimes />
+            </button>
+            <button
+              className="absolute left-4 text-white text-3xl bg-black/50 rounded-full p-2"
+              onClick={() => navigateImages('prev')}
+            >
+              <FaChevronLeft />
+            </button>
+            <motion.img
+              src={selectedImage}
+              alt={`${college.name} - Photo ${currentImageIndex + 1}`}
+              className="max-w-full max-h-screen object-contain"
+              initial={{ scale: 0.9 }}
+              animate={{ scale: 1 }}
+              exit={{ scale: 0.9 }}
+              onError={(e) => {
+                e.target.src = 'https://via.placeholder.com/800?text=Image+Not+Found';
+              }}
+            />
+            <button
+              className="absolute right-4 text-white text-3xl bg-black/50 rounded-full p-2"
+              onClick={() => navigateImages('next')}
+            >
+              <FaChevronRight />
+            </button>
+            <div className="absolute bottom-4 left-0 right-0 text-center text-white">
+              Photo {currentImageIndex + 1} of {college.photos.length}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
-          <button
-            className="absolute left-4 text-white text-3xl bg-black/50 rounded-full p-2 z-10"
-            onClick={() => navigateImages('prev')}
-          >
-            <FaChevronLeft />
-          </button>
-
-          <motion.img
-            src={selectedImage}
-            alt={`${collegeData.name} - Photo ${currentImageIndex + 1}`}
-            className="max-w-full max-h-screen object-contain"
-            initial={{ scale: 0.9 }}
-            animate={{ scale: 1 }}
-            exit={{ scale: 0.9 }}
-          />
-
-          <button
-            className="absolute right-4 text-white text-3xl bg-black/50 rounded-full p-2 z-10"
-            onClick={() => navigateImages('next')}
-          >
-            <FaChevronRight />
-          </button>
-
-          <div className="absolute bottom-4 left-0 right-0 text-center text-white">
-            Photo {currentImageIndex + 1} of {collegeData.photos.length}
-          </div>
-        </motion.div>
-      )}
-      
-      <StickyButton/>
+      <Footer />
+      <StickyButton />
     </div>
   );
 };

@@ -2,24 +2,26 @@ import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { FaChevronDown, FaChevronUp } from 'react-icons/fa';
 
-const BasicInfo = () => {
+const BasicInfo = ({ college }) => {
+  // Fallback values for when college data is missing or undefined
   const info = {
-    typeOfCollege: 'Private',
-    affiliation: 'VTU',
-    courses: 'B.Tech, M.Tech, MBA, MCA',
-    duration: '4 Years (B.Tech)',
-    language: 'English',
-    establishmentYear: '2001',
-    accreditation: 'NAAC A+',
-    hostel: 'Yes',
-    library: 'Yes',
-    labs: 'Yes',
-    studentTeacherRatio: '15:1',
-    transportation: 'Yes',
-    sports: 'Yes',
-    placement: '90%',
+    typeOfCollege: college?.typeOfCollege || 'N/A',
+    affiliation: college?.affiliation || 'N/A',
+    courses: college?.coursesOffered?.join(', ') || 'N/A',
+    duration: college?.duration || 'N/A',
+    language: college?.language || 'N/A',
+    establishmentYear: college?.establishmentYear || 'N/A',
+    accreditation: college?.accreditation || 'N/A',
+    hostel: college?.hostel || 'N/A',
+    library: college?.library || 'N/A',
+    labs: college?.laboratories || 'N/A',
+    studentTeacherRatio: college?.studentTeacherRatio || 'N/A',
+    transportation: college?.transportation || 'N/A',
+    sports: college?.playground || 'N/A',
+    placement: college?.placementStatistics?.percentage || 'N/A',
   };
 
+  // FAQ section using dynamic data
   const faqs = [
     { question: 'When was the college established?', answer: info.establishmentYear },
     { question: 'Which university is the college affiliated to?', answer: info.affiliation },
@@ -29,6 +31,7 @@ const BasicInfo = () => {
     { question: 'Is the college accredited?', answer: info.accreditation },
   ];
 
+  // Info items for the grid
   const infoItems = [
     { icon: '🏫', label: 'Type of College', value: info.typeOfCollege },
     { icon: '📜', label: 'Affiliation', value: info.affiliation },
@@ -49,7 +52,7 @@ const BasicInfo = () => {
   return (
     <div className="space-y-6">
       {/* College Information Grid */}
-      <motion.div 
+      <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5 }}
@@ -71,7 +74,7 @@ const BasicInfo = () => {
       </motion.div>
 
       {/* FAQ Section */}
-      <motion.div 
+      <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5, delay: 0.1 }}
@@ -80,12 +83,12 @@ const BasicInfo = () => {
         <h3 className="text-2xl font-bold text-center mb-6 bg-clip-text text-transparent bg-gradient-to-r from-orange-600 to-amber-600">
           Frequently Asked Questions
         </h3>
-        
+
         <div className="space-y-2">
           {faqs.map((faq, index) => {
             const [isOpen, setIsOpen] = useState(false);
             return (
-              <motion.div 
+              <motion.div
                 key={index}
                 className="border-b border-orange-100"
                 initial={{ opacity: 0 }}
@@ -104,7 +107,7 @@ const BasicInfo = () => {
                     <FaChevronDown className="text-orange-500" />
                   )}
                 </motion.button>
-                
+
                 <motion.div
                   initial={{ height: 0, opacity: 0 }}
                   animate={isOpen ? { height: 'auto', opacity: 1 } : { height: 0, opacity: 0 }}

@@ -1,80 +1,74 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { FaSchool, FaSearch, FaFilter, FaBookOpen, FaTimes, FaHome } from "react-icons/fa";
 import { IoLocationSharp } from "react-icons/io5";
 import { BsFillCalendar2CheckFill } from "react-icons/bs";
 import Footer from '../components/Footer';
 import StickyButton from '../components/StickyButton';
-
-const listings = [
-  {
-    category: "Schools",
-    icon: <FaSchool className="text-white" />,
-    place: "Bengaluru",
-    items: [
-      {
-        id: 1,
-        name: "New Horizon International School",
-        location: "Hennur Main Road",
-        fees: "₹1,54,900 - ₹2,21,900",
-        views: "10.8K Views",
-        board: "CBSE/ICSE",
-        rating: 4.7,
-        image: "https://images.unsplash.com/photo-1588072432836-e10032774350?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=800&q=80",
-      },
-      {
-        id: 2,
-        name: "Trio World Academy",
-        location: "Sahakar Nagar",
-        fees: "₹2,00,000 - ₹2,50,000",
-        views: "10.6K Views",
-        board: "IB/IGCSE",
-        rating: 4.8,
-        image: "https://images.unsplash.com/photo-1523050854058-8df90110c9f1?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=800&q=80",
-      },
-      {
-        id: 3,
-        name: "Harrow International School",
-        location: "Devanahalli",
-        fees: "₹1,80,000 - ₹2,30,000",
-        views: "7.8K Views",
-        board: "IB/IGCSE",
-        rating: 4.9,
-        image: "https://images.unsplash.com/photo-1523240795612-9a054b0db644?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=800&q=80",
-      },
-      {
-        id: 4,
-        name: "Greenwood High International",
-        location: "Sarjapur Road",
-        fees: "₹1,90,000 - ₹2,40,000",
-        views: "9.2K Views",
-        board: "CBSE/ICSE",
-        rating: 4.8,
-        image: "https://images.unsplash.com/photo-1549861833-c5932fd19229?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=800&q=80",
-      },
-    ],
-  },
-];
+import { schoolApi } from '../services/schoolApi'; // Import schoolApi
 
 function Listing() {
+  const [searchParams] = useSearchParams();
+  const cityFromQuery = searchParams.get('city') || 'Bengaluru'; // Default to Bengaluru if no city is provided
+  const [schools, setSchools] = useState([]); // State to store fetched schools
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const [filters, setFilters] = useState({
     feesRange: [0, 300000],
     board: [],
     schoolType: [],
     gender: [],
-    location: 'Bengaluru'
+    location: cityFromQuery, // Initialize with city from query
   });
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
   const boardOptions = ['CBSE', 'ICSE', 'IB', 'IGCSE', 'State Board'];
   const schoolTypeOptions = ['Government', 'Private', 'International', 'Public'];
   const genderOptions = ['Co-ed', 'Boys Only', 'Girls Only'];
 
-  const nav = useNavigate()
+  const nav = useNavigate();
+
+  // Fetch schools when component mounts or city changes
+  useEffect(() => {
+    const fetchSchools = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+
+        // Fetch schools with filters including city
+        const response = await schoolApi.getSchoolsWithFilters({
+          city: cityFromQuery,
+          typeOfSchool: filters.schoolType.join(',') || undefined,
+          board: filters.board.join(',') || undefined,
+          maxFee: filters.feesRange[1] || undefined,
+        });
+
+        console.log('Schools API response:', response);
+
+        if (response.success && response.data) {
+          // Convert object to array if necessary
+          const schoolsData = Array.isArray(response.data)
+            ? response.data
+            : Object.values(response.data);
+          setSchools(schoolsData);
+        } else {
+          setSchools([]);
+        }
+      } catch (err) {
+        console.error('Error fetching schools:', err);
+        setError('Failed to load schools. Please try again.');
+        setSchools([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchSchools();
+  }, [cityFromQuery, filters]); // Re-fetch when city or filters change
 
   const handleFilterChange = (filterType, value) => {
-    setFilters(prev => {
+    setFilters((prev) => {
       if (filterType === 'feesRange') {
         return { ...prev, feesRange: value };
       } else {
@@ -98,7 +92,7 @@ function Listing() {
       board: [],
       schoolType: [],
       gender: [],
-      location: 'Bengaluru'
+      location: cityFromQuery,
     });
   };
 
@@ -107,11 +101,24 @@ function Listing() {
     setIsFilterOpen(false);
   };
 
+  // Group schools by city (optional, if you want to display multiple cities)
+  const groupedSchools = schools.reduce((acc, school) => {
+    const city = school.city || 'Unknown';
+    if (!acc[city]) {
+      acc[city] = [];
+    }
+    acc[city].push(school);
+    return acc;
+  }, {});
+
+  // Use only the selected city for display
+  const selectedCitySchools = groupedSchools[cityFromQuery] || [];
+
   return (
     <div className="bg-orange-50 min-h-screen font-sans">
       {/* Header */}
-      <header className="bg-orange-600 shadow-lg sticky top-0 z-50 ">
-        <div className="max-w-7xl mx-auto px-4  md:py-6 flex flex-col md:flex-row items-center justify-between">
+      <header className="bg-orange-600 shadow-lg sticky top-0 z-50">
+        <div className="max-w-7xl mx-auto px-4 md:py-6 flex flex-col md:flex-row items-center justify-between">
           <div className="flex w-full md:w-auto justify-between items-center mb-4 md:mb-0">
             <Link to="/" className="text-3xl font-extrabold text-white">
               <motion.span whileHover={{ scale: 1.05 }}>
@@ -141,7 +148,7 @@ function Listing() {
             <FaSearch className="absolute left-4 top-1/2 transform -translate-y-1/2 text-orange-400" />
             <input
               type="text"
-              placeholder="Search Schools, Locations in Bengaluru..."
+              placeholder={`Search Schools, Locations in ${cityFromQuery}...`}
               className="pl-12 pr-4 py-3 rounded-full bg-white border border-transparent text-gray-800 focus:outline-none w-full focus:ring-2 focus:ring-orange-200 focus:border-transparent shadow-sm"
             />
           </div>
@@ -172,12 +179,12 @@ function Listing() {
               <span className="mx-2">»</span>
               <span className="text-orange-600">{filters.location}</span>
             </div>
-            <h1 className="text-3xl md:text-4xl font-extrabold text-gray-800 mt-2">
+            <h1 className="text-3xl md:text-4xl font-bold text-gray-800 mt-2">
               Schools In {filters.location} 2025 - 26
             </h1>
             <p className="text-lg text-gray-600 flex items-center mt-1">
               <BsFillCalendar2CheckFill className="mr-2 text-orange-500" />
-              2846 Schools | List Updated on Aug 1, 2025
+              {selectedCitySchools.length} Schools | List Updated on Aug 1, 2025
             </p>
           </div>
           <motion.button
@@ -187,24 +194,36 @@ function Listing() {
             onClick={() => setIsFilterOpen(true)}
           >
             <FaFilter className="mr-2" />
-            Filters (11)
+            Filters ({filters.board.length + filters.schoolType.length + filters.gender.length})
           </motion.button>
         </div>
 
+        {/* Loading and Error States */}
+        {loading && (
+          <div className="text-center py-8">
+            <p className="text-lg text-gray-600">Loading schools...</p>
+          </div>
+        )}
+        {error && (
+          <div className="text-center py-8">
+            <p className="text-lg text-red-600">{error}</p>
+          </div>
+        )}
+
         {/* Section List */}
-        {listings.map((section, index) => (
-          <div key={index} className="mb-12">
+        {!loading && !error && selectedCitySchools.length > 0 && (
+          <div className="mb-12">
             <h2 className="text-2xl font-bold text-gray-800 mb-6 flex items-center">
               <span className="p-2 bg-orange-600 rounded-full mr-3">
-                {section.icon}
+                <FaSchool className="text-white" />
               </span>
-              <span className="ml-2">{section.category} in {section.place}</span>
+              <span className="ml-2">Schools in {cityFromQuery}</span>
             </h2>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-              {section.items.map((item) => (
+              {selectedCitySchools.map((school) => (
                 <Link
-                  to={`/school-details`}
-                  key={item.id}
+                  to={`/school-details/${school.id}`} // Assuming school has an id field
+                  key={school.id}
                   className="group"
                 >
                   <motion.div
@@ -216,33 +235,32 @@ function Listing() {
                   >
                     <div className="relative h-48 w-full overflow-hidden">
                       <img
-                        src={item.image}
-                        alt={item.name}
+                        src={school.schoolImage || 'https://via.placeholder.com/800x400'} // Use schoolImage or fallback
+                        alt={school.name}
                         className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
                       />
-                      <div className="absolute top-4 left-4 bg-yellow-500 text-dark text-xs font-bold px-3 py-1 rounded-full shadow-lg">
+                      {/* <div className="absolute top-4 left-4 bg-yellow-500 text-dark text-xs font-bold px-3 py-1 rounded-full shadow-lg">
                         Admissions Open
-                      </div>
+                      </div> */}
                       <div className="absolute top-4 right-4 flex items-center bg-white/90 text-orange-600 px-3 py-1 rounded-full shadow-lg backdrop-blur-sm">
-                        <span className="font-bold mr-1">{item.rating}</span>
+                        <span className="font-bold mr-1">{school.rating || 4.5}</span>
                         <svg className="w-4 h-4 fill-current" viewBox="0 0 20 20">
                           <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
                         </svg>
                       </div>
                     </div>
                     <div className="p-4 flex flex-col flex-grow h-64">
-                      <p className="text-xs font-semibold text-orange-500 uppercase tracking-wide">{item.board}</p>
-                      <h3 className="text-lg font-bold text-gray-900 mt-1 line-clamp-2 min-h-[4rem]">{item.name}</h3>
+                      <p className="text-xs font-semibold text-orange-500 uppercase tracking-wide">{school.board || 'N/A'}</p>
+                      <h3 className="text-lg font-bold text-gray-900 mt-1 line-clamp-2 min-h-[4rem]">{school.name}</h3>
                       <p className="text-sm text-gray-500 flex items-center mt-2">
                         <IoLocationSharp className="mr-1 text-orange-400" />
-                        <span className="line-clamp-1">{item.location}</span>
+                        <span className="line-clamp-1">{school.address || school.city}</span>
                       </p>
-
                       <div className="mt-3">
-                        <p className="text-base font-bold text-gray-700">{item.fees}</p>
-                        {/* <p className="text-xs text-gray-500 mt-1">{item.views}</p> */}
+                        <p className="text-base font-bold text-gray-700">
+                          ₹{(school.totalAnnualFee || 0).toLocaleString()} - ₹{(school.totalAnnualFee || 0).toLocaleString()}
+                        </p>
                       </div>
-
                       <div className="mt-auto pt-4">
                         <div className="flex justify-between items-center space-x-2">
                           <motion.button
@@ -262,10 +280,6 @@ function Listing() {
                             <i className="fas fa-phone-alt"></i>
                           </motion.button>
                         </div>
-
-                        {/* <button className="block text-center text-xs text-orange-600 hover:underline mt-2 w-full">
-                          View More
-                        </button> */}
                       </div>
                     </div>
                   </motion.div>
@@ -273,7 +287,12 @@ function Listing() {
               ))}
             </div>
           </div>
-        ))}
+        )}
+        {!loading && !error && selectedCitySchools.length === 0 && (
+          <div className="text-center py-8">
+            <p className="text-lg text-gray-600">No schools found in {cityFromQuery}.</p>
+          </div>
+        )}
       </main>
 
       {/* Filter Modal */}
@@ -408,8 +427,8 @@ function Listing() {
           </motion.div>
         )}
       </AnimatePresence>
-      {/* <Footer/> */}
-    <StickyButton/>
+      {/* <Footer /> */}
+      <StickyButton />
     </div>
   );
 }

@@ -268,9 +268,9 @@ function AllColleges() {
                       alt={college.name}
                       className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
                     />
-                    <div className="absolute top-4 left-4 bg-yellow-500 text-dark text-xs font-bold px-3 py-1 rounded-full shadow-lg">
+                    {/* <div className="absolute top-4 left-4 bg-yellow-500 text-dark text-xs font-bold px-3 py-1 rounded-full shadow-lg">
                       Admissions Open
-                    </div>
+                    </div> */}
                   </div>
                   <div className="p-4 flex flex-col flex-grow h-64">
                     <p className="text-xs font-semibold text-orange-500 uppercase tracking-wide">
