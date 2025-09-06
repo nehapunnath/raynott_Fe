@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import {
   FaRupeeSign, FaSchool, FaFlask, FaBook,
@@ -6,8 +6,79 @@ import {
   FaVideo, FaFirstAid, FaWifi, FaLink, FaClipboardList
 } from 'react-icons/fa';
 import { GiMoneyStack } from 'react-icons/gi';
+import { useParams } from 'react-router-dom';
+import { collegeApi } from '../../services/collegeApi';
 
-const FeeStructure = ({ college }) => {
+const FeeStructure = () => {
+  const { id } = useParams();
+  const [college, setCollege] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  // Fetch college details
+  useEffect(() => {
+    const fetchCollegeDetails = async () => {
+      setLoading(true);
+      setError(null);
+      try {
+        console.log(`Fetching college with ID: ${id}`);
+        const response = await collegeApi.getCollege(id);
+        console.log('College API response:', response);
+        const collegeData = response.data || {};
+
+        // Format college data with fallback values
+        const formattedCollege = {
+          id: collegeData.id || id,
+          totalAnnualFee: collegeData.totalAnnualFee || null,
+          admissionFee: collegeData.admissionFee || null,
+          tuitionFee: collegeData.tuitionFee || null,
+          transportFee: collegeData.transportFee || null,
+          booksUniformsFee: collegeData.booksUniformsFee || null,
+          campusSize: collegeData.campusSize || 'N/A',
+          classrooms: collegeData.classrooms || 'N/A',
+          laboratories: collegeData.laboratories || 'N/A',
+          library: collegeData.library || 'N/A',
+          playground: collegeData.playground || 'N/A',
+          auditorium: collegeData.auditorium || 'N/A',
+          smartBoards: collegeData.smartBoards || 'N/A',
+          cctv: collegeData.cctv || 'N/A',
+          medicalRoom: collegeData.medicalRoom || 'N/A',
+          wifi: collegeData.wifi || 'N/A',
+          admissionLink: collegeData.admissionLink || 'https://example.com/admission',
+          admissionProcess: collegeData.admissionProcess || 'N/A',
+        };
+        setCollege(formattedCollege);
+      } catch (err) {
+        console.error('Error fetching college details:', err);
+        setError(err.response?.data?.message || err.message || 'Failed to fetch college details');
+        setCollege(null);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchCollegeDetails();
+  }, [id]);
+
+  // Loading state
+  if (loading) {
+    return (
+      <div className="p-8 text-center">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-amber-600 mx-auto mb-4"></div>
+        <p className="text-gray-700">Loading fee structure and infrastructure details...</p>
+      </div>
+    );
+  }
+
+  // Error state
+  if (error || !college) {
+    return (
+      <div className="p-8 text-center">
+        <p className="text-red-600">{error || 'Failed to load fee structure and infrastructure details'}</p>
+      </div>
+    );
+  }
+
   // Fallback values for fee details
   const feeDetails = [
     {
@@ -135,7 +206,7 @@ const FeeStructure = ({ college }) => {
         </div>
       </motion.div>
 
-      {/* Admission Section */}
+      /* Admission Section */
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}

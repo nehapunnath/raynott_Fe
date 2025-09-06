@@ -1,61 +1,12 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { FaUniversity, FaSearch, FaFilter, FaBookOpen, FaTimes, FaHome } from "react-icons/fa";
 import { IoLocationSharp } from "react-icons/io5";
 import { BsFillCalendar2CheckFill } from "react-icons/bs";
+import { collegeApi } from '../services/collegeApi';
 import Footer from '../components/Footer';
 import StickyButton from '../components/StickyButton';
-
-const listings = [
-  {
-    category: "Colleges",
-    icon: <FaUniversity className="text-white" />,
-    place: "Bengaluru",
-    items: [
-      {
-        id: 1,
-        name: "New Horizon College of Engineering",
-        location: "Hosur Road",
-        fees: "₹1,20,000 - ₹2,50,000",
-        views: "15.2K Views",
-        type: "Private University",
-        rating: 4.8,
-        image: "https://images.unsplash.com/photo-1523050854058-8df90110c9f1?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=800&q=80",
-      },
-      {
-        id: 2,
-        name: "Bangalore Institute of Technology",
-        location: "KR Road",
-        fees: "₹80,000 - ₹1,20,000",
-        views: "12.5K Views",
-        type: "Autonomous",
-        rating: 4.5,
-        image: "https://images.unsplash.com/photo-1523240795612-9a054b0db644?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=800&q=80",
-      },
-      {
-        id: 3,
-        name: "St. Joseph's College",
-        location: "Brigade Road",
-        fees: "₹75,000 - ₹1,50,000",
-        views: "11.8K Views",
-        type: "Private",
-        rating: 4.6,
-        image: "https://images.unsplash.com/photo-1549861833-c5932fd19229?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=800&q=80",
-      },
-      {
-        id: 4,
-        name: "Mount Carmel College",
-        location: "Palace Road",
-        fees: "₹90,000 - ₹1,80,000",
-        views: "10.9K Views",
-        type: "Private",
-        rating: 4.7,
-        image: "https://images.unsplash.com/photo-1588072432836-e10032774350?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=800&q=80",
-      },
-    ],
-  },
-];
 
 function Colleges() {
   const [isFilterOpen, setIsFilterOpen] = useState(false);
@@ -63,13 +14,55 @@ function Colleges() {
     feesRange: [0, 300000],
     type: [],
     specialization: [],
-    location: 'Bengaluru'
+    location: ''
   });
+  const [colleges, setColleges] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  const navigate = useNavigate();
+  const location = useLocation();
 
   const typeOptions = ['Private', 'Government', 'Autonomous', 'Deemed University', 'Private University'];
   const specializationOptions = ['Engineering', 'Medical', 'Arts', 'Commerce', 'Science', 'Law', 'Management'];
 
-  const nav = useNavigate()
+  // Extract query parameters from URL
+  useEffect(() => {
+    const queryParams = new URLSearchParams(location.search);
+    const type = queryParams.get('type') || '';
+    const city = queryParams.get('city') || 'Bengaluru';
+
+    setFilters(prev => ({
+      ...prev,
+      location: city,
+      specialization: type ? [type] : []
+    }));
+
+    // Fetch colleges based on type and city
+    const fetchColleges = async () => {
+      try {
+        setLoading(true);
+        const response = await collegeApi.searchColleges({
+          typeOfCollege: type,
+          city: city
+        });
+        
+        if (response.success && response.data) {
+          const collegesArray = Object.values(response.data);
+          setColleges(collegesArray);
+        } else {
+          setColleges([]);
+        }
+      } catch (err) {
+        setError(err.message || 'Failed to fetch colleges');
+        setColleges([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchColleges();
+  }, [location.search]);
 
   const handleFilterChange = (filterType, value) => {
     setFilters(prev => {
@@ -95,13 +88,33 @@ function Colleges() {
       feesRange: [0, 300000],
       type: [],
       specialization: [],
-      location: 'Bengaluru'
+      location: filters.location
     });
   };
 
-  const applyFilters = () => {
+  const applyFilters = async () => {
     console.log('Applied filters:', filters);
-    setIsFilterOpen(false);
+    try {
+      setLoading(true);
+      const response = await collegeApi.searchColleges({
+        city: filters.location,
+        typeOfCollege: filters.specialization.join(','),
+        type: filters.type.join(','),
+        maxFee: filters.feesRange[1]
+      });
+
+      if (response.success && response.data) {
+        setColleges(Object.values(response.data));
+      } else {
+        setColleges([]);
+      }
+    } catch (err) {
+      setError(err.message || 'Failed to fetch colleges');
+      setColleges([]);
+    } finally {
+      setIsFilterOpen(false);
+      setLoading(false);
+    }
   };
 
   return (
@@ -138,7 +151,7 @@ function Colleges() {
             <FaSearch className="absolute left-4 top-1/2 transform -translate-y-1/2 text-orange-400" />
             <input
               type="text"
-              placeholder="Search Colleges, Locations in Bengaluru..."
+              placeholder={`Search Colleges, Locations in ${filters.location}...`}
               className="pl-12 pr-4 py-3 rounded-full bg-white border border-transparent text-gray-800 focus:outline-none w-full focus:ring-2 focus:ring-orange-200 focus:border-transparent shadow-sm"
             />
           </div>
@@ -148,7 +161,7 @@ function Colleges() {
               className="bg-white border border-white text-orange-600 hover:bg-orange-100 font-semibold py-2 px-4 rounded-full transition duration-300"
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
-              onClick={() => nav('/bookdemo')}
+              onClick={() => navigate('/bookdemo')}
             >
               Book A Demo
             </motion.button>
@@ -170,11 +183,11 @@ function Colleges() {
               <span className="text-orange-600">{filters.location}</span>
             </div>
             <h1 className="text-3xl md:text-4xl font-extrabold text-gray-800 mt-2">
-              Colleges In {filters.location} 2025 - 26
+              {filters.specialization.length > 0 ? `${filters.specialization.join(', ')} Colleges` : 'Colleges'} In {filters.location} 2025 - 26
             </h1>
             <p className="text-lg text-gray-600 flex items-center mt-1">
               <BsFillCalendar2CheckFill className="mr-2 text-orange-500" />
-              1846 Colleges | List Updated on Aug 1, 2025
+              {colleges.length} Colleges | List Updated on Aug 1, 2025
             </p>
           </div>
           <motion.button
@@ -184,24 +197,36 @@ function Colleges() {
             onClick={() => setIsFilterOpen(true)}
           >
             <FaFilter className="mr-2" />
-            Filters (8)
+            Filters ({filters.type.length + filters.specialization.length})
           </motion.button>
         </div>
 
-        {/* Section List */}
-        {listings.map((section, index) => (
-          <div key={index} className="mb-12">
+        {/* Colleges List */}
+        {loading ? (
+          <div className="text-center py-12">
+            <p className="text-lg text-gray-600">Loading colleges...</p>
+          </div>
+        ) : error ? (
+          <div className="text-center py-12">
+            <p className="text-lg text-red-600">{error}</p>
+          </div>
+        ) : colleges.length === 0 ? (
+          <div className="text-center py-12">
+            <p className="text-lg text-gray-600">No colleges found for the selected criteria.</p>
+          </div>
+        ) : (
+          <div className="mb-12">
             <h2 className="text-2xl font-bold text-gray-800 mb-6 flex items-center">
               <span className="p-2 bg-orange-600 rounded-full mr-3">
-                {section.icon}
+                <FaUniversity className="text-white" />
               </span>
-              <span className="ml-2">{section.category} in {section.place}</span>
+              <span className="ml-2">{filters.specialization.length > 0 ? filters.specialization.join(', ') : 'All Colleges'} in {filters.location}</span>
             </h2>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-              {section.items.map((item) => (
+              {colleges.map((college) => (
                 <Link
-                  to={`/college-details`}
-                  key={item.id}
+                  to={`/college-details/${college.id}`}
+                  key={college.id}
                   className="group"
                 >
                   <motion.div
@@ -213,32 +238,30 @@ function Colleges() {
                   >
                     <div className="relative h-48 w-full overflow-hidden">
                       <img
-                        src={item.image}
-                        alt={item.name}
+                        src={college.collegeImage || 'https://images.unsplash.com/photo-1523050854058-8df90110c9f1?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80'}
+                        alt={college.name}
                         className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
                       />
                       <div className="absolute top-4 left-4 bg-yellow-500 text-dark text-xs font-bold px-3 py-1 rounded-full shadow-lg">
                         Admissions Open
                       </div>
                       <div className="absolute top-4 right-4 flex items-center bg-white/90 text-orange-600 px-3 py-1 rounded-full shadow-lg backdrop-blur-sm">
-                        <span className="font-bold mr-1">{item.rating}</span>
+                        <span className="font-bold mr-1">{college.rating || 4.5}</span>
                         <svg className="w-4 h-4 fill-current" viewBox="0 0 20 20">
                           <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
                         </svg>
                       </div>
                     </div>
                     <div className="p-4 flex flex-col flex-grow h-64">
-                      <p className="text-xs font-semibold text-orange-500 uppercase tracking-wide">{item.type}</p>
-                      <h3 className="text-lg font-bold text-gray-900 mt-1 line-clamp-2 min-h-[4rem]">{item.name}</h3>
+                      <p className="text-xs font-semibold text-orange-500 uppercase tracking-wide">{college.typeOfCollege}</p>
+                      <h3 className="text-lg font-bold text-gray-900 mt-1 line-clamp-2 min-h-[4rem]">{college.name}</h3>
                       <p className="text-sm text-gray-500 flex items-center mt-2">
                         <IoLocationSharp className="mr-1 text-orange-400" />
-                        <span className="line-clamp-1">{item.location}</span>
+                        <span className="line-clamp-1">{college.city}</span>
                       </p>
-
                       <div className="mt-3">
-                        <p className="text-base font-bold text-gray-700">{item.fees}</p>
+                        <p className="text-base font-bold text-gray-700">₹{college.totalAnnualFee?.toLocaleString() || 'N/A'}</p>
                       </div>
-
                       <div className="mt-auto pt-4">
                         <div className="flex justify-between items-center space-x-2">
                           <motion.button
@@ -265,7 +288,7 @@ function Colleges() {
               ))}
             </div>
           </div>
-        ))}
+        )}
       </main>
 
       {/* Filter Modal */}
@@ -382,8 +405,8 @@ function Colleges() {
           </motion.div>
         )}
       </AnimatePresence>
-      {/* <Footer/> */}
-          <StickyButton/>
+      <Footer />
+      <StickyButton />
     </div>
   );
 }

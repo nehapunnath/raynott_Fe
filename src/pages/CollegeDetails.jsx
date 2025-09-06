@@ -29,7 +29,6 @@ const CollegeDetails = () => {
   const [selectedImage, setSelectedImage] = useState(null);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [college, setCollege] = useState(null);
-  const [similarColleges, setSimilarColleges] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
@@ -59,38 +58,23 @@ const CollegeDetails = () => {
           affiliation: collegeData.affiliation || 'N/A',
           phone: collegeData.phone || '+91 9876543210',
           image: collegeData.collegeImage || 'https://via.placeholder.com/800x400',
-          established: collegeData.establishedYear || 2000,
+          established: collegeData.establishmentYear || 2000,
           courses: collegeData.coursesOffered || ['Course 1', 'Course 2'],
           streams: collegeData.streams || ['Stream 1', 'Stream 2'],
           facilities: collegeData.facilities || ['Facility 1', 'Facility 2'],
           accreditation: collegeData.accreditation || 'NAAC A',
-          photos: collegeData.photos || [
-            'https://images.unsplash.com/photo-1523050854058-8df90110c9f1?ixlib=rb-4.0.3&auto=format&fit=crop&w=1470&q=80',
-            'https://images.unsplash.com/photo-1523240795612-9a054b0db644?ixlib=rb-4.0.3&auto=format&fit=crop&w=1470&q=80',
-          ],
+          photos: Array.isArray(collegeData.photos) && collegeData.photos.length > 0
+            ? collegeData.photos
+            : [
+                'https://images.unsplash.com/photo-1523050854058-8df90110c9f1?ixlib=rb-4.0.3&auto=format&fit=crop&w=1470&q=80',
+                'https://images.unsplash.com/photo-1523240795612-9a054b0db644?ixlib=rb-4.0.3&auto=format&fit=crop&w=1470&q=80',
+              ],
         };
         setCollege(formattedCollege);
-
-        // Fetch similar colleges
-        console.log(`Fetching similar colleges for city: ${collegeData.city}`);
-        const similarResponse = await collegeApi.getSimilarColleges(collegeData.city, collegeData.coursesOffered);
-        console.log('Similar colleges API response:', similarResponse);
-        const similarCollegesData = (similarResponse.data || [])
-          .filter((c) => c.id !== id)
-          .slice(0, 5)
-          .map((c) => ({
-            name: c.name || 'Unnamed College',
-            address: c.address || c.city || 'Unknown Location',
-            rating: c.rating || 4.0,
-            image: c.collegeImage || 'https://via.placeholder.com/800x400',
-            link: `/college-details/${c.id}`,
-          }));
-        setSimilarColleges(similarCollegesData);
       } catch (err) {
         console.error('Error fetching college details:', err);
         setError(err.response?.data?.message || err.message || 'Failed to fetch college details');
         setCollege(null);
-        setSimilarColleges([]);
       } finally {
         setLoading(false);
       }
@@ -405,7 +389,7 @@ const CollegeDetails = () => {
             </div>
           </motion.div>
 
-          {/* Reviews (Commented out, preserved for reference) */}
+          {/* Reviews */}
           {/* <motion.div
             id="reviews"
             className="bg-white rounded-2xl shadow-lg overflow-hidden"
@@ -413,15 +397,15 @@ const CollegeDetails = () => {
             whileInView={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5 }}
             viewport={{ once: true, margin: '-100px' }}
-          >
-            <div className="p-6">
+          > */}
+            {/* <div className="p-6">
               <h2 className="text-2xl font-bold text-gray-800 mb-4 flex items-center">
                 <span className="w-2 h-8 bg-orange-600 rounded-full mr-3"></span>
                 Student Reviews
               </h2>
               <Review college={college} />
-            </div>
-          </motion.div> */}
+            </div> */}
+          {/* </motion.div> */}
         </div>
 
         {/* Right Column - Fixed Form */}
@@ -523,59 +507,6 @@ const CollegeDetails = () => {
         </motion.div>
       </div>
 
-      {/* Similar Colleges (Commented out, preserved for reference) */}
-      {/* {similarColleges.length > 0 && (
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5 }}
-          viewport={{ once: true }}
-          className="max-w-7xl mx-auto mt-16 px-4 pb-12"
-        >
-          <h2 className="text-3xl font-bold text-center text-gray-800 mb-2">Similar Colleges You Might Like</h2>
-          <p className="text-lg text-center text-gray-600 mb-8">Discover other great educational options</p>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {similarColleges.map((college, index) => (
-              <motion.div
-                key={index}
-                whileHover={{ y: -8 }}
-                transition={{ type: 'spring', stiffness: 300 }}
-                className="bg-white rounded-xl shadow-lg overflow-hidden"
-              >
-                <div className="relative h-48 overflow-hidden">
-                  <img
-                    src={college.image}
-                    alt={college.name}
-                    className="w-full h-full object-cover transition-transform duration-500 hover:scale-105"
-                  />
-                  <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent p-4">
-                    <div className="flex justify-between items-center">
-                      <h3 className="text-lg font-semibold text-white">{college.name}</h3>
-                      <div className="flex items-center bg-white/90 text-amber-600 px-2 py-1 rounded-full">
-                        <FaStar className="mr-1" />
-                        <span className="font-bold">{college.rating}</span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-                <div className="p-5">
-                  <p className="text-gray-600 mb-3 flex items-center">
-                    <FaMapMarkerAlt className="mr-2 text-orange-500" />
-                    {college.address}
-                  </p>
-                  <Link
-                    to={college.link}
-                    className="inline-block text-orange-600 font-medium hover:underline"
-                  >
-                    View Details →
-                  </Link>
-                </div>
-              </motion.div>
-            ))}
-          </div>
-        </motion.div>
-      )} */}
-
       {/* Image Modal */}
       <AnimatePresence>
         {selectedImage && college.photos && college.photos.length > 0 && (
@@ -621,7 +552,7 @@ const CollegeDetails = () => {
         )}
       </AnimatePresence>
 
-      <Footer />
+      {/* <Footer /> */}
       <StickyButton />
     </div>
   );

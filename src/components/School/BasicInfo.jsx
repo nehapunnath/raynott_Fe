@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { FaChevronDown, FaChevronUp, FaSpinner } from 'react-icons/fa';
-import { schoolApi } from '../../services/schoolApi'; // Adjust the path as needed
+import { schoolApi } from '../../services/schoolApi'; 
 import { useParams } from 'react-router-dom';
 
 // Separate component for FAQ items

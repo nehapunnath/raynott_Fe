@@ -1,7 +1,58 @@
-import React from 'react';
-import { motion } from 'framer-motion'; // Import motion for animations
+import React, { useState, useEffect } from 'react';
+import { motion } from 'framer-motion';
+import { useParams } from 'react-router-dom';
+import { collegeApi } from '../../services/collegeApi';
 
-const Contact = ({ college }) => {
+const Contact = () => {
+  const { id } = useParams();
+  const [college, setCollege] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  // Fetch college details
+  useEffect(() => {
+    const fetchCollegeDetails = async () => {
+      setLoading(true);
+      setError(null);
+      try {
+        console.log(`Fetching college with ID: ${id}`);
+        const response = await collegeApi.getCollege(id);
+        console.log('College API response:', response);
+        const collegeData = response.data || {};
+
+        // Format college data with fallback values
+        const formattedCollege = {
+          id: collegeData.id || id,
+          name: collegeData.name || 'Unnamed College',
+          address: collegeData.address || collegeData.city || 'Unknown Location',
+          city: collegeData.city || '',
+          state: collegeData.state || '',
+          pincode: collegeData.pincode || '',
+          phone: collegeData.phone || 'N/A',
+          email: collegeData.email || 'N/A',
+          website: collegeData.website || 'https://example.com',
+          socialMedia: {
+            facebook: collegeData.socialMedia?.facebook || 'https://facebook.com',
+            twitter: collegeData.socialMedia?.twitter || 'https://twitter.com',
+            instagram: collegeData.socialMedia?.instagram || 'https://instagram.com',
+          },
+          googleMapsEmbedUrl:
+            collegeData.googleMapsEmbedUrl ||
+            'https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3886.008888888889!2d77.63964131572784!3d13.11296749083023!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x3bae191736000000%3A0x0000000000000000!2sNew%20Horizon%20International%20School!5e0!3m2!1sen!2sin!4v1620000000000!5m2!1sen!2sin',
+        };
+        setCollege(formattedCollege);
+      } catch (err) {
+        console.error('Error fetching college details:', err);
+        setError(err.response?.data?.message || err.message || 'Failed to fetch college details');
+        setCollege(null);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchCollegeDetails();
+  }, [id]);
+
   // Fallback values for contact details
   const contactDetails = {
     name: college?.name || 'N/A',
@@ -20,6 +71,25 @@ const Contact = ({ college }) => {
       college?.googleMapsEmbedUrl ||
       'https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3886.008888888889!2d77.63964131572784!3d13.11296749083023!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x3bae191736000000%3A0x0000000000000000!2sNew%20Horizon%20International%20School!5e0!3m2!1sen!2sin!4v1620000000000!5m2!1sen!2sin',
   };
+
+  // Loading state
+  if (loading) {
+    return (
+      <div className="p-8 text-center">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-600 mx-auto mb-4"></div>
+        <p className="text-gray-700">Loading contact information...</p>
+      </div>
+    );
+  }
+
+  // Error state
+  if (error || !college) {
+    return (
+      <div className="p-8 text-center">
+        <p className="text-red-600">{error || 'Failed to load contact information'}</p>
+      </div>
+    );
+  }
 
   return (
     <div className="p-8 bg-gradient-to-br from-orange-50 to-amber-50 rounded-2xl shadow-xl border border-orange-100">
