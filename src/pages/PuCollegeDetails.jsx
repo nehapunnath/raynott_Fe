@@ -16,9 +16,10 @@ import { IoMdTime } from 'react-icons/io';
 import { Link, useParams, useNavigate } from 'react-router-dom';
 import { puCollegeApi } from '../services/pucollegeApi';
 import StickyButton from '../components/StickyButton';
-import BasicInfo from '../components/PuCollege/BasicInfo';
-import FeeStructure from '../components/PuCollege/FeeStructure';
-import Contact from '../components/PuCollege/Contact';
+import BasicInfo from '../components/PuColleges/BasicInfo';
+import FeeStructure from '../components/PuColleges/FeeStructure';
+import Contact from '../components/PuColleges/Contact';
+
 
 // City name normalization map for display purposes
 const cityNormalizationMap = {
