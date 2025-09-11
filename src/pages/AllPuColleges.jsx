@@ -4,73 +4,118 @@ import { Link, useNavigate } from 'react-router-dom';
 import { FaSchool, FaSearch, FaFilter, FaBookOpen, FaTimes, FaHome } from "react-icons/fa";
 import { IoLocationSharp } from "react-icons/io5";
 import { BsFillCalendar2CheckFill } from "react-icons/bs";
+import { puCollegeApi } from '../services/pucollegeApi';
 import Footer from '../components/Footer';
 import StickyButton from '../components/StickyButton';
 
-const listings = [
-  {
-    category: "PU Colleges",
-    icon: <FaSchool className="text-white" />,
-    place: "Bengaluru",
-    items: [
-      {
-        id: 1,
-        name: "Expert PU College",
-        location: "Malleswaram",
-        fees: "₹35,000 - ₹45,000",
-        views: "8.2K Views",
-        streams: "Science, Commerce",
-        rating: 4.6,
-        image: "https://images.unsplash.com/photo-1523050854058-8df90110c9f1?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=800&q=80",
-      },
-      {
-        id: 2,
-        name: "Vidya Mandir PU College",
-        location: "Rajajinagar",
-        fees: "₹30,000 - ₹40,000",
-        views: "7.5K Views",
-        streams: "Science, Commerce, Arts",
-        rating: 4.5,
-        image: "https://images.unsplash.com/photo-1523240795612-9a054b0db644?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=800&q=80",
-      },
-      {
-        id: 3,
-        name: "Alvas PU College",
-        location: "Vijayanagar",
-        fees: "₹40,000 - ₹50,000",
-        views: "6.8K Views",
-        streams: "Science, Commerce",
-        rating: 4.7,
-        image: "https://images.unsplash.com/photo-1549861833-c5932fd19229?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=800&q=80",
-      },
-      {
-        id: 4,
-        name: "Base PU College",
-        location: "Jayanagar",
-        fees: "₹45,000 - ₹55,000",
-        views: "9.1K Views",
-        streams: "Science",
-        rating: 4.8,
-        image: "https://images.unsplash.com/photo-1588072432836-e10032774350?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=800&q=80",
-      },
-    ],
-  },
-];
+// City name normalization map for display purposes
+const cityNormalizationMap = {
+  'bangalore': 'Bengaluru',
+  'bengaluru': 'Bengaluru',
+  'mumbai': 'Mumbai',
+  'delhi': 'Delhi',
+  'chennai': 'Chennai',
+  'hyderabad': 'Hyderabad',
+  'kolkata': 'Kolkata',
+  'pune': 'Pune',
+};
 
 function AllPuColleges() {
+  const navigate = useNavigate();
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const [filters, setFilters] = useState({
     feesRange: [0, 100000],
     streams: [],
     collegeType: [],
-    category: "PU Colleges",
-    location: 'Bengaluru'
+    category: "PU Colleges"
   });
+  const [puColleges, setPUColleges] = useState([]);
+  const [filteredColleges, setFilteredColleges] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
   const streamsOptions = ['Science', 'Commerce', 'Arts'];
   const collegeTypeOptions = ['Government', 'Private', 'Composite'];
 
-  const nav = useNavigate()
+  // Normalize city name for display
+  const normalizeCity = (city) => {
+    if (!city) return 'Unknown';
+    const cleanCity = city.trim().toLowerCase();
+    return cityNormalizationMap[cleanCity] || city;
+  };
+
+  // Fetch PU Colleges from API
+  useEffect(() => {
+    const fetchPUColleges = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+        const response = await puCollegeApi.getPUColleges();
+        console.log('PU Colleges API response:', response);
+
+        let collegesArray = [];
+        if (response.success && response.data) {
+          collegesArray = Array.isArray(response.data) 
+            ? response.data 
+            : Object.values(response.data);
+        }
+
+        console.log('Raw colleges array:', collegesArray);
+
+        const mappedColleges = collegesArray.map(college => ({
+          id: college.id || college._id || Math.random().toString(36).substr(2, 9),
+          name: college.name || 'Unnamed College',
+          location: college.address || 'Unknown Location',
+          city: normalizeCity(college.city || college.addressCity || college.location || 'Unknown'),
+          fees: college.totalAnnualFee 
+            ? `₹${Number(college.totalAnnualFee).toLocaleString()} - ₹${(Number(college.totalAnnualFee) + 10000).toLocaleString()}`
+            : '₹30,000 - ₹50,000',
+          views: `${Math.floor(Math.random() * 5000 + 5000)} Views`,
+          streams: Array.isArray(college.streams) 
+            ? college.streams.join(', ') 
+            : (typeof college.streams === 'string' ? college.streams : 'Science, Commerce'),
+          rating: college.rating || (Math.random() * (5 - 4) + 4).toFixed(1),
+          image: college.collegeImage || 
+                 'https://images.unsplash.com/photo-1523050854058-8df90110c9f1?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80',
+          typeOfCollege: college.typeOfCollege || 'PU College'
+        }));
+
+        console.log('Mapped colleges:', mappedColleges);
+        setPUColleges(mappedColleges);
+        setFilteredColleges(mappedColleges); // Initially show all colleges
+      } catch (err) {
+        console.error('Error fetching PU Colleges:', err);
+        setError('Failed to load PU Colleges. Please try again later.');
+        setPUColleges([]);
+        setFilteredColleges([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchPUColleges();
+    window.scrollTo(0, 0);
+  }, []);
+
+  // Apply filters to PU Colleges
+  const applyFilters = () => {
+    const filtered = puColleges.filter(college => {
+      const feeRange = college.fees
+        .split(' - ')
+        .map(fee => parseInt(fee.replace(/₹|,/g, '')));
+      const collegeStreams = college.streams.split(', ').map(s => s.trim());
+      const isFeeInRange = feeRange[0] >= filters.feesRange[0] && feeRange[1] <= filters.feesRange[1];
+      const isStreamMatch = filters.streams.length === 0 || 
+                           filters.streams.some(stream => collegeStreams.includes(stream));
+      const isTypeMatch = filters.collegeType.length === 0 || 
+                         filters.collegeType.includes(college.typeOfCollege);
+      return isFeeInRange && isStreamMatch && isTypeMatch;
+    });
+
+    setFilteredColleges(filtered);
+    console.log('Applied filters:', filters, 'Filtered colleges:', filtered);
+    setIsFilterOpen(false);
+  };
 
   const handleFilterChange = (filterType, value) => {
     setFilters(prev => {
@@ -96,18 +141,10 @@ function AllPuColleges() {
       feesRange: [0, 100000],
       streams: [],
       collegeType: [],
-      location: 'Bengaluru'
+      category: "PU Colleges"
     });
+    setFilteredColleges(puColleges); // Reset to show all colleges
   };
-
-  const applyFilters = () => {
-    console.log('Applied filters:', filters);
-    setIsFilterOpen(false);
-  };
-
-  useEffect(() => {
-          window.scrollTo(0, 0);
-      }, []);
 
   return (
     <div className="bg-orange-50 min-h-screen font-sans">
@@ -120,14 +157,29 @@ function AllPuColleges() {
                 Raynott
               </motion.span>
             </Link>
-
+            <div className="md:hidden flex space-x-2">
+              <motion.button
+                className="bg-white text-orange-600 font-semibold py-2 px-4 rounded-full transition duration-300"
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+              >
+                Demo
+              </motion.button>
+              <motion.button
+                className="bg-white text-orange-600 font-semibold py-2 px-4 rounded-full transition duration-300"
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+              >
+                <FaBookOpen />
+              </motion.button>
+            </div>
           </div>
 
           <div className="relative w-full max-w-2xl md:max-w-xl flex-grow md:ml-8">
             <FaSearch className="absolute left-4 top-1/2 transform -translate-y-1/2 text-orange-400" />
             <input
               type="text"
-              placeholder="Search PU Colleges, Locations in Bengaluru..."
+              placeholder="Search PU Colleges across India..."
               className="pl-12 pr-4 py-3 rounded-full bg-white border border-transparent text-gray-800 focus:outline-none w-full focus:ring-2 focus:ring-orange-200 focus:border-transparent shadow-sm"
             />
           </div>
@@ -137,7 +189,7 @@ function AllPuColleges() {
               className="bg-white border border-white text-orange-600 hover:bg-orange-100 font-semibold py-2 px-4 rounded-full transition duration-300"
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
-              onClick={() => nav('/bookdemo')}
+              onClick={() => navigate('/bookdemo')}
             >
               Book A Demo
             </motion.button>
@@ -159,11 +211,11 @@ function AllPuColleges() {
               <span className="text-orange-600">{filters.category}</span>
             </div>
             <h1 className="text-3xl md:text-4xl font-extrabold text-gray-800 mt-2">
-                Top Pu Colleges in India - 2025-26 Academic Year
+              Top PU Colleges in India - 2025-26 Academic Year
             </h1>
             <p className="text-lg text-gray-600 flex items-center mt-1">
               <BsFillCalendar2CheckFill className="mr-2 text-orange-500" />
-              1246 PU Colleges | List Updated on Aug 1, 2025
+              {filteredColleges.length} PU Colleges | List Updated on Aug 1, 2025
             </p>
           </div>
           <motion.button
@@ -173,24 +225,38 @@ function AllPuColleges() {
             onClick={() => setIsFilterOpen(true)}
           >
             <FaFilter className="mr-2" />
-            Filters (8)
+            Filters ({filters.streams.length + filters.collegeType.length + (filters.feesRange[0] !== 0 || filters.feesRange[1] !== 100000 ? 1 : 0)})
           </motion.button>
         </div>
 
-        {/* Section List */}
-        {listings.map((section, index) => (
-          <div key={index} className="mb-12">
+        {/* Loading State */}
+        {loading && (
+          <div className="flex justify-center items-center h-64">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-600"></div>
+          </div>
+        )}
+
+        {/* Error State */}
+        {error && !loading && (
+          <div className="text-center text-red-600 font-medium p-4">
+            {error}
+          </div>
+        )}
+
+        {/* PU Colleges List */}
+        {!loading && !error && filteredColleges.length > 0 && (
+          <div className="mb-12">
             <h2 className="text-2xl font-bold text-gray-800 mb-6 flex items-center">
               <span className="p-2 bg-orange-600 rounded-full mr-3">
-                {section.icon}
+                <FaSchool className="text-white" />
               </span>
-              <span className="ml-2">{section.category} in {section.place}</span>
+              <span className="ml-2">{filters.category} in India</span>
             </h2>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-              {section.items.map((item) => (
+              {filteredColleges.map((college) => (
                 <Link
-                  to={`/pucollege-details`}
-                  key={item.id}
+                  to={`/pucollege-details/${college.id}`}
+                  key={college.id}
                   className="group"
                 >
                   <motion.div
@@ -202,32 +268,30 @@ function AllPuColleges() {
                   >
                     <div className="relative h-48 w-full overflow-hidden">
                       <img
-                        src={item.image}
-                        alt={item.name}
+                        src={college.image}
+                        alt={college.name}
                         className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
                       />
-                      <div className="absolute top-4 left-4 bg-yellow-500 text-dark text-xs font-bold px-3 py-1 rounded-full shadow-lg">
+                      {/* <div className="absolute top-4 left-4 bg-yellow-500 text-dark text-xs font-bold px-3 py-1 rounded-full shadow-lg">
                         Admissions Open
-                      </div>
+                      </div> */}
                       <div className="absolute top-4 right-4 flex items-center bg-white/90 text-orange-600 px-3 py-1 rounded-full shadow-lg backdrop-blur-sm">
-                        <span className="font-bold mr-1">{item.rating}</span>
+                        <span className="font-bold mr-1">{college.rating}</span>
                         <svg className="w-4 h-4 fill-current" viewBox="0 0 20 20">
                           <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
                         </svg>
                       </div>
                     </div>
                     <div className="p-4 flex flex-col flex-grow h-64">
-                      <p className="text-xs font-semibold text-orange-500 uppercase tracking-wide">{item.streams}</p>
-                      <h3 className="text-lg font-bold text-gray-900 mt-1 line-clamp-2 min-h-[4rem]">{item.name}</h3>
+                      <p className="text-xs font-semibold text-orange-500 uppercase tracking-wide">{college.streams}</p>
+                      <h3 className="text-lg font-bold text-gray-900 mt-1 line-clamp-2 min-h-[4rem]">{college.name}</h3>
                       <p className="text-sm text-gray-500 flex items-center mt-2">
                         <IoLocationSharp className="mr-1 text-orange-400" />
-                        <span className="line-clamp-1">{item.location}</span>
+                        <span className="line-clamp-1">{college.location}, {college.city}</span>
                       </p>
-
                       <div className="mt-3">
-                        <p className="text-base font-bold text-gray-700">{item.fees}</p>
+                        <p className="text-base font-bold text-gray-700">{college.fees}</p>
                       </div>
-
                       <div className="mt-auto pt-4">
                         <div className="flex justify-between items-center space-x-2">
                           <motion.button
@@ -254,7 +318,14 @@ function AllPuColleges() {
               ))}
             </div>
           </div>
-        ))}
+        )}
+
+        {/* No Results */}
+        {!loading && !error && filteredColleges.length === 0 && (
+          <div className="text-center text-gray-600 font-medium p-8">
+            No PU Colleges found. Please adjust the filters or try again later.
+          </div>
+        )}
       </main>
 
       {/* Filter Modal */}
@@ -371,8 +442,9 @@ function AllPuColleges() {
           </motion.div>
         )}
       </AnimatePresence>
-      {/* <Footer/> */}
-    <StickyButton/>
+
+      {/* <Footer /> */}
+      <StickyButton />
     </div>
   );
 }

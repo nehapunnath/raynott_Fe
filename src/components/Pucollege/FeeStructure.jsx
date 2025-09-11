@@ -1,4 +1,5 @@
-import React from 'react';
+
+import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { 
   FaRupeeSign, FaSchool, FaFlask, FaBook, 
@@ -6,28 +7,147 @@ import {
   FaVideo, FaFirstAid, FaWifi, FaLink, FaClipboardList
 } from 'react-icons/fa';
 import { GiMoneyStack } from 'react-icons/gi';
+import { useParams } from 'react-router-dom';
+import { puCollegeApi } from '../../services/pucollegeApi';
 
-const FeeStructure = () => {
+const FeeStructure = ({ puCollege: puCollegeProp }) => {
+  const { id } = useParams(); // Get college ID from URL
+  const [puCollege, setPUCollege] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  // Fetch college data from API
+  useEffect(() => {
+    const fetchCollegeData = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+
+        // Use prop if provided and valid, otherwise fetch from API
+        if (puCollegeProp && Object.keys(puCollegeProp).length > 0) {
+          setPUCollege(puCollegeProp);
+          setLoading(false);
+          return;
+        }
+
+        // Fetch college data by ID
+        const response = await puCollegeApi.getPUCollege(id);
+        console.log('FeeStructure API response:', response);
+
+        if (!response.success || !response.data) {
+          throw new Error('College data not found');
+        }
+
+        const collegeData = response.data;
+        const mappedCollege = {
+          id: collegeData.id || collegeData._id || id,
+          fees: collegeData.fees || {
+            totalAnnualFee: '₹1,54,000/year',
+            admissionFee: '₹25,000',
+            tuitionFee: '₹1,00,000',
+            transportFee: '₹15,000 (optional)',
+            booksAndUniforms: '₹14,000',
+          },
+          facilities: Array.isArray(collegeData.facilities)
+            ? collegeData.facilities
+            : typeof collegeData.facilities === 'string'
+            ? collegeData.facilities.split(', ')
+            : ['Laboratories', 'Library', 'Playground', 'Auditorium', 'Smart Boards', 'CCTV', 'Medical Room', 'Wi-Fi'],
+          campusSize: collegeData.campusSize || '10 acres',
+          classrooms: collegeData.classrooms || '40+',
+          admissionLink: collegeData.admissionLink || 'https://example.com/admission',
+          admissionProcess:
+            collegeData.admissionProcess ||
+            'The admission process involves submitting an online application form, followed by an entrance test and an interview. Documents required include birth certificate, previous academic records, and identity proof.',
+        };
+
+        setPUCollege(mappedCollege);
+      } catch (err) {
+        console.error('Error fetching PU College data in FeeStructure:', err);
+        setError('Failed to load fee and infrastructure information. Using fallback data.');
+        // Fallback to prop or default data
+        setPUCollege(
+          puCollegeProp || {
+            fees: {
+              totalAnnualFee: '₹1,54,000/year',
+              admissionFee: '₹25,000',
+              tuitionFee: '₹1,00,000',
+              transportFee: '₹15,000 (optional)',
+              booksAndUniforms: '₹14,000',
+            },
+            facilities: ['Laboratories', 'Library', 'Playground', 'Auditorium', 'Smart Boards', 'CCTV', 'Medical Room', 'Wi-Fi'],
+            campusSize: '10 acres',
+            classrooms: '40+',
+            admissionLink: 'https://example.com/admission',
+            admissionProcess:
+              'The admission process involves submitting an online application form, followed by an entrance test and an interview. Documents required include birth certificate, previous academic records, and identity proof.',
+          }
+        );
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchCollegeData();
+  }, [id, puCollegeProp]);
+
+  // Prepare feeDetails and infrastructureDetails from puCollege data
   const feeDetails = [
-    { icon: <GiMoneyStack className="text-amber-700" />, label: 'Total Annual Fee', value: '₹1,54,000/year' },
-    { icon: <FaRupeeSign className="text-amber-600" />, label: 'Admission Fee', value: '₹25,000' },
-    { icon: <FaRupeeSign className="text-amber-600" />, label: 'Tuition Fee', value: '₹1,00,000' },
-    { icon: <FaRupeeSign className="text-amber-600" />, label: 'Transport Fee', value: '₹15,000 (optional)' },
-    { icon: <FaRupeeSign className="text-amber-600" />, label: 'Books & Uniforms', value: '₹14,000' }
+    { icon: <GiMoneyStack className="text-amber-700" />, label: 'Total Annual Fee', value: puCollege?.fees?.totalAnnualFee || '₹1,54,000/year' },
+    { icon: <FaRupeeSign className="text-amber-600" />, label: 'Admission Fee', value: puCollege?.fees?.admissionFee || '₹25,000' },
+    { icon: <FaRupeeSign className="text-amber-600" />, label: 'Tuition Fee', value: puCollege?.fees?.tuitionFee || '₹1,00,000' },
+    { icon: <FaRupeeSign className="text-amber-600" />, label: 'Transport Fee', value: puCollege?.fees?.transportFee || '₹15,000 (optional)' },
+    { icon: <FaRupeeSign className="text-amber-600" />, label: 'Books & Uniforms', value: puCollege?.fees?.booksAndUniforms || '₹14,000' },
   ];
 
   const infrastructureDetails = [
-    { icon: <FaSchool className="text-amber-700" />, label: 'Campus Size', value: '10 acres' },
-    { icon: <FaSchool className="text-amber-700" />, label: 'Classrooms', value: '40+' },
-    { icon: <FaFlask className="text-amber-600" />, label: 'Laboratories', value: 'Yes' },
-    { icon: <FaBook className="text-amber-600" />, label: 'Library', value: 'Yes' },
-    { icon: <FaRunning className="text-amber-500" />, label: 'Playground', value: 'Yes' },
-    { icon: <FaTheaterMasks className="text-amber-500" />, label: 'Auditorium', value: 'Yes' },
-    { icon: <FaChalkboardTeacher className="text-amber-400" />, label: 'Smart Boards', value: 'Yes' },
-    { icon: <FaVideo className="text-amber-400" />, label: 'CCTV', value: 'Yes' },
-    { icon: <FaFirstAid className="text-amber-300" />, label: 'Medical Room', value: 'Yes' },
-    { icon: <FaWifi className="text-amber-300" />, label: 'Wi-Fi', value: 'Yes' }
+    { icon: <FaSchool className="text-amber-700" />, label: 'Campus Size', value: puCollege?.campusSize || '10 acres' },
+    { icon: <FaSchool className="text-amber-700" />, label: 'Classrooms', value: puCollege?.classrooms || '40+' },
+    {
+      icon: <FaFlask className="text-amber-600" />,
+      label: 'Laboratories',
+      value: puCollege?.facilities?.includes('Laboratories') ? 'Yes' : 'No',
+    },
+    { icon: <FaBook className="text-amber-600" />, label: 'Library', value: puCollege?.facilities?.includes('Library') ? 'Yes' : 'No' },
+    {
+      icon: <FaRunning className="text-amber-500" />,
+      label: 'Playground',
+      value: puCollege?.facilities?.includes('Playground') ? 'Yes' : 'No',
+    },
+    {
+      icon: <FaTheaterMasks className="text-amber-500" />,
+      label: 'Auditorium',
+      value: puCollege?.facilities?.includes('Auditorium') ? 'Yes' : 'No',
+    },
+    {
+      icon: <FaChalkboardTeacher className="text-amber-400" />,
+      label: 'Smart Boards',
+      value: puCollege?.facilities?.includes('Smart Boards') ? 'Yes' : 'No',
+    },
+    { icon: <FaVideo className="text-amber-400" />, label: 'CCTV', value: puCollege?.facilities?.includes('CCTV') ? 'Yes' : 'No' },
+    {
+      icon: <FaFirstAid className="text-amber-300" />,
+      label: 'Medical Room',
+      value: puCollege?.facilities?.includes('Medical Room') ? 'Yes' : 'No',
+    },
+    { icon: <FaWifi className="text-amber-300" />, label: 'Wi-Fi', value: puCollege?.facilities?.includes('Wi-Fi') ? 'Yes' : 'No' },
   ];
+
+  if (loading) {
+    return (
+      <div className="flex justify-center items-center h-64">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-amber-600"></div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="text-center text-red-600 font-medium p-8">
+        {error}
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-8">
@@ -130,7 +250,7 @@ const FeeStructure = () => {
                 <h3 className="text-xl font-semibold text-gray-700">Admission Link</h3>
               </div>
               <motion.a
-                href="https://example.com/admission"
+                href={puCollege?.admissionLink || 'https://example.com/admission'}
                 target="_blank"
                 rel="noopener noreferrer"
                 whileHover={{ scale: 1.05 }}
@@ -150,7 +270,8 @@ const FeeStructure = () => {
               </div>
               <div className="bg-gradient-to-r from-amber-100 to-orange-100 p-5 rounded-xl border border-amber-300">
                 <p className="text-gray-700 text-center">
-                  The admission process involves submitting an online application form, followed by an entrance test and an interview. Documents required include birth certificate, previous academic records, and identity proof.
+                  {puCollege?.admissionProcess ||
+                    'The admission process involves submitting an online application form, followed by an entrance test and an interview. Documents required include birth certificate, previous academic records, and identity proof.'}
                 </p>
               </div>
             </div>

@@ -1,23 +1,111 @@
-import React, { useState } from 'react';
+
+import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { FaChevronDown, FaChevronUp } from 'react-icons/fa';
+import { useParams } from 'react-router-dom';
+import { puCollegeApi } from '../../services/pucollegeApi';
 
-const BasicInfo = () => {
+const BasicInfo = ({ puCollege: puCollegeProp }) => {
+  const { id } = useParams(); // Get college ID from URL
+  const [puCollege, setPUCollege] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [openFaqs, setOpenFaqs] = useState({}); // Single state for all FAQ open/closed states
+
+  // Fetch college data from API
+  useEffect(() => {
+    const fetchCollegeData = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+
+        // Use prop if provided and valid, otherwise fetch from API
+        if (puCollegeProp && Object.keys(puCollegeProp).length > 0) {
+          setPUCollege(puCollegeProp);
+          setLoading(false);
+          return;
+        }
+
+        // Fetch college data by ID
+        const response = await puCollegeApi.getPUCollege(id);
+        console.log('BasicInfo API response:', response);
+
+        if (!response.success || !response.data) {
+          throw new Error('College data not found');
+        }
+
+        const collegeData = response.data;
+        const mappedCollege = {
+          id: collegeData.id || collegeData._id || id,
+          name: collegeData.name || 'Unnamed College',
+          board: collegeData.board || 'Karnataka PU Board',
+          established: collegeData.established || 2010,
+          streams: Array.isArray(collegeData.streams)
+            ? collegeData.streams
+            : typeof collegeData.streams === 'string'
+            ? collegeData.streams.split(', ')
+            : ['Science', 'Commerce', 'Arts'],
+          facilities: Array.isArray(collegeData.facilities)
+            ? collegeData.facilities
+            : typeof collegeData.facilities === 'string'
+            ? collegeData.facilities.split(', ')
+            : ['Smart Classes', 'Laboratories', 'Library'],
+          // Additional fields with fallbacks
+          typeOfCollege: collegeData.typeOfCollege || 'Pre-University',
+          subjects: collegeData.subjects || 'PCMB, Commerce, Humanities',
+          language: collegeData.language || 'English',
+          accreditation: collegeData.accreditation || 'Yes',
+          hostel: collegeData.hostel || 'No',
+          studentTeacherRatio: collegeData.studentTeacherRatio || '25:1',
+          transportation: collegeData.transportation || 'No',
+          competitiveExamPrep: collegeData.competitiveExamPrep || 'Yes',
+        };
+
+        setPUCollege(mappedCollege);
+      } catch (err) {
+        console.error('Error fetching PU College data in BasicInfo:', err);
+        setError('Failed to load college information. Using fallback data.');
+        // Fallback to prop or default data
+        setPUCollege(
+          puCollegeProp || {
+            typeOfCollege: 'Pre-University',
+            board: 'Karnataka PU Board',
+            streams: ['Science', 'Commerce', 'Arts'],
+            subjects: 'PCMB, Commerce, Humanities',
+            language: 'English',
+            established: '2010',
+            accreditation: 'Yes',
+            hostel: 'No',
+            facilities: ['Library', 'Laboratories'],
+            studentTeacherRatio: '25:1',
+            transportation: 'No',
+            competitiveExamPrep: 'Yes',
+          }
+        );
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchCollegeData();
+  }, [id, puCollegeProp]);
+
+  // Prepare info object from puCollege data
   const info = {
-    typeOfCollege: 'Pre-University',
-    board: 'State Board',
-    streams: 'Science, Commerce, Arts',
-    subjects: 'PCMB, Commerce, Humanities',
-    language: 'English',
-    establishmentYear: '2010',
-    accreditation: 'Yes',
-    hostel: 'No',
-    library: 'Yes',
-    labs: 'Yes',
-    studentTeacherRatio: '25:1',
-    transportation: 'No',
-    sports: 'Yes',
-    competitiveExamPrep: 'Yes',
+    typeOfCollege: puCollege?.typeOfCollege || 'Pre-University',
+    board: puCollege?.board || 'Karnataka PU Board',
+    streams: puCollege?.streams?.join(', ') || 'Science, Commerce, Arts',
+    subjects: puCollege?.subjects || 'PCMB, Commerce, Humanities',
+    language: puCollege?.language || 'English',
+    establishmentYear: puCollege?.established?.toString() || '2010',
+    accreditation: puCollege?.accreditation || 'Yes',
+    hostel: puCollege?.hostel || 'No',
+    library: puCollege?.facilities?.includes('Library') ? 'Yes' : 'No',
+    labs: puCollege?.facilities?.includes('Laboratories') ? 'Yes' : 'No',
+    studentTeacherRatio: puCollege?.studentTeacherRatio || '25:1',
+    transportation: puCollege?.transportation || 'No',
+    sports: puCollege?.facilities?.includes('Sports') ? 'Yes' : 'No',
+    competitiveExamPrep: puCollege?.competitiveExamPrep || 'Yes',
   };
 
   const faqs = [
@@ -45,6 +133,30 @@ const BasicInfo = () => {
     { icon: '⚽', label: 'Sports Facilities', value: info.sports },
     { icon: '📝', label: 'Competitive Exam Prep', value: info.competitiveExamPrep },
   ];
+
+  // Toggle FAQ open/closed state
+  const toggleFaq = (index) => {
+    setOpenFaqs((prev) => ({
+      ...prev,
+      [index]: !prev[index],
+    }));
+  };
+
+  if (loading) {
+    return (
+      <div className="flex justify-center items-center h-64">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-600"></div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="text-center text-red-600 font-medium p-8">
+        {error}
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -82,42 +194,39 @@ const BasicInfo = () => {
         </h3>
         
         <div className="space-y-2">
-          {faqs.map((faq, index) => {
-            const [isOpen, setIsOpen] = useState(false);
-            return (
-              <motion.div 
-                key={index}
-                className="border-b border-orange-100"
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ delay: index * 0.05 }}
+          {faqs.map((faq, index) => (
+            <motion.div 
+              key={index}
+              className="border-b border-orange-100"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: index * 0.05 }}
+            >
+              <motion.button
+                onClick={() => toggleFaq(index)}
+                className="w-full text-left py-4 px-3 flex justify-between items-center hover:bg-orange-50 rounded-lg transition-colors"
+                whileHover={{ backgroundColor: 'rgba(254, 215, 170, 0.3)' }}
               >
-                <motion.button
-                  onClick={() => setIsOpen(!isOpen)}
-                  className="w-full text-left py-4 px-3 flex justify-between items-center hover:bg-orange-50 rounded-lg transition-colors"
-                  whileHover={{ backgroundColor: 'rgba(254, 215, 170, 0.3)' }}
-                >
-                  <span className="font-medium text-gray-800">{faq.question}</span>
-                  {isOpen ? (
-                    <FaChevronUp className="text-orange-500" />
-                  ) : (
-                    <FaChevronDown className="text-orange-500" />
-                  )}
-                </motion.button>
-                
-                <motion.div
-                  initial={{ height: 0, opacity: 0 }}
-                  animate={isOpen ? { height: 'auto', opacity: 1 } : { height: 0, opacity: 0 }}
-                  transition={{ duration: 0.3 }}
-                  className="overflow-hidden"
-                >
-                  <div className="px-3 pb-4 text-gray-700 font-medium">
-                    {faq.answer}
-                  </div>
-                </motion.div>
+                <span className="font-medium text-gray-800">{faq.question}</span>
+                {openFaqs[index] ? (
+                  <FaChevronUp className="text-orange-500" />
+                ) : (
+                  <FaChevronDown className="text-orange-500" />
+                )}
+              </motion.button>
+              
+              <motion.div
+                initial={{ height: 0, opacity: 0 }}
+                animate={openFaqs[index] ? { height: 'auto', opacity: 1 } : { height: 0, opacity: 0 }}
+                transition={{ duration: 0.3 }}
+                className="overflow-hidden"
+              >
+                <div className="px-3 pb-4 text-gray-700 font-medium">
+                  {faq.answer}
+                </div>
               </motion.div>
-            );
-          })}
+            </motion.div>
+          ))}
         </div>
       </motion.div>
     </div>

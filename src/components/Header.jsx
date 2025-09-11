@@ -3,12 +3,14 @@ import { Link } from 'react-router-dom';
 import { FaBars, FaTimes, FaChevronRight } from 'react-icons/fa';
 import { schoolApi } from '../services/schoolApi';
 import collegeApi from '../services/collegeApi';
+import { puCollegeApi } from '../services/pucollegeApi';
 
 function Header() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [activeDropdown, setActiveDropdown] = useState(null);
   const [schoolsData, setSchoolsData] = useState({});
   const [collegesData, setCollegesData] = useState({});
+  const [puCollegesData, setPUCollegesData] = useState({});
   const [loading, setLoading] = useState(true);
   const [mobileSubmenu, setMobileSubmenu] = useState(null);
 
@@ -71,6 +73,7 @@ function Header() {
     try {
       console.log('Fetching data...');
       
+      // Fetch Schools
       const schoolsResponse = await schoolApi.getSchools();
       console.log('Schools API response:', schoolsResponse);
       
@@ -80,6 +83,7 @@ function Header() {
         console.log('Processed schools data:', schoolData);
       }
 
+      // Fetch Colleges
       const collegesResponse = await collegeApi.getColleges();
       console.log('Colleges API response:', collegesResponse);
       
@@ -106,6 +110,31 @@ function Header() {
           'Management': ['Bangalore', 'Mumbai', 'Delhi', 'Hyderabad', 'Pune']
         });
       }
+
+      // Fetch PU Colleges
+      const puCollegesResponse = await puCollegeApi.getPUColleges();
+      console.log('PU Colleges API response:', puCollegesResponse);
+      
+      let puCollegesDataToProcess = puCollegesResponse.data;
+      if (puCollegesResponse && !puCollegesResponse.data && puCollegesResponse.success) {
+        for (const key in puCollegesResponse) {
+          if (key !== 'success' && key !== 'message' && Array.isArray(puCollegesResponse[key])) {
+            puCollegesDataToProcess = puCollegesResponse[key];
+            break;
+          }
+        }
+      }
+      
+      if (puCollegesResponse.success && puCollegesDataToProcess) {
+        const puCollegeData = organizeData(puCollegesDataToProcess, 'typeOfCollege', 'city');
+        setPUCollegesData(puCollegeData);
+        console.log('Processed PU colleges data:', puCollegeData);
+      } else {
+        console.warn('No PU college data found in response');
+        setPUCollegesData({
+          'PU College': ['Bangalore', 'Mumbai', 'Delhi', 'Chennai', 'Hyderabad']
+        });
+      }
     } catch (error) {
       console.error('Error fetching data:', error);
       setSchoolsData({
@@ -120,6 +149,9 @@ function Header() {
         'Arts & Science': ['Bangalore', 'Chennai', 'Mumbai', 'Delhi', 'Kolkata'],
         'Management': ['Bangalore', 'Mumbai', 'Delhi', 'Hyderabad', 'Pune']
       });
+      setPUCollegesData({
+        'PU College': ['Bangalore', 'Mumbai', 'Delhi', 'Chennai', 'Hyderabad']
+      });
     } finally {
       setLoading(false);
     }
@@ -131,7 +163,7 @@ function Header() {
         label: type,
         subItems: schoolsData[type].map(city => ({
           name: `Schools in ${city}`,
-          path: `/listing?type=${encodeURIComponent(type)}&city=${encodeURIComponent(city)}` // Updated to /listing
+          path: `/listing?type=${encodeURIComponent(type)}&city=${encodeURIComponent(city)}`
         }))
       })) : [
         {
@@ -144,26 +176,29 @@ function Header() {
       Object.keys(collegesData).map(type => ({
         label: type,
         subItems: collegesData[type].map(city => ({
-          name: `Schools in ${city}`,
+          name: `Colleges in ${city}`,
           path: `/colleges?type=${encodeURIComponent(type)}&city=${encodeURIComponent(city)}`
         }))
       })) : [
         {
           label: 'Colleges',
-          subItems: [{ name: 'Browse All Schools', path: '/colleges' }]
+          subItems: [{ name: 'Browse All Colleges', path: '/colleges' }]
         }
       ],
     
-    pu: [
-      { 
-        label: 'PU Colleges', 
-        subItems: [
-          { name: 'PU Colleges in Bangalore', path: '/pu-colleges?city=Bangalore' },
-          { name: 'PU Colleges in Mumbai', path: '/pu-colleges?city=Mumbai' },
-          { name: 'PU Colleges in Delhi', path: '/pu-colleges?city=Delhi' }
-        ] 
-      }
-    ],
+    pu: Object.keys(puCollegesData).length > 0 ? 
+      Object.keys(puCollegesData).map(type => ({
+        label: type,
+        subItems: puCollegesData[type].map(city => ({
+          name: `PU Colleges in ${city}`,
+          path: `/pu-colleges?type=${encodeURIComponent(type)}&city=${encodeURIComponent(city)}`
+        }))
+      })) : [
+        {
+          label: 'PU Colleges',
+          subItems: [{ name: 'Browse All PU Colleges', path: '/pu-colleges' }]
+        }
+      ],
     
     coaching: [
       { 
@@ -303,7 +338,7 @@ function Header() {
             onMouseLeave={() => setActiveDropdown(null)}
           >
             <span className="cursor-pointer hover:text-orange-400 px-2 py-1 whitespace-nowrap flex items-center transition-colors">
-              {key === 'pu' ? 'PU College' : 
+              {key === 'pu' ? 'PU Colleges' : 
                key === 'coaching' ? 'Coaching/Tuition' : 
                key.charAt(0).toUpperCase() + key.slice(1)}
             </span>
@@ -372,7 +407,7 @@ function Header() {
                         className="flex items-center justify-between w-full text-left font-semibold text-orange-400 text-lg py-2"
                       >
                         <span>
-                          {key === 'pu' ? 'PU College' : 
+                          {key === 'pu' ? 'PU Colleges' : 
                            key === 'coaching' ? 'Coaching/Tuition' : 
                            key.charAt(0).toUpperCase() + key.slice(1)}
                         </span>

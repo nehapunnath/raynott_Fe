@@ -37,6 +37,8 @@ import EditSchool from './pages/Admin/EditSchool'
 import ViewSchool from './pages/Admin/ViewSchool'
 import EditCollege from './pages/Admin/EditCollege'
 import ViewCollege from './pages/Admin/ViewCollege'
+import ViewPucollege from './pages/Admin/ViewPucollege'
+import EditPucollege from './pages/Admin/EditPucollege'
 
 function App() {
   const location = useLocation()
@@ -87,8 +89,12 @@ function App() {
         <Route path='/admin/edit-school/:id' element={<EditSchool/>}/>
         <Route path='/admin/school-details/:id' element={<ViewSchool/>}/>
 
-         <Route path='/admin/edit-college/:id' element={<EditCollege/>}/>
+        <Route path='/admin/edit-college/:id' element={<EditCollege/>}/>
         <Route path='/admin/college-details/:id' element={<ViewCollege/>}/>
+        
+        <Route path='/admin/edit-pucollege/:id' element={<EditPucollege/>}/>
+        <Route path='/admin/pucollege-details/:id' element={<ViewPucollege/>}/>
+
 
 
       </Routes>
