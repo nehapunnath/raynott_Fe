@@ -1,11 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
+import { useParams, useNavigate } from 'react-router-dom';
 import { FaBookOpen, FaMapMarkerAlt, FaGraduationCap, FaRupeeSign, FaSchool, FaFlask, FaBook, FaChalkboardTeacher, FaVideo, FaFirstAid, FaWifi, FaLink, FaClipboardList, FaPhone } from 'react-icons/fa';
 import { IoMdTime } from 'react-icons/io';
-import { TuitionCoachingApi, coachingTypeApi } from '../../services/TuitionCoachingApi'; // Import API functions
+import { TuitionCoachingApi, coachingTypeApi } from '../../services/TuitionCoachingApi';
 
-const AddCoaching = () => {
-    // List of cities for the dropdown in Contact Details
+const EditCoaching = () => {
+    const { id } = useParams();
+    const navigate = useNavigate();
     const cities = ['Bangalore', 'Hyderabad', 'Mumbai', 'Kolkata', 'Delhi', 'Chennai'];
 
     const [formData, setFormData] = useState({
@@ -45,8 +47,10 @@ const AddCoaching = () => {
         wifi: '',
         admissionLink: '',
         admissionProcess: '',
-        centerImage: null, // Changed to null to store file object
-        photos: [], // Store file objects for gallery
+        centerImage: null,
+        centerImagePreview: '',
+        photos: [],
+        photosPreview: [],
         facilities: []
     });
 
@@ -55,25 +59,85 @@ const AddCoaching = () => {
     const [showAddType, setShowAddType] = useState(false);
     const [message, setMessage] = useState({ type: '', text: '' });
     const [loading, setLoading] = useState(false);
+    const [isFetching, setIsFetching] = useState(true);
 
-    // Fetch coaching types on component mount
+    // Fetch coaching types and existing coaching data on mount
     useEffect(() => {
-        const fetchCoachingTypes = async () => {
+        const fetchData = async () => {
             try {
-                const response = await coachingTypeApi.getCoachingTypes();
-                if (response.success && response.data) {
-                    const types = Object.values(response.data).map(type => type.name);
+                setIsFetching(true);
+
+                // Fetch coaching types
+                const typesResponse = await coachingTypeApi.getCoachingTypes();
+                if (typesResponse.success && typesResponse.data) {
+                    const types = Object.values(typesResponse.data).map(type => type.name);
                     setCoachingTypes(types);
+                }
+
+                // Fetch existing coaching data
+                const coachingResponse = await TuitionCoachingApi.getTuitionCoaching(id);
+                if (coachingResponse.success && coachingResponse.data) {
+                    const coachingData = coachingResponse.data[id] || coachingResponse.data;
+                    setFormData({
+                        name: coachingData.name || '',
+                        typeOfCoaching: coachingData.typeOfCoaching || '',
+                        city: coachingData.city || '',
+                        classes: coachingData.classes || '',
+                        subjects: coachingData.subjects || '',
+                        batchSize: coachingData.batchSize || '',
+                        classDuration: coachingData.classDuration || '',
+                        language: coachingData.language || '',
+                        establishmentYear: coachingData.establishmentYear || '',
+                        faculty: coachingData.faculty || '',
+                        studyMaterial: coachingData.studyMaterial || '',
+                        tests: coachingData.tests || '',
+                        doubtSessions: coachingData.doubtSessions || '',
+                        infrastructure: coachingData.infrastructure || '',
+                        demoClass: coachingData.demoClass || '',
+                        flexibleTimings: coachingData.flexibleTimings || '',
+                        totalAnnualFee: coachingData.totalAnnualFee || '',
+                        admissionFee: coachingData.admissionFee || '',
+                        tuitionFee: coachingData.tuitionFee || '',
+                        transportFee: coachingData.transportFee || '',
+                        booksUniformsFee: coachingData.booksUniformsFee || '',
+                        address: coachingData.address || '',
+                        phone: coachingData.phone || '',
+                        email: coachingData.email || '',
+                        website: coachingData.website || '',
+                        socialMedia: coachingData.socialMedia || { facebook: '', twitter: '', instagram: '' },
+                        googleMapsEmbedUrl: coachingData.googleMapsEmbedUrl || '',
+                        classrooms: coachingData.classrooms || '',
+                        laboratories: coachingData.laboratories || '',
+                        library: coachingData.library || '',
+                        smartBoards: coachingData.smartBoards || '',
+                        cctv: coachingData.cctv || '',
+                        medicalRoom: coachingData.medicalRoom || '',
+                        wifi: coachingData.wifi || '',
+                        admissionLink: coachingData.admissionLink || '',
+                        admissionProcess: coachingData.admissionProcess || '',
+                        centerImage: null,
+                        centerImagePreview: coachingData.centerImage || '',
+                        photos: [],
+                        photosPreview: Array.isArray(coachingData.photos) ? coachingData.photos : [],
+                        facilities: Array.isArray(coachingData.facilities) ? coachingData.facilities : []
+                    });
+                } else {
+                    setMessage({
+                        type: 'error',
+                        text: coachingResponse.message || 'Failed to fetch coaching data'
+                    });
                 }
             } catch (error) {
                 setMessage({
                     type: 'error',
-                    text: 'Failed to fetch coaching types: ' + (error.message || 'Unknown error')
+                    text: error.response?.status === 404 ? 'Tuition/Coaching Center not found' : error.message || 'Failed to fetch data'
                 });
+            } finally {
+                setIsFetching(false);
             }
         };
-        fetchCoachingTypes();
-    }, []);
+        fetchData();
+    }, [id]);
 
     const handleInputChange = (e) => {
         const { name, value } = e.target;
@@ -143,8 +207,8 @@ const AddCoaching = () => {
             if (files.length > 0) {
                 setFormData(prev => ({
                     ...prev,
-                    centerImage: files[0], // Store file object
-                    centerImagePreview: URL.createObjectURL(files[0]) // Store preview URL
+                    centerImage: files[0],
+                    centerImagePreview: URL.createObjectURL(files[0])
                 }));
             }
         } else if (type === 'gallery') {
@@ -157,8 +221,8 @@ const AddCoaching = () => {
             }
             setFormData(prev => ({
                 ...prev,
-                photos: [...prev.photos, ...files], // Store file objects
-                photosPreview: [...(prev.photosPreview || []), ...files.map(file => URL.createObjectURL(file))] // Store preview URLs
+                photos: [...prev.photos, ...files],
+                photosPreview: [...(prev.photosPreview || []), ...files.map(file => URL.createObjectURL(file))]
             }));
         }
     };
@@ -199,69 +263,36 @@ const AddCoaching = () => {
         });
 
         try {
-            const response = await TuitionCoachingApi.addTuitionCoaching(formDataToSend);
+            const response = await TuitionCoachingApi.updateTuitionCoaching(id, formDataToSend);
             if (response.success) {
                 setMessage({
                     type: 'success',
-                    text: 'Tuition/Coaching Center added successfully!'
+                    text: 'Tuition/Coaching Center updated successfully!'
                 });
-                // Reset form
-                setFormData({
-                    name: '',
-                    typeOfCoaching: '',
-                    city: '',
-                    classes: '',
-                    subjects: '',
-                    batchSize: '',
-                    classDuration: '',
-                    language: '',
-                    establishmentYear: '',
-                    faculty: '',
-                    studyMaterial: '',
-                    tests: '',
-                    doubtSessions: '',
-                    infrastructure: '',
-                    demoClass: '',
-                    flexibleTimings: '',
-                    totalAnnualFee: '',
-                    admissionFee: '',
-                    tuitionFee: '',
-                    transportFee: '',
-                    booksUniformsFee: '',
-                    address: '',
-                    phone: '',
-                    email: '',
-                    website: '',
-                    socialMedia: { facebook: '', twitter: '', instagram: '' },
-                    googleMapsEmbedUrl: '',
-                    classrooms: '',
-                    laboratories: '',
-                    library: '',
-                    smartBoards: '',
-                    cctv: '',
-                    medicalRoom: '',
-                    wifi: '',
-                    admissionLink: '',
-                    admissionProcess: '',
-                    centerImage: null,
-                    photos: [],
-                    facilities: []
-                });
+                setTimeout(() => navigate('/admin/dashboard'), 2000);
             } else {
                 setMessage({
                     type: 'error',
-                    text: response.message || 'Failed to add tuition/coaching center'
+                    text: response.message || 'Failed to update tuition/coaching center'
                 });
             }
         } catch (error) {
             setMessage({
                 type: 'error',
-                text: 'Failed to add tuition/coaching center: ' + (error.message || 'Unknown error')
+                text: 'Failed to update tuition/coaching center: ' + (error.message || 'Unknown error')
             });
         } finally {
             setLoading(false);
         }
     };
+
+    if (isFetching) {
+        return (
+            <div className="flex justify-center items-center h-64">
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-600"></div>
+            </div>
+        );
+    }
 
     return (
         <div className="min-h-screen bg-gradient-to-b from-orange-50 to-white">
@@ -287,7 +318,7 @@ const AddCoaching = () => {
                 transition={{ duration: 0.6 }}
                 className="max-w-7xl mx-auto mt-8 px-4 pb-8"
             >
-                <h1 className="text-4xl font-bold text-center text-gray-800 mb-8">Add New Tuition/Coaching Center</h1>
+                <h1 className="text-4xl font-bold text-center text-gray-800 mb-8">Edit Tuition/Coaching Center</h1>
                 <div className="bg-white rounded-2xl shadow-xl p-8 border border-orange-100">
                     {/* Basic Information */}
                     <motion.div
@@ -768,20 +799,31 @@ const AddCoaching = () => {
                         />
                     </motion.div>
 
-                    {/* Submit Button */}
-                    <motion.button
-                        onClick={handleSubmit}
-                        whileHover={{ scale: 1.03, boxShadow: '0 4px 15px rgba(249, 115, 22, 0.3)' }}
-                        whileTap={{ scale: 0.98 }}
-                        className={`w-full bg-gradient-to-r from-orange-500 to-amber-600 text-white py-3 rounded-lg font-bold hover:from-orange-600 hover:to-amber-700 transition-all shadow-lg ${loading ? 'opacity-50 cursor-not-allowed' : ''}`}
-                        disabled={loading}
-                    >
-                        {loading ? 'Submitting...' : 'Submit Tuition/Coaching Center Details'}
-                    </motion.button>
+                    {/* Submit and Cancel Buttons */}
+                    <div className="flex space-x-4">
+                        <motion.button
+                            onClick={handleSubmit}
+                            whileHover={{ scale: 1.03, boxShadow: '0 4px 15px rgba(249, 115, 22, 0.3)' }}
+                            whileTap={{ scale: 0.98 }}
+                            className={`w-full bg-gradient-to-r from-orange-500 to-amber-600 text-white py-3 rounded-lg font-bold hover:from-orange-600 hover:to-amber-700 transition-all shadow-lg ${loading ? 'opacity-50 cursor-not-allowed' : ''}`}
+                            disabled={loading}
+                        >
+                            {loading ? 'Updating...' : 'Update Tuition/Coaching Center'}
+                        </motion.button>
+                        <motion.button
+                            onClick={() => navigate('/admin/dashboard')}
+                            whileHover={{ scale: 1.03, boxShadow: '0 4px 15px rgba(107, 114, 128, 0.3)' }}
+                            whileTap={{ scale: 0.98 }}
+                            className="w-full bg-gray-500 text-white py-3 rounded-lg font-bold hover:bg-gray-600 transition-all shadow-lg"
+                            disabled={loading}
+                        >
+                            Cancel
+                        </motion.button>
+                    </div>
                 </div>
             </motion.div>
         </div>
     );
 };
 
-export default AddCoaching;
+export default EditCoaching;

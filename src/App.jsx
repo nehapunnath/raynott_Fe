@@ -39,6 +39,8 @@ import EditCollege from './pages/Admin/EditCollege'
 import ViewCollege from './pages/Admin/ViewCollege'
 import ViewPucollege from './pages/Admin/ViewPucollege'
 import EditPucollege from './pages/Admin/EditPucollege'
+import EditCoaching from './pages/Admin/EditCoaching'
+import ViewCoaching from './pages/Admin/ViewCoaching'
 
 function App() {
   const location = useLocation()
@@ -94,6 +96,9 @@ function App() {
         
         <Route path='/admin/edit-pucollege/:id' element={<EditPucollege/>}/>
         <Route path='/admin/pucollege-details/:id' element={<ViewPucollege/>}/>
+
+          <Route path='/admin/edit-tuition-coaching/:id' element={<EditCoaching/>}/>
+        <Route path='/admin/tuition-coaching-details/:id' element={<ViewCoaching/>}/>
 
 
 

@@ -78,13 +78,13 @@ const Sidebar = ({ sidebarOpen, setSidebarOpen, activeTab, setActiveTab }) => {
           onClick={() => setActiveTab('teachers')}
           sidebarOpen={sidebarOpen}
         />
-        <NavItem 
+        {/* <NavItem 
           icon={<FaCog />} 
           text="Create Super Admin" 
           active={activeTab === 'create-superadmin'} 
           onClick={() => setActiveTab('create-superadmin')}
           sidebarOpen={sidebarOpen}
-        />
+        /> */}
       </nav>
 
       <div className="p-4 border-t border-orange-500">
