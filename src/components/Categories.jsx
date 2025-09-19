@@ -43,7 +43,7 @@ const categories = [
   {
     name: "Coaching / Tuition Center",
     icon: <FaChalkboardTeacher />,
-    link: "/coaching",
+    link: "/all-coaching",
     bg: "bg-gradient-to-br from-rose-50 to-pink-50",
     iconBg: "bg-gradient-to-r from-rose-500 to-pink-600",
     textColor: "text-rose-700",

@@ -1,124 +1,135 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { FaChalkboardTeacher, FaSearch, FaFilter, FaBookOpen, FaTimes, FaHome } from "react-icons/fa";
 import { IoLocationSharp } from "react-icons/io5";
 import { BsFillCalendar2CheckFill } from "react-icons/bs";
-import Footer from '../components/Footer';
+import { TuitionCoachingApi } from '../services/TuitionCoachingApi';
+// import Footer from '../components/Footer';
 import StickyButton from '../components/StickyButton';
 
-const listings = [
-  {
-    category: "Coaching Centers",
-    icon: <FaChalkboardTeacher className="text-white" />,
-    place: "Bengaluru",
-    items: [
-      {
-        id: 1,
-        name: "Aakash Institute",
-        location: "Indiranagar",
-        fees: "₹40,000 - ₹1,20,000",
-        views: "8.5K Views",
-        courses: "JEE/NEET",
-        rating: 4.6,
-        image: "https://images.unsplash.com/photo-1588072432836-e10032774350?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=800&q=80",
-      },
-      {
-        id: 2,
-        name: "FIITJEE",
-        location: "Koramangala",
-        fees: "₹50,000 - ₹1,50,000",
-        views: "7.8K Views",
-        courses: "JEE/Advanced",
-        rating: 4.7,
-        image: "https://images.unsplash.com/photo-1523050854058-8df90110c9f1?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=800&q=80",
-      },
-      {
-        id: 3,
-        name: "Allen Career Institute",
-        location: "HSR Layout",
-        fees: "₹45,000 - ₹1,30,000",
-        views: "9.2K Views",
-        courses: "NEET/KVPY",
-        rating: 4.8,
-        image: "https://images.unsplash.com/photo-1523240795612-9a054b0db644?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=800&q=80",
-      },
-      {
-        id: 4,
-        name: "TIME - T.I.M.E.",
-        location: "Jayanagar",
-        fees: "₹35,000 - ₹1,00,000",
-        views: "6.7K Views",
-        courses: "CAT/GMAT",
-        rating: 4.5,
-        image: "https://images.unsplash.com/photo-1549861833-c5932fd19229?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=800&q=80",
-      },
-    ],
-  },
-  {
-    category: "Tuition Centers",
-    icon: <FaBookOpen className="text-white" />,
-    place: "Bengaluru",
-    items: [
-      {
-        id: 5,
-        name: "Bright Minds Tutorials",
-        location: "Whitefield",
-        fees: "₹15,000 - ₹30,000",
-        views: "5.2K Views",
-        courses: "CBSE/ICSE All Subjects",
-        rating: 4.4,
-        image: "https://images.unsplash.com/photo-1588072432836-e10032774350?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=800&q=80",
-      },
-      {
-        id: 6,
-        name: "Scholar's Den",
-        location: "BTM Layout",
-        fees: "₹12,000 - ₹25,000",
-        views: "4.8K Views",
-        courses: "State Board Classes",
-        rating: 4.3,
-        image: "https://images.unsplash.com/photo-1523050854058-8df90110c9f1?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=800&q=80",
-      },
-      {
-        id: 7,
-        name: "Excel Tuition Hub",
-        location: "Marathahalli",
-        fees: "₹10,000 - ₹20,000",
-        views: "4.1K Views",
-        courses: "Mathematics Focus",
-        rating: 4.5,
-        image: "https://images.unsplash.com/photo-1523240795612-9a054b0db644?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=800&q=80",
-      },
-      {
-        id: 8,
-        name: "Concept Classes",
-        location: "Electronic City",
-        fees: "₹8,000 - ₹18,000",
-        views: "3.9K Views",
-        courses: "Science Stream",
-        rating: 4.2,
-        image: "https://images.unsplash.com/photo-1549861833-c5932fd19229?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=800&q=80",
-      },
-    ],
-  },
-];
+// City name normalization map
+const cityNormalizationMap = {
+  'bangalore': 'Bengaluru',
+  'bengaluru': 'Bengaluru',
+  'mumbai': 'Mumbai',
+  'delhi': 'Delhi',
+  'chennai': 'Chennai',
+  'hyderabad': 'Hyderabad',
+  'kolkata': 'Kolkata',
+  'pune': 'Pune',
+};
 
 function CoachingList() {
+  const navigate = useNavigate();
+  const location = useLocation();
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const [filters, setFilters] = useState({
     feesRange: [0, 150000],
     courses: [],
     centerType: [],
     classRange: [],
-    location: 'Bengaluru'
+    location: 'Bengaluru' // Default city
   });
+  const [coachingCenters, setCoachingCenters] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
   const coursesOptions = ['JEE', 'NEET', 'CAT', 'GMAT', 'KVPY', 'CBSE', 'ICSE', 'State Board'];
   const centerTypeOptions = ['Coaching Center', 'Tuition Center', 'Online Classes', 'Home Tutors'];
   const classRangeOptions = ['1-5', '6-8', '9-10', '11-12', 'College'];
 
-  const nav = useNavigate()
+  // Normalize city name
+  const normalizeCity = (city) => {
+    if (!city) return 'Bengaluru';
+    const cleanCity = city.trim().toLowerCase();
+    return cityNormalizationMap[cleanCity] || city;
+  };
+
+  // Extract city from URL query parameters and fetch data
+  useEffect(() => {
+    const queryParams = new URLSearchParams(location.search);
+    const city = normalizeCity(queryParams.get('city'));
+    setFilters(prev => ({ ...prev, location: city }));
+    fetchCoachingCenters(city);
+  }, [location.search]);
+
+  // Fetch Coaching Centers from API
+  const fetchCoachingCenters = async (city) => {
+    try {
+      setLoading(true);
+      setError(null);
+      const response = await TuitionCoachingApi.getTuitionCoachings();
+      console.log('Coaching Centers API response:', response);
+
+      let centersArray = [];
+      if (response.success && response.data) {
+        centersArray = Array.isArray(response.data) 
+          ? response.data 
+          : Object.values(response.data);
+      }
+
+      console.log('Raw coaching centers array:', centersArray);
+
+      // Filter centers by normalized city
+      const normalizedCity = normalizeCity(city);
+      const filteredCenters = centersArray
+        .filter(center => {
+          const centerCity = center.city || center.addressCity || center.location || 'Unknown';
+          return normalizeCity(centerCity).toLowerCase() === normalizedCity.toLowerCase();
+        })
+        .map(center => ({
+          id: center.id || center._id || Math.random().toString(36).substr(2, 9),
+          name: center.name || 'Unnamed Coaching Center',
+          location: center.address || 'Unknown Location',
+          fees: center.totalAnnualFee 
+            ? `₹${Number(center.totalAnnualFee).toLocaleString()} - ₹${(Number(center.totalAnnualFee) + 10000).toLocaleString()}`
+            : '₹8,000 - ₹150,000',
+          views: `${Math.floor(Math.random() * 5000 + 5000)} Views`,
+          courses: Array.isArray(center.subjects) 
+            ? center.subjects.join(', ') 
+            : (typeof center.subjects === 'string' ? center.subjects : 'JEE, NEET'),
+          rating: center.rating || (Math.random() * (5 - 4) + 4).toFixed(1),
+          image: center.centerImage || 
+                 'https://images.unsplash.com/photo-1588072432836-e10032774350?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80',
+          typeOfCoaching: center.typeOfCoaching || 'Coaching Center'
+        }));
+
+      console.log(`Filtered coaching centers for ${normalizedCity}:`, filteredCenters);
+
+      setCoachingCenters(filteredCenters);
+    } catch (err) {
+      console.error('Error fetching Coaching Centers:', err);
+      setError(`Failed to load Coaching Centers for ${normalizeCity(city)}. Please try again later.`);
+      setCoachingCenters([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Group centers by typeOfCoaching
+  const groupedCenters = coachingCenters.reduce((acc, center) => {
+    const type = center.typeOfCoaching || 'Coaching Center';
+    if (!acc[type]) {
+      acc[type] = [];
+    }
+    acc[type].push(center);
+    return acc;
+  }, {});
+
+  // Apply filters to the Coaching Centers list
+  const filteredCenters = coachingCenters.filter(center => {
+    const feeRange = center.fees
+      .split(' - ')
+      .map(fee => parseInt(fee.replace(/₹|,/g, '')));
+    const centerCourses = center.courses.split(', ').map(s => s.trim());
+    const isFeeInRange = feeRange[0] >= filters.feesRange[0] && feeRange[1] <= filters.feesRange[1];
+    const isCourseMatch = filters.courses.length === 0 || 
+                         filters.courses.some(course => centerCourses.includes(course));
+    const isTypeMatch = filters.centerType.length === 0 || 
+                       filters.centerType.includes(center.typeOfCoaching);
+    return isFeeInRange && isCourseMatch && isTypeMatch;
+  });
 
   const handleFilterChange = (filterType, value) => {
     setFilters(prev => {
@@ -145,7 +156,7 @@ function CoachingList() {
       courses: [],
       centerType: [],
       classRange: [],
-      location: 'Bengaluru'
+      location: filters.location // Preserve the current city
     });
   };
 
@@ -155,8 +166,8 @@ function CoachingList() {
   };
 
   useEffect(() => {
-              window.scrollTo(0, 0);
-          }, []);
+    window.scrollTo(0, 0);
+  }, []);
 
   return (
     <div className="bg-orange-50 min-h-screen font-sans">
@@ -192,7 +203,7 @@ function CoachingList() {
             <FaSearch className="absolute left-4 top-1/2 transform -translate-y-1/2 text-orange-400" />
             <input
               type="text"
-              placeholder="Search Coaching Centers, Tuitions in Bengaluru..."
+              placeholder={`Search Coaching Centers, Tuitions in ${filters.location}...`}
               className="pl-12 pr-4 py-3 rounded-full bg-white border border-transparent text-gray-800 focus:outline-none w-full focus:ring-2 focus:ring-orange-200 focus:border-transparent shadow-sm"
             />
           </div>
@@ -202,7 +213,7 @@ function CoachingList() {
               className="bg-white border border-white text-orange-600 hover:bg-orange-100 font-semibold py-2 px-4 rounded-full transition duration-300"
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
-              onClick={() => nav('/bookdemo')}
+              onClick={() => navigate('/bookdemo')}
             >
               Book A Demo
             </motion.button>
@@ -228,7 +239,7 @@ function CoachingList() {
             </h1>
             <p className="text-lg text-gray-600 flex items-center mt-1">
               <BsFillCalendar2CheckFill className="mr-2 text-orange-500" />
-              1846 Centers | List Updated on Aug 1, 2025
+              {filteredCenters.length} Centers | List Updated on Aug 1, 2025
             </p>
           </div>
           <motion.button
@@ -238,89 +249,111 @@ function CoachingList() {
             onClick={() => setIsFilterOpen(true)}
           >
             <FaFilter className="mr-2" />
-            Filters (8)
+            Filters ({filters.courses.length + filters.centerType.length + filters.classRange.length + (filters.feesRange[0] !== 0 || filters.feesRange[1] !== 150000 ? 1 : 0)})
           </motion.button>
         </div>
 
-        {/* Section List */}
-        {listings.map((section, index) => (
-          <div key={index} className="mb-12">
-            <h2 className="text-2xl font-bold text-gray-800 mb-6 flex items-center">
-              <span className="p-2 bg-orange-600 rounded-full mr-3">
-                {section.icon}
-              </span>
-              <span className="ml-2">{section.category} in {section.place}</span>
-            </h2>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-              {section.items.map((item) => (
-                <Link
-                  to={`/coaching-details`}
-                  key={item.id}
-                  className="group"
-                >
-                  <motion.div
-                    className="bg-white rounded-xl shadow-lg hover:shadow-2xl transition-all duration-300 overflow-hidden flex flex-col w-full h-full"
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.5 }}
-                    whileHover={{ y: -5 }}
+        {/* Loading State */}
+        {loading && (
+          <div className="flex justify-center items-center h-64">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-600"></div>
+          </div>
+        )}
+
+        {/* Error State */}
+        {error && !loading && (
+          <div className="text-center text-red-600 font-medium p-4">
+            {error}
+          </div>
+        )}
+
+        {/* Coaching Centers List */}
+        {!loading && !error && Object.keys(groupedCenters).length > 0 && (
+          Object.keys(groupedCenters).map((type, index) => (
+            <div key={index} className="mb-12">
+              <h2 className="text-2xl font-bold text-gray-800 mb-6 flex items-center">
+                <span className="p-2 bg-orange-600 rounded-full mr-3">
+                  <FaChalkboardTeacher className="text-white" />
+                </span>
+                <span className="ml-2">{type} in {filters.location}</span>
+              </h2>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+                {groupedCenters[type].map((center) => (
+                  <Link
+                    to={`/coaching-details/${center.id}`}
+                    key={center.id}
+                    className="group"
                   >
-                    <div className="relative h-48 w-full overflow-hidden">
-                      <img
-                        src={item.image}
-                        alt={item.name}
-                        className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
-                      />
-                      <div className="absolute top-4 left-4 bg-yellow-500 text-dark text-xs font-bold px-3 py-1 rounded-full shadow-lg">
-                        Admissions Open
-                      </div>
-                      <div className="absolute top-4 right-4 flex items-center bg-white/90 text-orange-600 px-3 py-1 rounded-full shadow-lg backdrop-blur-sm">
-                        <span className="font-bold mr-1">{item.rating}</span>
-                        <svg className="w-4 h-4 fill-current" viewBox="0 0 20 20">
-                          <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-                        </svg>
-                      </div>
-                    </div>
-                    <div className="p-4 flex flex-col flex-grow h-64">
-                      <p className="text-xs font-semibold text-orange-500 uppercase tracking-wide">{item.courses}</p>
-                      <h3 className="text-lg font-bold text-gray-900 mt-1 line-clamp-2 min-h-[4rem]">{item.name}</h3>
-                      <p className="text-sm text-gray-500 flex items-center mt-2">
-                        <IoLocationSharp className="mr-1 text-orange-400" />
-                        <span className="line-clamp-1">{item.location}</span>
-                      </p>
-
-                      <div className="mt-3">
-                        <p className="text-base font-bold text-gray-700">{item.fees}</p>
-                        {/* <p className="text-xs text-gray-500 mt-1">{item.views}</p> */}
-                      </div>
-
-                      <div className="mt-auto pt-4">
-                        <div className="flex justify-between items-center space-x-2">
-                          <motion.button
-                            className="bg-orange-600 hover:bg-orange-700 text-white text-sm font-medium py-2 px-3 rounded-lg w-full transition duration-300"
-                            whileHover={{ scale: 1.02 }}
-                            whileTap={{ scale: 0.98 }}
-                            onClick={(e) => e.preventDefault()}
-                          >
-                            Enquire Now
-                          </motion.button>
-                          <motion.button
-                            className="bg-transparent border border-orange-600 text-orange-600 hover:bg-orange-50 font-medium rounded-lg w-10 h-10 flex items-center justify-center transition duration-300"
-                            whileHover={{ scale: 1.02 }}
-                            whileTap={{ scale: 0.98 }}
-                            onClick={(e) => e.preventDefault()}
-                          >
-                            <i className="fas fa-phone-alt"></i>
-                          </motion.button>
+                    <motion.div
+                      className="bg-white rounded-xl shadow-lg hover:shadow-2xl transition-all duration-300 overflow-hidden flex flex-col w-full h-full"
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ duration: 0.5 }}
+                      whileHover={{ y: -5 }}
+                    >
+                      <div className="relative h-48 w-full overflow-hidden">
+                        <img
+                          src={center.image}
+                          alt={center.name}
+                          className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+                        />
+                        <div className="absolute top-4 left-4 bg-yellow-500 text-dark text-xs font-bold px-3 py-1 rounded-full shadow-lg">
+                          Admissions Open
+                        </div>
+                        <div className="absolute top-4 right-4 flex items-center bg-white/90 text-orange-600 px-3 py-1 rounded-full shadow-lg backdrop-blur-sm">
+                          <span className="font-bold mr-1">{center.rating}</span>
+                          <svg className="w-4 h-4 fill-current" viewBox="0 0 20 20">
+                            <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                          </svg>
                         </div>
                       </div>
-                    </div>
-                  </motion.div>
-                </Link>
-              ))}
+                      <div className="p-4 flex flex-col flex-grow h-64">
+                        <p className="text-xs font-semibold text-orange-500 uppercase tracking-wide">{center.courses}</p>
+                        <h3 className="text-lg font-bold text-gray-900 mt-1 line-clamp-2 min-h-[4rem]">{center.name}</h3>
+                        <p className="text-sm text-gray-500 flex items-center mt-2">
+                          <IoLocationSharp className="mr-1 text-orange-400" />
+                          <span className="line-clamp-1">{center.location}</span>
+                        </p>
+
+                        <div className="mt-3">
+                          <p className="text-base font-bold text-gray-700">{center.fees}</p>
+                        </div>
+
+                        <div className="mt-auto pt-4">
+                          <div className="flex justify-between items-center space-x-2">
+                            <motion.button
+                              className="bg-orange-600 hover:bg-orange-700 text-white text-sm font-medium py-2 px-3 rounded-lg w-full transition duration-300"
+                              whileHover={{ scale: 1.02 }}
+                              whileTap={{ scale: 0.98 }}
+                              onClick={(e) => e.preventDefault()}
+                            >
+                              Enquire Now
+                            </motion.button>
+                            <motion.button
+                              className="bg-transparent border border-orange-600 text-orange-600 hover:bg-orange-50 font-medium rounded-lg w-10 h-10 flex items-center justify-center transition duration-300"
+                              whileHover={{ scale: 1.02 }}
+                              whileTap={{ scale: 0.98 }}
+                              onClick={(e) => e.preventDefault()}
+                            >
+                              <i className="fas fa-phone-alt"></i>
+                            </motion.button>
+                          </div>
+                        </div>
+                      </div>
+                    </motion.div>
+                  </Link>
+                ))}
+              </div>
             </div>
+          ))
+        )}
+
+        {/* No Results */}
+        {!loading && !error && Object.keys(groupedCenters).length === 0 && (
+          <div className="text-center text-gray-600 font-medium p-8">
+            No Coaching Centers found in {filters.location}. Please select a different city from the menu or check back later.
           </div>
-        ))}
+        )}
       </main>
 
       {/* Filter Modal */}
@@ -455,8 +488,9 @@ function CoachingList() {
           </motion.div>
         )}
       </AnimatePresence>
-      {/* <Footer/> */}
-    <StickyButton/>
+
+      {/* <Footer /> */}
+      <StickyButton />
     </div>
   );
 }

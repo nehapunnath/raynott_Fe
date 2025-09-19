@@ -449,7 +449,7 @@ const ViewCoaching = () => {
                         {/* Action Buttons */}
                         <div className="flex space-x-4">
                             <motion.button
-                                onClick={() => navigate('/admin/tuition-coaching')}
+                                onClick={() => navigate('/admin/dashboard')}
                                 whileHover={{ scale: 1.03, boxShadow: '0 4px 15px rgba(249, 115, 22, 0.3)' }}
                                 whileTap={{ scale: 0.98 }}
                                 className="w-full bg-gradient-to-r from-orange-500 to-amber-600 text-white py-3 rounded-lg font-bold transition-all shadow-lg hover:from-orange-600 hover:to-amber-700"

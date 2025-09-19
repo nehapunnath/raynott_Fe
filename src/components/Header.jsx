@@ -4,6 +4,7 @@ import { FaBars, FaTimes, FaChevronRight } from 'react-icons/fa';
 import { schoolApi } from '../services/schoolApi';
 import collegeApi from '../services/collegeApi';
 import { puCollegeApi } from '../services/pucollegeApi';
+import TuitionCoachingApi from '../services/TuitionCoachingApi';
 
 function Header() {
   const [menuOpen, setMenuOpen] = useState(false);
@@ -11,6 +12,7 @@ function Header() {
   const [schoolsData, setSchoolsData] = useState({});
   const [collegesData, setCollegesData] = useState({});
   const [puCollegesData, setPUCollegesData] = useState({});
+  const [tuitionCoachingsData, setTuitionCoachingsData] = useState({});
   const [loading, setLoading] = useState(true);
   const [mobileSubmenu, setMobileSubmenu] = useState(null);
 
@@ -40,6 +42,7 @@ function Header() {
                    item.collegeType || 
                    item.schoolType || 
                    item.typeOfCollege || 
+                   item.typeOfCoaching || 
                    'Other';
       
       const city = item[cityField] || 
@@ -135,6 +138,32 @@ function Header() {
           'PU College': ['Bangalore', 'Mumbai', 'Delhi', 'Chennai', 'Hyderabad']
         });
       }
+
+      // Fetch Tuition/Coaching Centers
+      const tuitionCoachingsResponse = await TuitionCoachingApi.getTuitionCoachings();
+      console.log('Tuition Coachings API response:', tuitionCoachingsResponse);
+      
+      let tuitionCoachingsDataToProcess = tuitionCoachingsResponse.data;
+      if (tuitionCoachingsResponse && !tuitionCoachingsResponse.data && tuitionCoachingsResponse.success) {
+        for (const key in tuitionCoachingsResponse) {
+          if (key !== 'success' && key !== 'message' && Array.isArray(tuitionCoachingsResponse[key])) {
+            tuitionCoachingsDataToProcess = tuitionCoachingsResponse[key];
+            break;
+          }
+        }
+      }
+      
+      if (tuitionCoachingsResponse.success && tuitionCoachingsDataToProcess) {
+        const tuitionCoachingData = organizeData(tuitionCoachingsDataToProcess, 'typeOfCoaching', 'city');
+        setTuitionCoachingsData(tuitionCoachingData);
+        console.log('Processed tuition coachings data:', tuitionCoachingData);
+      } else {
+        console.warn('No tuition coaching data found in response');
+        setTuitionCoachingsData({
+          'Entrance Exams': ['Bangalore', 'Delhi', 'Mumbai', 'Chennai', 'Hyderabad'],
+          'Tuition Centers': ['Bangalore', 'Delhi', 'Mumbai', 'Chennai', 'Hyderabad']
+        });
+      }
     } catch (error) {
       console.error('Error fetching data:', error);
       setSchoolsData({
@@ -151,6 +180,10 @@ function Header() {
       });
       setPUCollegesData({
         'PU College': ['Bangalore', 'Mumbai', 'Delhi', 'Chennai', 'Hyderabad']
+      });
+      setTuitionCoachingsData({
+        'Entrance Exams': ['Bangalore', 'Delhi', 'Mumbai', 'Chennai', 'Hyderabad'],
+        'Tuition Centers': ['Bangalore', 'Delhi', 'Mumbai', 'Chennai', 'Hyderabad']
       });
     } finally {
       setLoading(false);
@@ -200,24 +233,19 @@ function Header() {
         }
       ],
     
-    coaching: [
-      { 
-        label: 'Entrance Exams', 
-        subItems: [
-          { name: 'Coaching in Bangalore', path: '/coaching?type=entrance&city=Bangalore' },
-          { name: 'Coaching in Delhi', path: '/coaching?type=entrance&city=Delhi' },
-          { name: 'Coaching in Mumbai', path: '/coaching?type=entrance&city=Mumbai' }
-        ] 
-      },
-      { 
-        label: 'Tuition Centers', 
-        subItems: [
-          { name: 'Tutors in Bangalore', path: '/tutors?city=Bangalore' },
-          { name: 'Tutors in Delhi', path: '/tutors?city=Delhi' },
-          { name: 'Tutors in Mumbai', path: '/tutors?city=Mumbai' }
-        ] 
-      }
-    ]
+    coaching: Object.keys(tuitionCoachingsData).length > 0 ? 
+      Object.keys(tuitionCoachingsData).map(type => ({
+        label: type,
+        subItems: tuitionCoachingsData[type].map(city => ({
+          name: `Coaching in ${city}`,
+          path: `/coaching?type=${encodeURIComponent(type)}&city=${encodeURIComponent(city)}`
+        }))
+      })) : [
+        {
+          label: 'Coaching/Tuition',
+          subItems: [{ name: 'Browse All Coaching/Tuition', path: '/coaching' }]
+        }
+      ]
   };
 
   const renderDesktopDropdown = (category) => {
