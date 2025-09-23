@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
-import { motion } from 'framer-motion';
+
+import React, { useState, useEffect } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import {
     FaBookOpen,
     FaSearch,
@@ -9,12 +10,12 @@ import {
     FaGraduationCap,
     FaChevronLeft,
     FaChevronRight,
-    FaTimes
+    FaTimes,
+    FaHome
 } from 'react-icons/fa';
 import { IoMdTime } from 'react-icons/io';
-
-import { useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useParams, useNavigate } from 'react-router-dom';
+import { TuitionCoachingApi } from '../services/TuitionCoachingApi'; // Adjust path as needed
 import BasicInfo from '../components/Coaching/BasicInfo';
 import FeeStructure from '../components/Coaching/FeeStructure';
 import Contact from '../components/Coaching/Contact';
@@ -25,34 +26,63 @@ import StickyButton from '../components/StickyButton';
 const CoachingDetail = () => {
     const [selectedImage, setSelectedImage] = useState(null);
     const [currentImageIndex, setCurrentImageIndex] = useState(0);
+    const [coachingCenter, setCoachingCenter] = useState(null);
+    const [similarCoachingCenters, setSimilarCoachingCenters] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(null);
+    const { id } = useParams();
+    const nav = useNavigate();
 
     useEffect(() => {
+        const fetchCoachingDetails = async () => {
+            try {
+                setLoading(true);
+                // Fetch coaching center details
+                const response = await TuitionCoachingApi.getTuitionCoaching(id);
+                console.log('Coaching API response:', response);
+                if (response.success && response.data) {
+                    // Format coaching data with fallback for photos
+                    const formattedCoaching = {
+                        ...response.data,
+                        photos: Array.isArray(response.data.photos) && response.data.photos.length > 0
+                            ? response.data.photos
+                            : [
+                                'https://images.unsplash.com/photo-1523050854058-8df90110c9f1?ixlib=rb-4.0.3&auto=format&fit=crop&w=1470&q=80',
+                                'https://images.unsplash.com/photo-1523240795612-9a054b0db644?ixlib=rb-4.0.3&auto=format&fit=crop&w=1470&q=80'
+                            ]
+                    };
+                    setCoachingCenter(formattedCoaching);
+                    // Fetch similar coaching centers based on city and subjects
+                    const similarResponse = await TuitionCoachingApi.getSimilarTuitionCoachings(
+                        response.data.city,
+                        response.data.subjects?.join(',')
+                    );
+                    if (similarResponse.success) {
+                        // Convert to array and filter out the current coaching center
+                        const similarCenters = Object.keys(similarResponse.data || {})
+                            .map(key => ({
+                                id: key,
+                                ...similarResponse.data[key],
+                                link: `/coaching-details/${key}`
+                            }))
+                            .filter(center => center.id !== id)
+                            .slice(0, 3); // Limit to 3 similar centers
+                        setSimilarCoachingCenters(similarCenters);
+                    }
+                } else {
+                    setError('Coaching center not found');
+                }
+            } catch (err) {
+                console.error('Error fetching coaching details:', err);
+                setError(err.response?.data?.message || err.message || 'Failed to fetch coaching details');
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchCoachingDetails();
         window.scrollTo(0, 0);
-    }, []);
-
-    const coachingCenter = {
-        name: 'Brilliant Minds Coaching Center',
-        address: 'Koramangala 5th Block, Bengaluru, Karnataka 560034',
-        fees: '₹1,20,000/year',
-        rating: 4.8,
-        phone: '+91 9876543210',
-        image: 'https://images.unsplash.com/photo-1522202176988-66273c2fd55f?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=800&q=80',
-        established: 2015,
-        courses: ['JEE Main & Advanced', 'NEET', 'KVPY', 'Olympiads'],
-        batches: ['Regular', 'Weekend', 'Crash Course'],
-        facilities: ['Air-conditioned Classes', 'Test Series', 'Doubt Sessions', 'Study Material'],
-        photos: [
-            'https://images.unsplash.com/photo-1549861833-c5932fd19229?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1470&q=80',
-            'https://images.unsplash.com/photo-1581093450021-4a7360e9a6a3?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1470&q=80',
-            'https://images.unsplash.com/photo-1588072432836-e10032774350?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1470&q=80'
-        ]
-    };
-
-    const similarCoachingCenters = [
-        { name: 'Aakash Institute', address: 'Jayanagar', rating: 4.7, image: 'https://images.unsplash.com/photo-1523050854058-8df90110c9f1?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1470&q=80', link: '/coaching/aakash' },
-        { name: 'FIITJEE', address: 'Indiranagar', rating: 4.6, image: 'https://images.unsplash.com/photo-1523240795612-9a054b0db644?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1470&q=80', link: '/coaching/fiitjee' },
-        { name: 'Allen Career Institute', address: 'Whitefield', rating: 4.5, image: 'https://images.unsplash.com/photo-1588072432836-e10032774350?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1470&q=80', link: '/coaching/allen' },
-    ];
+    }, [id]);
 
     const scrollToSection = (id) => {
         const section = document.getElementById(id);
@@ -71,67 +101,109 @@ const CoachingDetail = () => {
     };
 
     const navigateImages = (direction) => {
-        let newIndex;
-        if (direction === 'prev') {
-            newIndex = currentImageIndex === 0 ? coachingCenter.photos.length - 1 : currentImageIndex - 1;
-        } else {
-            newIndex = currentImageIndex === coachingCenter.photos.length - 1 ? 0 : currentImageIndex + 1;
-        }
+        if (!coachingCenter || !coachingCenter.photos) return;
+        let newIndex =
+            direction === 'prev'
+                ? currentImageIndex === 0
+                    ? coachingCenter.photos.length - 1
+                    : currentImageIndex - 1
+                : currentImageIndex === coachingCenter.photos.length - 1
+                    ? 0
+                    : currentImageIndex + 1;
         setSelectedImage(coachingCenter.photos[newIndex]);
         setCurrentImageIndex(newIndex);
     };
 
+    if (loading) {
+        return (
+            <div className="min-h-screen bg-orange-50 flex items-center justify-center">
+                <div className="text-center">
+                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-600 mx-auto mb-4"></div>
+                    <p className="text-gray-700">Loading coaching details...</p>
+                </div>
+            </div>
+        );
+    }
+
+    if (error || !coachingCenter) {
+        return (
+            <div className="min-h-screen bg-orange-50 flex items-center justify-center">
+                <div className="text-center">
+                    <p className="text-red-600 mb-4">{error || 'Coaching center not found'}</p>
+                    <button
+                        onClick={() => nav('/coaching')}
+                        className="bg-orange-600 text-white px-4 py-2 rounded-lg hover:bg-orange-700"
+                    >
+                        Browse All Coaching Centers
+                    </button>
+                </div>
+            </div>
+        );
+    }
+
     return (
         <div className="min-h-screen bg-gradient-to-b from-orange-50 to-white">
             {/* Header */}
-            <header className="bg-orange-600 shadow-lg sticky top-0 z-50 ">
-                    <div className="max-w-7xl mx-auto px-4  md:py-6 flex flex-col md:flex-row items-center justify-between">
-                      <div className="flex w-full md:w-auto justify-between items-center mb-4 md:mb-0">
+            <header className="bg-orange-600 shadow-lg sticky top-0 z-50">
+                <div className="max-w-7xl mx-auto px-4 py-4 md:py-6 flex flex-col md:flex-row items-center justify-between">
+                    <div className="flex w-full md:w-auto justify-between items-center mb-4 md:mb-0">
                         <Link to="/" className="text-3xl font-extrabold text-white">
-                          <motion.span whileHover={{ scale: 1.05 }}>
-                            Raynott
-                          </motion.span>
+                            <motion.span whileHover={{ scale: 1.05 }}>
+                                Raynott
+                            </motion.span>
                         </Link>
-            
                         <div className="md:hidden flex space-x-2">
-                          <motion.button
-                            className="bg-white text-orange-600 font-semibold py-2 px-4 rounded-full transition duration-300"
-                            whileHover={{ scale: 1.05 }}
-                            whileTap={{ scale: 0.95 }}
-                          >
-                            Demo
-                          </motion.button>
-                          <motion.button
-                            className="bg-white text-orange-600 font-semibold py-2 px-4 rounded-full transition duration-300"
-                            whileHover={{ scale: 1.05 }}
-                            whileTap={{ scale: 0.95 }}
-                          >
-                            <FaBookOpen />
-                          </motion.button>
+                            <motion.button
+                                className="bg-white text-orange-600 font-semibold py-2 px-4 rounded-full transition duration-300"
+                                whileHover={{ scale: 1.05 }}
+                                whileTap={{ scale: 0.95 }}
+                                onClick={() => nav('/bookdemo')}
+                            >
+                                Demo
+                            </motion.button>
+                            <motion.button
+                                className="bg-white text-orange-600 font-semibold py-2 px-4 rounded-full transition duration-300"
+                                whileHover={{ scale: 1.05 }}
+                                whileTap={{ scale: 0.95 }}
+                            >
+                                <FaBookOpen />
+                            </motion.button>
                         </div>
-                      </div>
-            
-                      <div className="relative w-full max-w-2xl md:max-w-xl flex-grow md:ml-8">
+                    </div>
+                    <div className="relative w-full max-w-2xl md:max-w-xl flex-grow md:ml-8">
                         <FaSearch className="absolute left-4 top-1/2 transform -translate-y-1/2 text-orange-400" />
                         <input
-                          type="text"
-                          placeholder="Search Schools, Locations in Bengaluru..."
-                          className="pl-12 pr-4 py-3 rounded-full bg-white border border-transparent text-gray-800 focus:outline-none w-full focus:ring-2 focus:ring-orange-200 focus:border-transparent shadow-sm"
+                            type="text"
+                            placeholder="Search Coaching Centers, Locations in Bengaluru..."
+                            className="pl-12 pr-4 py-3 rounded-full bg-white border border-transparent text-gray-800 focus:outline-none w-full focus:ring-2 focus:ring-orange-200 focus:border-transparent shadow-sm"
                         />
-                      </div>
-            
-                      <div className="hidden md:flex space-x-4 ml-8">
-                        <motion.button
-                          className="bg-white border border-white text-orange-600 hover:bg-orange-100 font-semibold py-2 px-4 rounded-full transition duration-300"
-                          whileHover={{ scale: 1.05 }}
-                          whileTap={{ scale: 0.95 }}
-                          onClick={() => nav('/bookdemo')}
-                        >
-                          Book A Demo
-                        </motion.button>
-                      </div>
                     </div>
-                  </header>
+                    <div className="hidden md:flex space-x-4 ml-8">
+                        <motion.button
+                            className="bg-white border border-white text-orange-600 hover:bg-orange-100 font-semibold py-2 px-4 rounded-full transition duration-300"
+                            whileHover={{ scale: 1.05 }}
+                            whileTap={{ scale: 0.95 }}
+                            onClick={() => nav('/bookdemo')}
+                        >
+                            Book A Demo
+                        </motion.button>
+                    </div>
+                </div>
+            </header>
+
+            {/* Breadcrumb */}
+            <div className="max-w-7xl mx-auto px-4 py-4">
+                <div className="text-sm text-gray-500 flex items-center">
+                    <Link to="/" className="flex items-center hover:text-orange-600">
+                        <FaHome className="mr-1 text-orange-500" />
+                        Home
+                    </Link>
+                    <span className="mx-2">»</span>
+                    <Link to="/coaching" className="hover:text-orange-600">Coaching Centers</Link>
+                    <span className="mx-2">»</span>
+                    <span className="text-orange-600">{coachingCenter.name}</span>
+                </div>
+            </div>
 
             {/* Hero Banner */}
             <motion.div
@@ -142,11 +214,13 @@ const CoachingDetail = () => {
             >
                 <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/40 to-transparent z-10"></div>
                 <img
-                    src={coachingCenter.image}
+                    src={coachingCenter.centerImage || 'https://via.placeholder.com/800x400'}
                     alt={coachingCenter.name}
                     className="w-full h-[32rem] object-cover"
+                    onError={(e) => {
+                        e.target.src = 'https://via.placeholder.com/800x400?text=Image+Not+Found';
+                    }}
                 />
-
                 <div className="absolute bottom-0 left-0 right-0 z-20 p-8 text-white">
                     <motion.h1
                         className="text-4xl md:text-5xl font-bold mb-2 drop-shadow-lg"
@@ -156,26 +230,25 @@ const CoachingDetail = () => {
                     >
                         {coachingCenter.name}
                     </motion.h1>
-
                     <div className="flex flex-wrap items-center gap-4 mb-4">
                         <div className="flex items-center bg-white/20 backdrop-blur-sm px-3 py-1 rounded-full">
                             <FaMapMarkerAlt className="mr-1 text-orange-300" />
-                            <span>{coachingCenter.address}</span>
+                            <span>{coachingCenter.address}, {coachingCenter.city}</span>
                         </div>
                         <div className="flex items-center bg-white/20 backdrop-blur-sm px-3 py-1 rounded-full">
                             <IoMdTime className="mr-1 text-orange-300" />
-                            <span>Est. {coachingCenter.established}</span>
+                            <span>Est. {coachingCenter.establishmentYear || 'N/A'}</span>
                         </div>
                     </div>
-
                     <div className="flex flex-wrap items-center justify-between">
                         <div className="flex items-center space-x-6">
                             <div className="flex items-center text-amber-300 text-xl">
-                                <FaStar className="mr-1" /> {coachingCenter.rating}
+                                <FaStar className="mr-1" /> {coachingCenter.rating || 4.5}
                             </div>
-                            <p className="text-xl font-semibold text-white">{coachingCenter.fees}</p>
+                            <p className="text-xl font-semibold text-white">
+                                ₹{coachingCenter.totalAnnualFee?.toLocaleString() || 'Contact for fees'}
+                            </p>
                         </div>
-
                         <motion.a
                             href={`tel:${coachingCenter.phone}`}
                             whileHover={{ scale: 1.05 }}
@@ -197,7 +270,7 @@ const CoachingDetail = () => {
             >
                 <div className="bg-white rounded-xl shadow-lg overflow-hidden">
                     <div className="flex overflow-x-auto scrollbar-hide justify-center bg-gradient-to-r from-orange-50 to-amber-50 rounded-xl p-1 shadow-inner">
-                        {['Basic Info', 'Courses', 'Fee Structure', 'Contact', 'Reviews'].map((section) => (
+                        {['Basic Info', 'Photos', 'Courses', 'Fee Structure', 'Contact', 'Reviews'].map((section) => (
                             <motion.button
                                 key={section}
                                 onClick={() => scrollToSection(section.replace(/\s+/g, '').toLowerCase())}
@@ -205,7 +278,7 @@ const CoachingDetail = () => {
                                 whileHover={{ y: -2 }}
                                 whileTap={{ scale: 0.95 }}
                             >
-                                <span className="text-2xl font-bold font-['Poppins'] bg-clip-text  bg-gradient-to-r  text-amber-900  transition-all duration-300">
+                                <span className="text-2xl font-bold font-['Poppins'] bg-clip-text bg-gradient-to-r text-amber-900 transition-all duration-300">
                                     {section}
                                 </span>
                                 <motion.div
@@ -221,7 +294,7 @@ const CoachingDetail = () => {
             </motion.div>
 
             {/* Main Content */}
-            <div className="max-w-7xl mx-auto mt-6 px-4 flex flex-col lg:flex-row gap-8">
+            <div className="max-w-7xl mx-auto mt-6 px-4 flex flex-col lg:flex-row gap-8 pb-12">
                 {/* Left Column - Scrollable */}
                 <div className="w-full lg:w-2/3 space-y-8">
                     {/* Basic Info */}
@@ -238,7 +311,54 @@ const CoachingDetail = () => {
                                 <span className="w-2 h-8 bg-orange-600 rounded-full mr-3"></span>
                                 Coaching Center Information
                             </h2>
-                            <BasicInfo coachingCenter={coachingCenter} />
+                            <BasicInfo />
+                        </div>
+                    </motion.div>
+
+                    {/* Photos Section */}
+                    <motion.div
+                        id="photos"
+                        className="bg-white rounded-2xl shadow-lg overflow-hidden"
+                        initial={{ opacity: 0, y: 20 }}
+                        whileInView={{ opacity: 1, y: 0 }}
+                        transition={{ duration: 0.5 }}
+                        viewport={{ once: true, margin: "-100px" }}
+                    >
+                        <div className="p-6">
+                            <h2 className="text-2xl font-bold text-gray-800 mb-6 flex items-center">
+                                <span className="w-2 h-8 bg-orange-600 rounded-full mr-3"></span>
+                                Coaching Gallery
+                            </h2>
+                            {coachingCenter.photos && coachingCenter.photos.length > 0 ? (
+                                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+                                    {coachingCenter.photos.map((photo, index) => (
+                                        <motion.div
+                                            key={index}
+                                            className="relative aspect-square overflow-hidden rounded-xl cursor-pointer group"
+                                            whileHover={{ scale: 1.02 }}
+                                            onClick={() => openImage(photo, index)}
+                                        >
+                                            <img
+                                                src={photo}
+                                                alt={`${coachingCenter.name} - Photo ${index + 1}`}
+                                                className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+                                                loading="lazy"
+                                                onError={(e) => {
+                                                    e.target.src = 'https://via.placeholder.com/300?text=Image+Not+Found';
+                                                }}
+                                            />
+                                            <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                                        </motion.div>
+                                    ))}
+                                </div>
+                            ) : (
+                                <p className="text-gray-500 text-center">No photos available for this coaching center.</p>
+                            )}
+                            {coachingCenter.photos && coachingCenter.photos.length > 0 && (
+                                <p className="text-sm text-gray-500 mt-4 text-center">
+                                    Click on any photo to view in full size
+                                </p>
+                            )}
                         </div>
                     </motion.div>
 
@@ -260,7 +380,7 @@ const CoachingDetail = () => {
                                 <div>
                                     <h3 className="font-semibold text-lg text-gray-700 mb-3">Courses Offered</h3>
                                     <ul className="space-y-2">
-                                        {coachingCenter.courses.map((course, index) => (
+                                        {(coachingCenter.subjects || []).map((course, index) => (
                                             <li key={index} className="flex items-center">
                                                 <span className="w-2 h-2 bg-orange-500 rounded-full mr-2"></span>
                                                 {course}
@@ -271,10 +391,10 @@ const CoachingDetail = () => {
                                 <div>
                                     <h3 className="font-semibold text-lg text-gray-700 mb-3">Batch Types</h3>
                                     <ul className="space-y-2">
-                                        {coachingCenter.batches.map((batch, index) => (
+                                        {(coachingCenter.batchSize?.split(',') || ['Regular', 'Weekend']).map((batch, index) => (
                                             <li key={index} className="flex items-center">
                                                 <span className="w-2 h-2 bg-orange-500 rounded-full mr-2"></span>
-                                                {batch}
+                                                {batch.trim()}
                                             </li>
                                         ))}
                                     </ul>
@@ -297,7 +417,7 @@ const CoachingDetail = () => {
                                 <span className="w-2 h-8 bg-orange-600 rounded-full mr-3"></span>
                                 Fee Structure
                             </h2>
-                            <FeeStructure coachingCenter={coachingCenter} />
+                            <FeeStructure />
                         </div>
                     </motion.div>
 
@@ -315,12 +435,12 @@ const CoachingDetail = () => {
                                 <span className="w-2 h-8 bg-orange-600 rounded-full mr-3"></span>
                                 Contact Details
                             </h2>
-                            <Contact coachingCenter={coachingCenter} />
+                            <Contact />
                         </div>
                     </motion.div>
 
                     {/* Reviews */}
-                    <motion.div
+                    {/* <motion.div
                         id="reviews"
                         className="bg-white rounded-2xl shadow-lg overflow-hidden"
                         initial={{ opacity: 0, y: 20 }}
@@ -333,9 +453,9 @@ const CoachingDetail = () => {
                                 <span className="w-2 h-8 bg-orange-600 rounded-full mr-3"></span>
                                 Student Reviews
                             </h2>
-                            <Review coachingCenter={coachingCenter} />
+                            <Review />
                         </div>
-                    </motion.div>
+                    </motion.div> */}
                 </div>
 
                 {/* Right Column - Fixed Form */}
@@ -349,7 +469,6 @@ const CoachingDetail = () => {
                         <div className="p-6">
                             <h3 className="text-2xl font-bold mb-4 text-gray-800">Free Counselling</h3>
                             <p className="mb-6 text-gray-600">Get personalized guidance from our education experts</p>
-
                             <div className="space-y-4">
                                 <motion.input
                                     type="text"
@@ -368,9 +487,11 @@ const CoachingDetail = () => {
                                     whileFocus={{ scale: 1.02 }}
                                 >
                                     <option value="">Select Course</option>
-                                    <option value="jee">JEE Main & Advanced</option>
-                                    <option value="neet">NEET</option>
-                                    <option value="olympiad">Olympiads</option>
+                                    {(coachingCenter.subjects || []).map((subject, index) => (
+                                        <option key={index} value={subject.toLowerCase()}>
+                                            {subject}
+                                        </option>
+                                    ))}
                                 </motion.select>
                                 <motion.textarea
                                     placeholder="Your Questions"
@@ -401,7 +522,7 @@ const CoachingDetail = () => {
                                     </div>
                                     <div>
                                         <p className="text-sm text-gray-500">Established</p>
-                                        <p className="font-medium">{coachingCenter.established}</p>
+                                        <p className="font-medium">{coachingCenter.establishmentYear || 'N/A'}</p>
                                     </div>
                                 </div>
                                 <div className="flex items-center">
@@ -410,7 +531,7 @@ const CoachingDetail = () => {
                                     </div>
                                     <div>
                                         <p className="text-sm text-gray-500">Courses</p>
-                                        <p className="font-medium">{coachingCenter.courses.join(', ')}</p>
+                                        <p className="font-medium">{coachingCenter.subjects?.join(', ') || 'N/A'}</p>
                                     </div>
                                 </div>
                                 <div className="flex items-center">
@@ -419,7 +540,7 @@ const CoachingDetail = () => {
                                     </div>
                                     <div>
                                         <p className="text-sm text-gray-500">Batch Types</p>
-                                        <p className="font-medium">{coachingCenter.batches.join(', ')}</p>
+                                        <p className="font-medium">{coachingCenter.batchSize || 'N/A'}</p>
                                     </div>
                                 </div>
                             </div>
@@ -429,16 +550,15 @@ const CoachingDetail = () => {
             </div>
 
             {/* Similar Coaching Centers */}
-            <motion.div
+            {/* <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 whileInView={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.5 }}
                 viewport={{ once: true }}
                 className="max-w-7xl mx-auto mt-16 px-4 pb-4"
-            >
-                <h2 className="text-3xl font-bold text-center text-gray-800 mb-2">Similar Coaching Centers</h2>
-                <p className="text-lg text-center text-gray-600 mb-8">Discover other great coaching options in Bengaluru</p>
-
+            > */}
+                {/* <h2 className="text-3xl font-bold text-center text-gray-800 mb-2">Similar Coaching Centers</h2>
+                <p className="text-lg text-center text-gray-600 mb-8">Discover other great coaching options in {coachingCenter.city}</p>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                     {similarCoachingCenters.map((center, index) => (
                         <motion.div
@@ -449,16 +569,19 @@ const CoachingDetail = () => {
                         >
                             <div className="relative h-48 overflow-hidden">
                                 <img
-                                    src={center.image}
+                                    src={center.centerImage || 'https://via.placeholder.com/800x400'}
                                     alt={center.name}
                                     className="w-full h-full object-cover transition-transform duration-500 hover:scale-105"
+                                    onError={(e) => {
+                                        e.target.src = 'https://via.placeholder.com/800x400?text=Image+Not+Found';
+                                    }}
                                 />
                                 <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent p-4">
                                     <div className="flex justify-between items-center">
                                         <h3 className="text-lg font-semibold text-white">{center.name}</h3>
                                         <div className="flex items-center bg-white/90 text-amber-600 px-2 py-1 rounded-full">
                                             <FaStar className="mr-1" />
-                                            <span className="font-bold">{center.rating}</span>
+                                            <span className="font-bold">{center.rating || 4.5}</span>
                                         </div>
                                     </div>
                                 </div>
@@ -466,7 +589,7 @@ const CoachingDetail = () => {
                             <div className="p-5">
                                 <p className="text-gray-600 mb-3 flex items-center">
                                     <FaMapMarkerAlt className="mr-2 text-orange-500" />
-                                    {center.address}
+                                    {center.address}, {center.city}
                                 </p>
                                 <motion.a
                                     href={center.link}
@@ -479,53 +602,55 @@ const CoachingDetail = () => {
                         </motion.div>
                     ))}
                 </div>
-            </motion.div>
+            </motion.div> */}
 
             {/* Image Modal */}
-            {selectedImage && (
-                <motion.div
-                    className="fixed inset-0 bg-black/90 z-50 flex items-center justify-center p-4"
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    exit={{ opacity: 0 }}
-                >
-                    <button
-                        className="absolute top-4 right-4 text-white text-3xl"
-                        onClick={closeImage}
+            <AnimatePresence>
+                {selectedImage && coachingCenter.photos && coachingCenter.photos.length > 0 && (
+                    <motion.div
+                        className="fixed inset-0 bg-black/90 z-50 flex items-center justify-center p-4"
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
                     >
-                        <FaTimes />
-                    </button>
+                        <button
+                            className="absolute top-4 right-4 text-white text-3xl"
+                            onClick={closeImage}
+                        >
+                            <FaTimes />
+                        </button>
+                        <button
+                            className="absolute left-4 text-white text-3xl bg-black/50 rounded-full p-2"
+                            onClick={() => navigateImages('prev')}
+                        >
+                            <FaChevronLeft />
+                        </button>
+                        <motion.img
+                            src={selectedImage}
+                            alt={`${coachingCenter.name} - Photo ${currentImageIndex + 1}`}
+                            className="max-w-full max-h-screen object-contain"
+                            initial={{ scale: 0.9 }}
+                            animate={{ scale: 1 }}
+                            exit={{ scale: 0.9 }}
+                            onError={(e) => {
+                                e.target.src = 'https://via.placeholder.com/800?text=Image+Not+Found';
+                            }}
+                        />
+                        <button
+                            className="absolute right-4 text-white text-3xl bg-black/50 rounded-full p-2"
+                            onClick={() => navigateImages('next')}
+                        >
+                            <FaChevronRight />
+                        </button>
+                        <div className="absolute bottom-4 left-0 right-0 text-center text-white">
+                            Photo {currentImageIndex + 1} of {coachingCenter.photos.length}
+                        </div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
 
-                    <button
-                        className="absolute left-4 text-white text-3xl bg-black/50 rounded-full p-2"
-                        onClick={() => navigateImages('prev')}
-                    >
-                        <FaChevronLeft />
-                    </button>
-
-                    <motion.img
-                        src={selectedImage}
-                        alt={`${coachingCenter.name} - Photo ${currentImageIndex + 1}`}
-                        className="max-w-full max-h-screen object-contain"
-                        initial={{ scale: 0.9 }}
-                        animate={{ scale: 1 }}
-                        exit={{ scale: 0.9 }}
-                    />
-
-                    <button
-                        className="absolute right-4 text-white text-3xl bg-black/50 rounded-full p-2"
-                        onClick={() => navigateImages('next')}
-                    >
-                        <FaChevronRight />
-                    </button>
-
-                    <div className="absolute bottom-4 left-0 right-0 text-center text-white">
-                        Photo {currentImageIndex + 1} of {coachingCenter.photos.length}
-                    </div>
-                </motion.div>
-            )}
-            {/* <Footer/> */}
-                <StickyButton/>
+            {/* <Footer /> */}
+            <StickyButton />
         </div>
     );
 };

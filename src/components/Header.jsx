@@ -107,10 +107,10 @@ function Header() {
       } else {
         console.warn('No college data found in response');
         setCollegesData({
-          'Engineering': ['Bangalore', 'Pune', 'Chennai', 'Hyderabad', 'Delhi'],
-          'Medical': ['Bangalore', 'Mumbai', 'Delhi', 'Chennai', 'Kolkata'],
-          'Arts & Science': ['Bangalore', 'Chennai', 'Mumbai', 'Delhi', 'Kolkata'],
-          'Management': ['Bangalore', 'Mumbai', 'Delhi', 'Hyderabad', 'Pune']
+          // 'Engineering': ['Bangalore', 'Pune', 'Chennai', 'Hyderabad', 'Delhi'],
+          // 'Medical': ['Bangalore', 'Mumbai', 'Delhi', 'Chennai', 'Kolkata'],
+          // 'Arts & Science': ['Bangalore', 'Chennai', 'Mumbai', 'Delhi', 'Kolkata'],
+          // 'Management': ['Bangalore', 'Mumbai', 'Delhi', 'Hyderabad', 'Pune']
         });
       }
 
@@ -135,7 +135,7 @@ function Header() {
       } else {
         console.warn('No PU college data found in response');
         setPUCollegesData({
-          'PU College': ['Bangalore', 'Mumbai', 'Delhi', 'Chennai', 'Hyderabad']
+          // 'PU College': ['Bangalore', 'Mumbai', 'Delhi', 'Chennai', 'Hyderabad']
         });
       }
 
@@ -159,32 +159,32 @@ function Header() {
         console.log('Processed tuition coachings data:', tuitionCoachingData);
       } else {
         console.warn('No tuition coaching data found in response');
-        setTuitionCoachingsData({
-          'Entrance Exams': ['Bangalore', 'Delhi', 'Mumbai', 'Chennai', 'Hyderabad'],
-          'Tuition Centers': ['Bangalore', 'Delhi', 'Mumbai', 'Chennai', 'Hyderabad']
-        });
+        // setTuitionCoachingsData({
+        //   'Entrance Exams': ['Bangalore', 'Delhi', 'Mumbai', 'Chennai', 'Hyderabad'],
+        //   'Tuition Centers': ['Bangalore', 'Delhi', 'Mumbai', 'Chennai', 'Hyderabad']
+        // });
       }
     } catch (error) {
       console.error('Error fetching data:', error);
-      setSchoolsData({
-        'CBSE': ['Bangalore', 'Mumbai', 'Delhi', 'Chennai', 'Hyderabad'],
-        'ICSE': ['Bangalore', 'Mumbai', 'Pune', 'Kolkata', 'Delhi'],
-        'State Board': ['Bangalore', 'Chennai', 'Hyderabad', 'Mumbai', 'Pune'],
-        'International': ['Bangalore', 'Mumbai', 'Delhi', 'Chennai']
-      });
-      setCollegesData({
-        'Engineering': ['Bangalore', 'Pune', 'Chennai', 'Hyderabad', 'Delhi'],
-        'Medical': ['Bangalore', 'Mumbai', 'Delhi', 'Chennai', 'Kolkata'],
-        'Arts & Science': ['Bangalore', 'Chennai', 'Mumbai', 'Delhi', 'Kolkata'],
-        'Management': ['Bangalore', 'Mumbai', 'Delhi', 'Hyderabad', 'Pune']
-      });
-      setPUCollegesData({
-        'PU College': ['Bangalore', 'Mumbai', 'Delhi', 'Chennai', 'Hyderabad']
-      });
-      setTuitionCoachingsData({
-        'Entrance Exams': ['Bangalore', 'Delhi', 'Mumbai', 'Chennai', 'Hyderabad'],
-        'Tuition Centers': ['Bangalore', 'Delhi', 'Mumbai', 'Chennai', 'Hyderabad']
-      });
+      // setSchoolsData({
+      //   'CBSE': ['Bangalore', 'Mumbai', 'Delhi', 'Chennai', 'Hyderabad'],
+      //   'ICSE': ['Bangalore', 'Mumbai', 'Pune', 'Kolkata', 'Delhi'],
+      //   'State Board': ['Bangalore', 'Chennai', 'Hyderabad', 'Mumbai', 'Pune'],
+      //   'International': ['Bangalore', 'Mumbai', 'Delhi', 'Chennai']
+      // });
+      // setCollegesData({
+      //   'Engineering': ['Bangalore', 'Pune', 'Chennai', 'Hyderabad', 'Delhi'],
+      //   'Medical': ['Bangalore', 'Mumbai', 'Delhi', 'Chennai', 'Kolkata'],
+      //   'Arts & Science': ['Bangalore', 'Chennai', 'Mumbai', 'Delhi', 'Kolkata'],
+      //   'Management': ['Bangalore', 'Mumbai', 'Delhi', 'Hyderabad', 'Pune']
+      // });
+      // setPUCollegesData({
+      //   'PU College': ['Bangalore', 'Mumbai', 'Delhi', 'Chennai', 'Hyderabad']
+      // });
+      // setTuitionCoachingsData({
+      //   'Entrance Exams': ['Bangalore', 'Delhi', 'Mumbai', 'Chennai', 'Hyderabad'],
+      //   'Tuition Centers': ['Bangalore', 'Delhi', 'Mumbai', 'Chennai', 'Hyderabad']
+      // });
     } finally {
       setLoading(false);
     }

@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Link, useNavigate } from 'react-router-dom';
-import { FaChalkboardTeacher, FaSearch, FaFilter, FaBookOpen, FaTimes, FaHome, FaChild, FaSchool, FaGraduationCap, FaUserGraduate, FaUserTie } from "react-icons/fa";
+import { FaChalkboardTeacher, FaSearch, FaFilter, FaBookOpen, FaTimes, FaHome, FaChild, FaSchool, FaGraduationCap, FaUserGraduate, FaUserTie, FaUniversity, FaBook } from "react-icons/fa";
 import { IoLocationSharp } from "react-icons/io5";
 import { BsFillCalendar2CheckFill } from "react-icons/bs";
 import Footer from '../components/Footer';
@@ -10,48 +10,28 @@ import StickyButton from '../components/StickyButton';
 const teacherCategories = [
   {
     id: 1,
-    title: "Looking For Child",
-    icon: <FaChild className="text-4xl text-orange-500" />,
-    description: "Find the perfect tutor for your child's academic needs",
-    path: "/teachers"
+    title: "Professional Teachers",
+    icon: <FaUniversity className="text-4xl text-orange-500" />,
+    description: "Qualified teachers for Schools, Colleges, PU Colleges, and Coaching Centers",
+    path: "/teachers",
+    subcategories: ["Schools", "Colleges", "PU Colleges", "Coaching Centers"]
   },
   {
     id: 2,
-    title: "Looking For School",
-    icon: <FaSchool className="text-4xl text-orange-500" />,
-    description: "Discover qualified teachers for school curriculum",
-    path: "/teachers"
-  },
-  {
-    id: 3,
-    title: "Looking For College",
-    icon: <FaGraduationCap className="text-4xl text-orange-500" />,
-    description: "Connect with professors and college instructors",
-    path: "/teachers"
-  },
-  {
-    id: 4,
-    title: "Looking For PU Colleges",
-    icon: <FaUserGraduate className="text-4xl text-orange-500" />,
-    description: "Find specialized teachers for pre-university courses",
-    path: "/teachers"
-  },
-  {
-    id: 5,
-    title: "Looking For Coaching/Tuition Centers",
-    icon: <FaChalkboardTeacher className="text-4xl text-orange-500" />,
-    description: "Explore coaching centers and tuition teachers",
-    path: "/teachers"
-  },
-  {
-    id: 6,
-    title: "Are You A Teacher?",
-    subtitle: "Looking For Students?",
+    title: "Personal Mentorship",
     icon: <FaUserTie className="text-4xl text-orange-500" />,
-    description: "Join our platform to connect with students",
-    path: "/register",
-    isRegistration: true
-  }
+    description: "Personalized guidance and one-on-one mentoring for individual learning",
+    path: "/teachers"
+  },
+  // {
+  //   id: 3,
+  //   title: "Become A Teacher",
+  //   subtitle: "Join Our Platform",
+  //   icon: <FaChalkboardTeacher className="text-4xl text-orange-500" />,
+  //   description: "Register as a teacher and connect with students across all levels",
+  //   path: "/register",
+  //   isRegistration: true
+  // }
 ];
 
 function AllTeachers() {
@@ -61,12 +41,14 @@ function AllTeachers() {
     qualification: [],
     experience: [0, 20],
     location: 'Bengaluru',
-    teachingMode: []
+    teachingMode: [],
+    institutionType: []
   });
 
-  const subjectOptions = ['Mathematics', 'Science', 'English', 'Social Studies', 'Computer Science', 'Languages'];
-  const qualificationOptions = ['B.Ed', 'M.Ed', 'PhD', 'Post Graduate', 'Graduate'];
+  const subjectOptions = ['Mathematics', 'Science', 'English', 'Social Studies', 'Computer Science', 'Languages', 'Physics', 'Chemistry', 'Biology', 'Commerce', 'Arts'];
+  const qualificationOptions = ['B.Ed', 'M.Ed', 'PhD', 'Post Graduate', 'Graduate', 'M.Sc', 'M.A', 'B.Sc', 'B.A'];
   const teachingModeOptions = ['Online', 'Offline', 'Both'];
+  const institutionTypeOptions = ['School', 'College', 'PU College', 'Coaching Center', 'University'];
 
   const nav = useNavigate();
 
@@ -95,7 +77,8 @@ function AllTeachers() {
       qualification: [],
       experience: [0, 20],
       location: 'Bengaluru',
-      teachingMode: []
+      teachingMode: [],
+      institutionType: []
     });
   };
 
@@ -105,8 +88,8 @@ function AllTeachers() {
   };
 
   useEffect(() => {
-              window.scrollTo(0, 0);
-          }, []);
+    window.scrollTo(0, 0);
+  }, []);
 
   return (
     <div className="bg-orange-50 min-h-screen font-sans">
@@ -125,7 +108,7 @@ function AllTeachers() {
             <FaSearch className="absolute left-4 top-1/2 transform -translate-y-1/2 text-orange-400" />
             <input
               type="text"
-              placeholder="Search Teachers, Subjects, Locations..."
+              placeholder="Search Teachers, Subjects, Institutions, Locations..."
               className="pl-12 pr-4 py-3 rounded-full bg-white border border-transparent text-gray-800 focus:outline-none w-full focus:ring-2 focus:ring-orange-200 focus:border-transparent shadow-sm"
             />
           </div>
@@ -157,7 +140,7 @@ function AllTeachers() {
               <span className="text-orange-600">All Teachers</span>
             </div>
             <h1 className="text-3xl md:text-4xl font-extrabold text-gray-800 mt-2">
-              Are You Looking For A TEACHER?
+              Find Qualified Teachers & Mentors
             </h1>
 
             <p className="text-lg text-gray-600 flex items-center mt-1">
@@ -165,7 +148,7 @@ function AllTeachers() {
               5846 Teachers | List Updated on Aug 1, 2025
             </p>
           </div>
-          <motion.button
+          {/* <motion.button
             className="bg-orange-600 hover:bg-orange-700 text-white font-semibold py-2 px-6 rounded-full transition duration-300 mt-4 md:mt-0 flex items-center"
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
@@ -173,11 +156,11 @@ function AllTeachers() {
           >
             <FaFilter className="mr-2" />
             Filters
-          </motion.button>
+          </motion.button> */}
         </div>
 
-        {/* Teacher Categories */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {/* Teacher Categories - Professional Focus */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           {teacherCategories.map((category) => (
             <Link to={category.path} key={category.id}>
               <motion.div 
@@ -193,6 +176,20 @@ function AllTeachers() {
                     <h4 className="text-lg font-semibold text-orange-600 mb-1">{category.subtitle}</h4>
                   )}
                   <p className="text-gray-600 mb-4">{category.description}</p>
+                  
+                  {/* Show subcategories for Professional Teachers */}
+                  {category.subcategories && (
+                    <div className="mb-4">
+                      <div className="flex flex-wrap justify-center gap-2">
+                        {category.subcategories.map((subcat, index) => (
+                          <span key={index} className="bg-orange-100 text-orange-700 px-2 py-1 rounded-full text-xs font-medium">
+                            {subcat}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                  
                   <motion.button
                     className={`mt-auto w-full py-3 px-4 font-medium rounded-lg transition duration-300 ${
                       category.isRegistration 
@@ -209,6 +206,33 @@ function AllTeachers() {
             </Link>
           ))}
         </div>
+
+        {/* Additional Info Section */}
+        {/* <div className="mt-12 bg-white rounded-xl shadow-sm p-6">
+          <h2 className="text-2xl font-bold text-gray-800 mb-4">Comprehensive Teacher Solutions</h2>
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div className="text-center p-4">
+              <FaSchool className="text-3xl text-orange-500 mx-auto mb-2" />
+              <h3 className="font-semibold text-gray-700">Schools</h3>
+              <p className="text-sm text-gray-600">K-12 Curriculum Teachers</p>
+            </div>
+            <div className="text-center p-4">
+              <FaUniversity className="text-3xl text-orange-500 mx-auto mb-2" />
+              <h3 className="font-semibold text-gray-700">Colleges</h3>
+              <p className="text-sm text-gray-600">Degree College Professors</p>
+            </div>
+            <div className="text-center p-4">
+              <FaUserGraduate className="text-3xl text-orange-500 mx-auto mb-2" />
+              <h3 className="font-semibold text-gray-700">PU Colleges</h3>
+              <p className="text-sm text-gray-600">Pre-University Faculty</p>
+            </div>
+            <div className="text-center p-4">
+              <FaBook className="text-3xl text-orange-500 mx-auto mb-2" />
+              <h3 className="font-semibold text-gray-700">Coaching Centers</h3>
+              <p className="text-sm text-gray-600">Specialized Training</p>
+            </div>
+          </div>
+        </div> */}
       </main>
 
       {/* Filter Modal */}
@@ -236,6 +260,24 @@ function AllTeachers() {
                   >
                     <FaTimes className="text-xl" />
                   </button>
+                </div>
+
+                {/* Institution Type Filter */}
+                <div className="mb-6">
+                  <h3 className="text-lg font-semibold mb-3 text-gray-700">Institution Type</h3>
+                  <div className="grid grid-cols-2 gap-3">
+                    {institutionTypeOptions.map((type) => (
+                      <label key={type} className="flex items-center">
+                        <input
+                          type="checkbox"
+                          checked={filters.institutionType.includes(type)}
+                          onChange={() => handleFilterChange('institutionType', type)}
+                          className="h-4 w-4 text-orange-600 focus:ring-orange-500 border-gray-300 rounded"
+                        />
+                        <span className="ml-2 text-gray-700">{type}</span>
+                      </label>
+                    ))}
+                  </div>
                 </div>
 
                 {/* Experience Range Filter */}

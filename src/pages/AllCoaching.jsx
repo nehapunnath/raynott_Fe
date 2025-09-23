@@ -4,58 +4,9 @@ import { Link, useNavigate } from 'react-router-dom';
 import { FaChalkboardTeacher, FaSearch, FaFilter, FaBookOpen, FaTimes, FaHome } from "react-icons/fa";
 import { IoLocationSharp } from "react-icons/io5";
 import { BsFillCalendar2CheckFill } from "react-icons/bs";
+import { TuitionCoachingApi } from '../services/TuitionCoachingApi'; 
 import Footer from '../components/Footer';
 import StickyButton from '../components/StickyButton';
-
-const listings = [
-  {
-    category: "Coaching Centers",
-    icon: <FaChalkboardTeacher className="text-white" />,
-    place: "Bengaluru",
-    items: [
-      {
-        id: 1,
-        name: "Aakash Institute",
-        location: "Indiranagar",
-        fees: "₹40,000 - ₹1,20,000",
-        views: "8.5K Views",
-        courses: "JEE/NEET",
-        rating: 4.6,
-        image: "https://images.unsplash.com/photo-1588072432836-e10032774350?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=800&q=80",
-      },
-      {
-        id: 2,
-        name: "FIITJEE",
-        location: "Koramangala",
-        fees: "₹50,000 - ₹1,50,000",
-        views: "7.8K Views",
-        courses: "JEE/Advanced",
-        rating: 4.7,
-        image: "https://images.unsplash.com/photo-1523050854058-8df90110c9f1?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=800&q=80",
-      },
-      {
-        id: 3,
-        name: "Allen Career Institute",
-        location: "HSR Layout",
-        fees: "₹45,000 - ₹1,30,000",
-        views: "9.2K Views",
-        courses: "NEET/KVPY",
-        rating: 4.8,
-        image: "https://images.unsplash.com/photo-1523240795612-9a054b0db644?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=800&q=80",
-      },
-      {
-        id: 4,
-        name: "TIME - T.I.M.E.",
-        location: "Jayanagar",
-        fees: "₹35,000 - ₹1,00,000",
-        views: "6.7K Views",
-        courses: "CAT/GMAT",
-        rating: 4.5,
-        image: "https://images.unsplash.com/photo-1549861833-c5932fd19229?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=800&q=80",
-      },
-    ],
-  },
-];
 
 function AllCoaching() {
   const [isFilterOpen, setIsFilterOpen] = useState(false);
@@ -67,12 +18,73 @@ function AllCoaching() {
     category: "Coaching Centers",
     location: 'Bengaluru'
   });
+  const [coachingCenters, setCoachingCenters] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
   const coursesOptions = ['JEE', 'NEET', 'CAT', 'GMAT', 'KVPY', 'CBSE', 'ICSE', 'State Board'];
   const centerTypeOptions = ['Coaching Center', 'Tuition Center', 'Online Classes', 'Home Tutors'];
   const classRangeOptions = ['1-5', '6-8', '9-10', '11-12', 'College'];
 
-  const nav = useNavigate()
+  const nav = useNavigate();
+
+  // Fetch coaching centers from API
+  useEffect(() => {
+    const fetchCoachingCenters = async () => {
+      try {
+        setLoading(true);
+        const response = await TuitionCoachingApi.getTuitionCoachings();
+        if (response.success) {
+          // Convert object to array for rendering
+          const centersArray = Object.keys(response.data || {}).map(key => ({
+            id: key,
+            ...response.data[key]
+          }));
+          setCoachingCenters(centersArray);
+        } else {
+          setError('Failed to fetch coaching centers');
+        }
+      } catch (err) {
+        setError(err.message || 'An error occurred while fetching coaching centers');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchCoachingCenters();
+    window.scrollTo(0, 0);
+  }, []);
+
+  // Apply filters when they change
+  useEffect(() => {
+    const applyFilters = async () => {
+      try {
+        setLoading(true);
+        const filterParams = {
+          city: filters.location,
+          typeOfCoaching: filters.centerType.join(','),
+          subjects: filters.courses.join(','),
+          maxFee: filters.feesRange[1]
+        };
+        const response = await TuitionCoachingApi.searchTuitionCoachings(filterParams);
+        if (response.success) {
+          const centersArray = Object.keys(response.data || {}).map(key => ({
+            id: key,
+            ...response.data[key]
+          }));
+          setCoachingCenters(centersArray);
+        } else {
+          setError('Failed to apply filters');
+        }
+      } catch (err) {
+        setError(err.message || 'An error occurred while applying filters');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    applyFilters();
+  }, [filters]);
 
   const handleFilterChange = (filterType, value) => {
     setFilters(prev => {
@@ -108,10 +120,6 @@ function AllCoaching() {
     setIsFilterOpen(false);
   };
 
-  useEffect(() => {
-          window.scrollTo(0, 0);
-      }, []);
-
   return (
     <div className="bg-orange-50 min-h-screen font-sans">
       {/* Header */}
@@ -123,7 +131,6 @@ function AllCoaching() {
                 Raynott
               </motion.span>
             </Link>
-
           </div>
 
           <div className="relative w-full max-w-2xl md:max-w-xl flex-grow md:ml-8">
@@ -161,12 +168,12 @@ function AllCoaching() {
               <span className="mx-2">»</span>
               <span className="text-orange-600">{filters.category}</span>
             </div>
-           <h1 className="text-3xl md:text-4xl font-extrabold text-gray-800 mt-2">
-                Top Coaching Centers in India - 2025-26 Academic Year
+            <h1 className="text-3xl md:text-4xl font-extrabold text-gray-800 mt-2">
+              Top Coaching Centers in India - 2025-26 Academic Year
             </h1>
             <p className="text-lg text-gray-600 flex items-center mt-1">
               <BsFillCalendar2CheckFill className="mr-2 text-orange-500" />
-              1846 Centers | List Updated on Aug 1, 2025
+              {coachingCenters.length} Centers | List Updated on Aug 1, 2025
             </p>
           </div>
           <motion.button
@@ -180,20 +187,28 @@ function AllCoaching() {
           </motion.button>
         </div>
 
-        {/* Section List */}
-        {listings.map((section, index) => (
-          <div key={index} className="mb-12">
+        {/* Loading and Error States */}
+        {loading && (
+          <div className="text-center text-gray-600">Loading coaching centers...</div>
+        )}
+        {error && (
+          <div className="text-center text-red-500">{error}</div>
+        )}
+
+        {/* Coaching Centers List */}
+        {!loading && !error && (
+          <div className="mb-12">
             <h2 className="text-2xl font-bold text-gray-800 mb-6 flex items-center">
-              <span className="p-2 bg-orange-600 rounded-full mr-3">
-                {section.icon}
+              {/* <span className="p-2 bg-orange-600 rounded-full mr-3">
+                <FaChalkboardTeacher className="text-white" />
               </span>
-              <span className="ml-2">{section.category} in {section.place}</span>
+              <span className="ml-2">{filters.category} in {filters.location}</span> */}
             </h2>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-              {section.items.map((item) => (
+              {coachingCenters.map((center) => (
                 <Link
-                  to={`/coaching-details`}
-                  key={item.id}
+                  to={`/coaching-details/${center.id}`}
+                  key={center.id}
                   className="group"
                 >
                   <motion.div
@@ -205,33 +220,34 @@ function AllCoaching() {
                   >
                     <div className="relative h-48 w-full overflow-hidden">
                       <img
-                        src={item.image}
-                        alt={item.name}
+                        src={center.centerImage || 'https://via.placeholder.com/800x400'}
+                        alt={center.name}
                         className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
                       />
-                      <div className="absolute top-4 left-4 bg-yellow-500 text-dark text-xs font-bold px-3 py-1 rounded-full shadow-lg">
+                      {/* <div className="absolute top-4 left-4 bg-yellow-500 text-dark text-xs font-bold px-3 py-1 rounded-full shadow-lg">
                         Admissions Open
-                      </div>
+                      </div> */}
                       <div className="absolute top-4 right-4 flex items-center bg-white/90 text-orange-600 px-3 py-1 rounded-full shadow-lg backdrop-blur-sm">
-                        <span className="font-bold mr-1">{item.rating}</span>
+                        <span className="font-bold mr-1">{center.rating || 4.5}</span>
                         <svg className="w-4 h-4 fill-current" viewBox="0 0 20 20">
                           <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
                         </svg>
                       </div>
                     </div>
                     <div className="p-4 flex flex-col flex-grow h-64">
-                      <p className="text-xs font-semibold text-orange-500 uppercase tracking-wide">{item.courses}</p>
-                      <h3 className="text-lg font-bold text-gray-900 mt-1 line-clamp-2 min-h-[4rem]">{item.name}</h3>
+                      <p className="text-xs font-semibold text-orange-500 uppercase tracking-wide">
+                        {center.subjects?.join(', ') || 'Various Courses'}
+                      </p>
+                      <h3 className="text-lg font-bold text-gray-900 mt-1 line-clamp-2 min-h-[4rem]">{center.name}</h3>
                       <p className="text-sm text-gray-500 flex items-center mt-2">
                         <IoLocationSharp className="mr-1 text-orange-400" />
-                        <span className="line-clamp-1">{item.location}</span>
+                        <span className="line-clamp-1">{center.address}, {center.city}</span>
                       </p>
-
                       <div className="mt-3">
-                        <p className="text-base font-bold text-gray-700">{item.fees}</p>
-                        {/* <p className="text-xs text-gray-500 mt-1">{item.views}</p> */}
+                        <p className="text-base font-bold text-gray-700">
+                          ₹{center.totalAnnualFee?.toLocaleString() || 'Contact for fees'}
+                        </p>
                       </div>
-
                       <div className="mt-auto pt-4">
                         <div className="flex justify-between items-center space-x-2">
                           <motion.button
@@ -258,7 +274,7 @@ function AllCoaching() {
               ))}
             </div>
           </div>
-        ))}
+        )}
       </main>
 
       {/* Filter Modal */}
@@ -393,8 +409,8 @@ function AllCoaching() {
           </motion.div>
         )}
       </AnimatePresence>
-      {/* <Footer/> */}
-          <StickyButton/>
+      {/* <Footer /> */}
+      <StickyButton />
     </div>
   );
 }

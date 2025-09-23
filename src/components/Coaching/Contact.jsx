@@ -1,18 +1,58 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
+import { useParams } from 'react-router-dom';
+import { TuitionCoachingApi } from '../../services/TuitionCoachingApi'; 
 
 const Contact = () => {
+  const [coachingCenter, setCoachingCenter] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const { id } = useParams();
+
+  useEffect(() => {
+    const fetchCoachingDetails = async () => {
+      try {
+        setLoading(true);
+        const response = await TuitionCoachingApi.getTuitionCoaching(id);
+        if (response.success && response.data) {
+          setCoachingCenter(response.data);
+        } else {
+          setError('Coaching center not found');
+        }
+      } catch (err) {
+        setError(err.message || 'An error occurred while fetching coaching details');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchCoachingDetails();
+  }, [id]);
+
+  if (loading) {
+    return <div className="text-center text-gray-600 p-8">Loading...</div>;
+  }
+
+  if (error) {
+    return <div className="text-center text-red-500 p-8">{error}</div>;
+  }
+
+  if (!coachingCenter) {
+    return <div className="text-center text-gray-600 p-8">No coaching center found</div>;
+  }
+
+  // Fallback contact details
   const contactDetails = {
-    name: 'Smart Learners Tuition Center',
-    address: '101 Knowledge Lane, Bengaluru, Karnataka, India',
-    phone: '+91 9876543210',
-    email: 'enquiry@smartlearners.com',
-    website: 'https://www.smartlearners.com',
+    name: coachingCenter.name || 'N/A',
+    address: `${coachingCenter.address || 'N/A'}, ${coachingCenter.city || 'N/A'}`,
+    phone: coachingCenter.phone || 'N/A',
+    email: coachingCenter.email || 'N/A',
+    website: coachingCenter.website || 'N/A',
     socialMedia: {
-      facebook: 'https://facebook.com',
-      twitter: 'https://twitter.com',
-      instagram: 'https://instagram.com',
+      facebook: coachingCenter.socialMedia?.facebook || 'https://facebook.com',
+      twitter: coachingCenter.socialMedia?.twitter || 'https://twitter.com',
+      instagram: coachingCenter.socialMedia?.instagram || 'https://instagram.com',
     },
-    googleMapsEmbedUrl: "https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3886.008888888889!2d77.63964131572784!3d13.11296749083023!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x3bae191736000000%3A0x0000000000000000!2sNew%20Horizon%20International%20School!5e0!3m2!1sen!2sin!4v1620000000000!5m2!1sen!2sin"
+    googleMapsEmbedUrl: coachingCenter.googleMapsEmbedUrl || 'https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3886.008888888889!2d77.63964131572784!3d13.11296749083023!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x3bae191736000000%3A0x0000000000000000!2sNew%20Horizon%20International%20School!5e0!3m2!1sen!2sin!4v1620000000000!5m2!1sen!2sin'
   };
 
   return (
@@ -34,7 +74,7 @@ const Contact = () => {
                 </svg>
               </div>
               <div>
-                <h3 className="font-semibold text-gray-700">School Name</h3>
+                <h3 className="font-semibold text-gray-700">Coaching Center Name</h3>
                 <p className="text-gray-600">{contactDetails.name}</p>
               </div>
             </div>
@@ -141,7 +181,7 @@ const Contact = () => {
               loading="lazy"
               referrerPolicy="no-referrer-when-downgrade"
               className="min-h-[300px]"
-              title="New Horizon International School Location"
+              title={`${contactDetails.name} Location`}
             ></iframe>
           </div>
           <div className="mt-4 text-center">
