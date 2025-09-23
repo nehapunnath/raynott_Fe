@@ -72,7 +72,6 @@ const CoachingList = () => {
         navigate(`/admin/tuition-coaching-details/${tuitionCoachingId}`);
     };
 
-    // Function to get coaching type name by ID
     const getCoachingTypeName = (typeName) => {
         return coachingTypes[typeName] || typeName || 'N/A';
     };

@@ -63,7 +63,6 @@ const AddPucollege = () => {
   const [typeLoading, setTypeLoading] = useState(false);
   const [message, setMessage] = useState({ type: '', text: '' });
 
-  // Cleanup for image previews
   useEffect(() => {
     return () => {
       if (formData.collegeImagePreview) {
@@ -73,7 +72,6 @@ const AddPucollege = () => {
     };
   }, [formData.collegeImagePreview, formData.photos]);
 
-  // Fetch PU college types on component mount
   useEffect(() => {
     fetchPuCollegeTypes();
   }, []);

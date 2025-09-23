@@ -204,8 +204,7 @@ const EditSchool = () => {
 
             if (response.success) {
                 setSubmitStatus({ success: true, message: 'School updated successfully!' });
-                setTimeout(() => navigate('/admin/dashboard'), 2000); // Redirect to schools list after 2 seconds
-            } else {
+                setTimeout(() => navigate('/admin/dashboard'), 2000); 
                 setSubmitStatus({ success: false, message: response.message || 'Failed to update school' });
             }
         } catch (error) {

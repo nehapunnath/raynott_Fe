@@ -5,7 +5,6 @@ import { IoMdTime } from 'react-icons/io';
 import { TuitionCoachingApi, coachingTypeApi } from '../../services/TuitionCoachingApi'; // Import API functions
 
 const AddCoaching = () => {
-    // List of cities for the dropdown in Contact Details
     const cities = ['Bangalore', 'Hyderabad', 'Mumbai', 'Kolkata', 'Delhi', 'Chennai'];
 
     const [formData, setFormData] = useState({

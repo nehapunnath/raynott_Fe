@@ -20,7 +20,6 @@ function Header() {
     fetchData();
   }, []);
 
-  // Function to extract and organize data from API response
   const organizeData = (data, typeField, cityField) => {
     const organizedData = {};
     
@@ -106,12 +105,12 @@ function Header() {
         console.log('Processed colleges data:', collegeData);
       } else {
         console.warn('No college data found in response');
-        setCollegesData({
+        // setCollegesData({
           // 'Engineering': ['Bangalore', 'Pune', 'Chennai', 'Hyderabad', 'Delhi'],
           // 'Medical': ['Bangalore', 'Mumbai', 'Delhi', 'Chennai', 'Kolkata'],
           // 'Arts & Science': ['Bangalore', 'Chennai', 'Mumbai', 'Delhi', 'Kolkata'],
           // 'Management': ['Bangalore', 'Mumbai', 'Delhi', 'Hyderabad', 'Pune']
-        });
+        // });
       }
 
       // Fetch PU Colleges
@@ -134,9 +133,9 @@ function Header() {
         console.log('Processed PU colleges data:', puCollegeData);
       } else {
         console.warn('No PU college data found in response');
-        setPUCollegesData({
+        // setPUCollegesData({
           // 'PU College': ['Bangalore', 'Mumbai', 'Delhi', 'Chennai', 'Hyderabad']
-        });
+        // });
       }
 
       // Fetch Tuition/Coaching Centers

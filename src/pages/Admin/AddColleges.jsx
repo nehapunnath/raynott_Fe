@@ -186,7 +186,6 @@ const AddColleges = () => {
     };
 
     const handleSubmit = async () => {
-        // Validate required fields
         const requiredFields = ['name', 'typeOfCollege', 'affiliation', 'address', 'city', 'state'];
         const missingFields = requiredFields.filter(field => !formData[field]);
         

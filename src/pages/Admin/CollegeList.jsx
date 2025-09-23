@@ -19,7 +19,6 @@ const CollegesList = () => {
         try {
             const response = await collegeTypeApi.getCollegeTypes();
             if (response.success) {
-                // Convert array to object with id as key for easy lookup
                 const typesMap = {};
                 response.data.forEach(type => {
                     typesMap[type.id] = type.name;
