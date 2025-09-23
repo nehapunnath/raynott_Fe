@@ -1,18 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import {
-    FaBookOpen,
-    FaSearch,
-    FaStar,
-    FaPhone,
-    FaMapMarkerAlt,
-    FaGraduationCap,
-    FaChevronLeft,
-    FaChevronRight,
-    FaTimes,
-    FaHome
-} from 'react-icons/fa';
+import {FaBookOpen,FaSearch,FaStar,FaPhone,FaMapMarkerAlt,FaGraduationCap,FaChevronLeft,FaChevronRight,FaTimes,FaHome} from 'react-icons/fa';
 import { IoMdTime } from 'react-icons/io';
 import { Link, useParams, useNavigate } from 'react-router-dom';
 import { TuitionCoachingApi } from '../services/TuitionCoachingApi'; // Adjust path as needed
