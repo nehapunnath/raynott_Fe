@@ -1,93 +1,96 @@
+// TeachersList.js
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Link, useNavigate, useLocation } from 'react-router-dom';
-import { FaChalkboardTeacher, FaSearch, FaFilter, FaBookOpen, FaTimes, FaHome, FaStar, FaPhone, FaMapMarkerAlt, FaGraduationCap } from "react-icons/fa";
-import { IoLocationSharp } from "react-icons/io5";
-import { BsFillCalendar2CheckFill, BsCashStack } from "react-icons/bs";
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
+import { FaSearch, FaFilter, FaTimes, FaHome, FaStar, FaPhone, FaMapMarkerAlt, FaGraduationCap, FaChalkboardTeacher, FaUniversity, FaUserTie } from "react-icons/fa";
+import { BsCashStack, BsFillCalendar2CheckFill } from "react-icons/bs";
 import StickyButton from '../components/StickyButton';
+import { teacherApi } from '../services/TeacherApi';
 
-const teachersData = [
-  {
-    id: 1,
-    name: "Dr. Priya Sharma",
-    subjects: ["Mathematics", "Physics"],
-    qualification: "PhD in Mathematics, M.Ed",
-    experience: "12 years",
-    rating: 4.9,
-    location: "HSR Layout, Bengaluru",
-    fees: "₹800 - ₹1200/hr",
-    teachingMode: ["Online", "Offline"],
-    image: "https://cdn.eduadvisor.my/articles/2022/04/how-to-be-teacher-malaysia-feature.png",
-    demoAvailable: true
-  },
-  {
-    id: 2,
-    name: "Prof. Ramesh Kumar",
-    subjects: ["Computer Science", "Programming"],
-    qualification: "M.Tech (CSE), B.Ed",
-    experience: "8 years",
-    rating: 4.7,
-    location: "Koramangala, Bengaluru",
-    fees: "₹600 - ₹1000/hr",
-    teachingMode: ["Online"],
-    image: "https://static.vecteezy.com/system/resources/thumbnails/048/764/749/small_2x/confident-young-polish-male-teacher-in-classroom-smiling-in-front-of-blackboard-for-education-and-teaching-concepts-photo.jpg",
-    demoAvailable: true
-  },
-  {
-    id: 3,
-    name: "Ms. Ananya Patel",
-    subjects: ["English", "Social Studies"],
-    qualification: "MA English, B.Ed",
-    experience: "5 years",
-    rating: 4.8,
-    location: "Indiranagar, Bengaluru",
-    fees: "₹500 - ₹900/hr",
-    teachingMode: ["Offline"],
-    image: "https://images.unsplash.com/photo-1544725176-7c40e5a71c5e?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=400&q=80",
-    demoAvailable: false
-  },
-  {
-    id: 4,
-    name: "Mr. Arjun Singh",
-    subjects: ["Chemistry", "Biology"],
-    qualification: "M.Sc Chemistry, B.Ed",
-    experience: "6 years",
-    rating: 4.6,
-    location: "Whitefield, Bengaluru",
-    fees: "₹700 - ₹1100/hr",
-    teachingMode: ["Online", "Offline"],
-    image: "https://static.vecteezy.com/system/resources/thumbnails/048/764/549/small_2x/confident-middleaged-male-school-teacher-middle-eastern-descent-smiling-in-classroom-ideal-for-educational-professional-and-cultural-diversity-themes-photo.jpg",
-    demoAvailable: true
-  },
-  {
-    id: 5,
-    name: "Ms. Deepika Reddy",
-    subjects: ["Economics", "Business Studies"],
-    qualification: "MA Economics, M.Ed",
-    experience: "10 years",
-    rating: 4.9,
-    location: "Jayanagar, Bengaluru",
-    fees: "₹900 - ₹1500/hr",
-    teachingMode: ["Online"],
-    image: "https://wpvip.edutopia.org/wp-content/uploads/2022/10/alber-169hero-thelook-shutterstock_0.jpg?w=2880&quality=85",
-    demoAvailable: true
-  },
-  {
-    id: 6,
-    name: "Mr. Vikram Joshi",
-    subjects: ["Physics", "Mathematics"],
-    qualification: "M.Sc Physics, B.Ed",
-    experience: "7 years",
-    rating: 4.7,
-    location: "Marathahalli, Bengaluru",
-    fees: "₹750 - ₹1200/hr",
-    teachingMode: ["Offline"],
-    image: "https://kajabi-storefronts-production.kajabi-cdn.com/kajabi-storefronts-production/file-uploads/blogs/2147503633/images/22af86c-42bc-03d2-6141-0b8b1fb4b60_AdobeStock_104938952.jpeg",
-    demoAvailable: false
-  },
-];
+// Fallback static data for debugging
+const fallbackTeachers = {
+  professional: [
+    {
+      id: '1',
+      name: 'Dr. Priya Sharma',
+      institutionType: 'School',
+      subjects: 'Mathematics,Physics',
+      qualification: 'PhD in Mathematics, M.Ed',
+      experience: '12 years',
+      city: 'Bengaluru',
+      hourlyRate: '₹800 - ₹1200/hr',
+      teachingMode: 'Both',
+      profileImage: 'https://cdn.eduadvisor.my/articles/2022/04/how-to-be-teacher-malaysia-feature.png',
+      demoFee: 'Free',
+      rating: 4.9
+    },
+    {
+      id: '2',
+      name: 'Prof. Ramesh Kumar',
+      institutionType: 'College',
+      subjects: 'Computer Science,Programming',
+      qualification: 'M.Tech (CSE), B.Ed',
+      experience: '8 years',
+      city: 'Bengaluru',
+      hourlyRate: '₹600 - ₹1000/hr',
+      teachingMode: 'Online',
+      profileImage: 'https://static.vecteezy.com/system/resources/thumbnails/048/764/749/small_2x/confident-young-polish-male-teacher-in-classroom-smiling-in-front-of-blackboard-for-education-and-teaching-concepts-photo.jpg',
+      demoFee: 'Free',
+      rating: 4.7
+    },
+    {
+      id: '3',
+      name: 'Ms. Anjali Patel',
+      institutionType: 'PU College',
+      subjects: 'Biology,Chemistry',
+      qualification: 'M.Sc, B.Ed',
+      experience: '6 years',
+      city: 'Bengaluru',
+      hourlyRate: '₹700 - ₹1100/hr',
+      teachingMode: 'Offline',
+      profileImage: 'https://img.freepik.com/free-photo/portrait-female-teacher-holding-book_23-2148201873.jpg',
+      demoFee: '₹200',
+      rating: 4.8
+    }
+  ],
+  personal: [
+    {
+      id: '4',
+      name: 'Mr. Vikram Singh',
+      institutionType: 'Personal Mentor',
+      subjects: 'Mathematics,Physics,Career Guidance',
+      qualification: 'M.Tech, Industry Expert',
+      experience: '15 years',
+      city: 'Bengaluru',
+      hourlyRate: '₹1000 - ₹1500/hr',
+      teachingMode: 'Both',
+      profileImage: 'https://img.freepik.com/free-photo/portrait-successful-man-suit_1262-14624.jpg',
+      demoFee: 'Free',
+      rating: 4.9,
+      specialization: 'Career Mentoring'
+    },
+    {
+      id: '5',
+      name: 'Dr. Meera Nair',
+      institutionType: 'Personal Mentor',
+      subjects: 'Psychology,Study Techniques',
+      qualification: 'PhD in Psychology',
+      experience: '10 years',
+      city: 'Bengaluru',
+      hourlyRate: '₹1200 - ₹1800/hr',
+      teachingMode: 'Online',
+      profileImage: 'https://img.freepik.com/free-photo/portrait-beautiful-young-woman-standing-grey-wall_231208-10760.jpg',
+      demoFee: 'Free',
+      rating: 4.8,
+      specialization: 'Learning Strategies'
+    }
+  ]
+};
 
 function TeachersList() {
+  const [searchParams] = useSearchParams();
+  const institutionTypeFromQuery = searchParams.get('institutionType')?.split(',').map(type => type.trim()) || [];
+  const [teachers, setTeachers] = useState([]);
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const [filters, setFilters] = useState({
     subjects: [],
@@ -95,100 +98,189 @@ function TeachersList() {
     qualification: [],
     teachingMode: [],
     minRating: 0,
-    location: 'Bengaluru'
+    location: 'Bengaluru',
+    institutionType: institutionTypeFromQuery,
+    specialization: [] // Added for Personal Mentors
   });
-  const location = useLocation();
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
-  const [selectedCategory, setSelectedCategory] = useState('');
 
-  const subjectOptions = ['Mathematics', 'Physics', 'Chemistry', 'Biology', 'English', 'Computer Science', 'Economics', 'Business Studies', 'Social Studies'];
-  const qualificationOptions = ['B.Ed', 'M.Ed', 'PhD', 'Post Graduate', 'Graduate'];
-  const teachingModeOptions = ['Online', 'Offline'];
-  const ratingOptions = [4.5, 4.0, 3.5, 3.0];
+  const subjectOptions = ['Mathematics', 'Physics', 'Chemistry', 'Biology', 'English', 'Computer Science', 'Economics', 'Business Studies', 'Social Studies', 'Languages', 'Commerce', 'Arts'];
+  const qualificationOptions = ['B.Ed', 'M.Ed', 'PhD', 'Post Graduate', 'Graduate', 'M.Sc', 'M.A', 'B.Sc', 'B.A'];
+  const teachingModeOptions = ['Online', 'Offline', 'Both'];
+  const ratingOptions = [0, 3, 3.5, 4, 4.5];
+  const institutionTypeOptions = ['School', 'College', 'PU College', 'Coaching Institute', 'Personal Mentor'];
+  const specializationOptions = ['Career Mentoring', 'Learning Strategies', 'Exam Preparation', 'Skill Development']; // Example specializations
+
+  const professionalTypes = ['School', 'College', 'PU College', 'Coaching Institute'];
+  const personalTypes = ['Personal Mentor'];
 
   const nav = useNavigate();
 
+  const isProfessionalView = institutionTypeFromQuery.some(type => professionalTypes.includes(type));
+  const isPersonalView = institutionTypeFromQuery.some(type => personalTypes.includes(type));
+
   useEffect(() => {
-    if (location.state?.category) {
-      setSelectedCategory(location.state.category);
-    }
+    console.log('Current searchParams:', searchParams.toString());
+    console.log('Initial institutionType:', institutionTypeFromQuery);
+    setFilters(prev => ({ ...prev, institutionType: institutionTypeFromQuery }));
+    fetchTeachers({ ...filters, institutionType: institutionTypeFromQuery });
     window.scrollTo(0, 0);
-  }, [location]);
+  }, [searchParams]);
+
+  const fetchTeachers = async (filterParams) => {
+    try {
+      setLoading(true);
+      setError(null);
+      console.log('Fetching teachers with filters:', filterParams);
+
+      // For demo purposes, use fallback data (comment out in production)
+      let teachersData = [];
+      if (filterParams.institutionType.some(type => professionalTypes.includes(type))) {
+        teachersData = fallbackTeachers.professional.filter(teacher =>
+          filterParams.institutionType.includes(teacher.institutionType)
+        );
+      } else if (filterParams.institutionType.some(type => personalTypes.includes(type))) {
+        teachersData = fallbackTeachers.personal.filter(teacher =>
+          filterParams.institutionType.includes(teacher.institutionType)
+        );
+      } else {
+        teachersData = [...fallbackTeachers.professional, ...fallbackTeachers.personal];
+      }
+
+      // Apply additional filters on fallback data
+      teachersData = teachersData.filter(teacher => {
+        let include = true;
+        if (filterParams.subjects.length > 0 && teacher.subjects) {
+          include = filterParams.subjects.some(subject =>
+            teacher.subjects.toLowerCase().includes(subject.toLowerCase())
+          );
+        }
+        if (filterParams.qualification.length > 0 && teacher.qualification) {
+          include = include && filterParams.qualification.some(qual =>
+            teacher.qualification.toLowerCase().includes(qual.toLowerCase())
+          );
+        }
+        if (filterParams.teachingMode.length > 0 && teacher.teachingMode) {
+          include = include && filterParams.teachingMode.includes(teacher.teachingMode);
+        }
+        if (filterParams.minRating !== 0 && teacher.rating) {
+          include = include && teacher.rating >= filterParams.minRating;
+        }
+        if (filterParams.experience[1] !== 20 && teacher.experience) {
+          const exp = parseInt(teacher.experience.replace(/[^0-9]+/g, '')) || 0;
+          include = include && exp <= filterParams.experience[1];
+        }
+        if (filterParams.specialization.length > 0 && teacher.specialization) {
+          include = include && filterParams.specialization.includes(teacher.specialization);
+        }
+        return include;
+      });
+
+      setTeachers(teachersData);
+      setLoading(false);
+
+      // Uncomment below to use actual API in production
+      /*
+      const token = localStorage.getItem('adminToken');
+      console.log('Authorization token:', token ? 'Present' : 'Missing');
+
+      const query = {
+        city: filterParams.location || undefined,
+        subjects: filterParams.subjects.join(',') || undefined,
+        qualification: filterParams.qualification.join(',') || undefined,
+        teachingMode: filterParams.teachingMode.join(',') || undefined,
+        maxExperience: filterParams.experience[1] !== 20 ? filterParams.experience[1] : undefined,
+        minRating: filterParams.minRating !== 0 ? filterParams.minRating : undefined,
+        institutionType: filterParams.institutionType.join(',') || undefined,
+        specialization: filterParams.specialization.join(',') || undefined
+      };
+
+      console.log('API query params:', query);
+
+      const response = await teacherApi.getTeachersWithFilters(query);
+      console.log('Teachers API response:', response);
+
+      if (response.success && response.data) {
+        const teachersData = Array.isArray(response.data)
+          ? response.data
+          : Object.values(response.data);
+        console.log('Processed teachers data:', teachersData);
+        setTeachers(teachersData);
+      } else {
+        console.log('No teachers found in response');
+        setTeachers([]);
+      }
+      setLoading(false);
+      */
+    } catch (err) {
+      console.error('Error fetching teachers:', err);
+      setError(err.response?.data?.message || err.message || 'Failed to load teachers');
+      setTeachers([]);
+      setLoading(false);
+    }
+  };
 
   const handleFilterChange = (filterType, value) => {
     setFilters(prev => {
-      if (filterType === 'experience' || filterType === 'minRating') {
+      if (filterType === 'experience') {
+        return { ...prev, [filterType]: [prev.experience[0], parseInt(value)] };
+      } else if (filterType === 'minRating') {
         return { ...prev, [filterType]: value };
       } else {
         const currentValues = [...prev[filterType]];
         const index = currentValues.indexOf(value);
-
         if (index === -1) {
           currentValues.push(value);
         } else {
           currentValues.splice(index, 1);
         }
-
         return { ...prev, [filterType]: currentValues };
       }
     });
   };
 
   const resetFilters = () => {
-    setFilters({
+    const resetFilters = {
       subjects: [],
       experience: [0, 20],
       qualification: [],
       teachingMode: [],
       minRating: 0,
-      location: 'Bengaluru'
-    });
+      location: 'Bengaluru',
+      institutionType: institutionTypeFromQuery,
+      specialization: []
+    };
+    setFilters(resetFilters);
+    console.log('Reset filters:', resetFilters);
+    fetchTeachers(resetFilters);
   };
 
   const applyFilters = () => {
-    console.log('Applied filters:', filters);
+    console.log('Applying filters:', filters);
+    const queryParams = new URLSearchParams();
+    if (filters.subjects.length > 0) queryParams.set('subjects', filters.subjects.join(','));
+    if (filters.qualification.length > 0) queryParams.set('qualification', filters.qualification.join(','));
+    if (filters.experience[1] !== 20) queryParams.set('maxExperience', filters.experience[1]);
+    if (filters.minRating !== 0) queryParams.set('minRating', filters.minRating);
+    if (filters.location) queryParams.set('city', filters.location);
+    if (filters.teachingMode.length > 0) queryParams.set('teachingMode', filters.teachingMode.join(','));
+    if (filters.institutionType.length > 0) queryParams.set('institutionType', filters.institutionType.join(','));
+    if (filters.specialization.length > 0) queryParams.set('specialization', filters.specialization.join(','));
+    nav(`/teachers?${queryParams.toString()}`);
+    fetchTeachers(filters);
     setIsFilterOpen(false);
   };
 
-  const filteredTeachers = teachersData.filter(teacher => {
-    // Filter by search query
-    if (searchQuery && !teacher.name.toLowerCase().includes(searchQuery.toLowerCase()) && 
-        !teacher.subjects.some(sub => sub.toLowerCase().includes(searchQuery.toLowerCase()))) {
-      return false;
-    }
-    
-    // Filter by selected category if exists
-    if (selectedCategory && !teacher.subjects.includes(selectedCategory)) {
-      return false;
-    }
-    
-    // Filter by subjects
-    if (filters.subjects.length > 0 && !filters.subjects.some(sub => teacher.subjects.includes(sub))) {
-      return false;
-    }
-    
-    // Filter by experience
-    const expYears = parseInt(teacher.experience);
-    if (expYears < filters.experience[0] || expYears > filters.experience[1]) {
-      return false;
-    }
-    
-    // Filter by qualification
-    if (filters.qualification.length > 0 && !filters.qualification.includes(teacher.qualification.split(',')[1].trim())) {
-      return false;
-    }
-    
-    // Filter by teaching mode
-    if (filters.teachingMode.length > 0 && !filters.teachingMode.some(mode => teacher.teachingMode.includes(mode))) {
-      return false;
-    }
-    
-    // Filter by rating
-    if (teacher.rating < filters.minRating) {
-      return false;
-    }
-    
-    return true;
+  const filteredTeachers = teachers.filter(teacher => {
+    if (!searchQuery) return true;
+    const searchLower = searchQuery.toLowerCase();
+    return (
+      teacher.name?.toLowerCase().includes(searchLower) ||
+      teacher.subjects?.toLowerCase().includes(searchLower) ||
+      teacher.specialization?.toLowerCase().includes(searchLower)
+    );
   });
 
   return (
@@ -208,7 +300,7 @@ function TeachersList() {
             <FaSearch className="absolute left-4 top-1/2 transform -translate-y-1/2 text-orange-400" />
             <input
               type="text"
-              placeholder="Search teachers, subjects..."
+              placeholder={`Search ${isProfessionalView ? 'professional teachers' : isPersonalView ? 'personal mentors' : 'teachers'} in ${filters.location}...`}
               className="pl-12 pr-4 py-3 rounded-full bg-white border border-transparent text-gray-800 focus:outline-none w-full focus:ring-2 focus:ring-orange-200 focus:border-transparent shadow-sm"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
@@ -242,15 +334,29 @@ function TeachersList() {
               <Link to="/all-teachers" className="hover:text-orange-600">Teachers</Link>
               <span className="mx-2">»</span>
               <span className="text-orange-600">
-                {selectedCategory || 'All Teachers'}
+                {isProfessionalView ? 'Professional Teachers' : 
+                 isPersonalView ? 'Personal Mentors' : 'All Teachers'}
               </span>
             </div>
-            <h1 className="text-3xl md:text-4xl font-extrabold text-gray-800 mt-2">
-              {selectedCategory ? `${selectedCategory} Teachers` : 'Find the Best Teachers'}
+            <h1 className="text-3xl md:text-4xl font-extrabold text-gray-800 mt-2 flex items-center">
+              {isProfessionalView ? (
+                <>
+                  <FaUniversity className="mr-3 text-orange-500" />
+                  Professional Teachers
+                </>
+              ) : isPersonalView ? (
+                <>
+                  <FaUserTie className="mr-3 text-orange-500" />
+                  Personal Mentors
+                </>
+              ) : (
+                'Find the Best Teachers'
+              )}
             </h1>
             <p className="text-lg text-gray-600 flex items-center mt-1">
               <BsFillCalendar2CheckFill className="mr-2 text-orange-500" />
-              {filteredTeachers.length} Teachers Available | Updated on Aug 1, 2025
+              {filteredTeachers.length} {isProfessionalView ? 'Professional Teachers' : 
+                                       isPersonalView ? 'Personal Mentors' : 'Teachers'} Available | Updated on Sep 24, 2025
             </p>
           </div>
           <motion.button
@@ -260,107 +366,139 @@ function TeachersList() {
             onClick={() => setIsFilterOpen(true)}
           >
             <FaFilter className="mr-2" />
-            Filters
+            Filters ({filters.subjects.length + filters.qualification.length + filters.teachingMode.length + filters.institutionType.length + filters.specialization.length})
           </motion.button>
         </div>
 
-        {/* Teachers Grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filteredTeachers.map((teacher) => (
-            <Link
-              to={`/teachers-details`}
+        {/* Loading and Error States */}
+        {loading && (
+          <div className="text-center py-8">
+            <p className="text-lg text-gray-600">Loading {isProfessionalView ? 'professional teachers' : isPersonalView ? 'personal mentors' : 'teachers'}...</p>
+          </div>
+        )}
+        {error && (
+          <div className="text-center py-8">
+            <p className="text-lg text-red-600">{error}</p>
+            <button
+              onClick={() => fetchTeachers(filters)}
+              className="mt-4 bg-orange-600 hover:bg-orange-700 text-white font-medium py-2 px-6 rounded-lg transition duration-300"
+            >
+              Retry
+            </button>
+          </div>
+        )}
+
+        {/* Teachers List */}
+        {!loading && !error && filteredTeachers.length > 0 && (
+          <div className="mb-12">
+            <h2 className="text-2xl font-bold text-gray-800 mb-6 flex items-center">
+              <span className="p-2 bg-orange-600 rounded-full mr-3">
+                <FaChalkboardTeacher className="text-white" />
+              </span>
+              <span>
+                {isProfessionalView ? 'Professional Teachers in ' : 
+                 isPersonalView ? 'Personal Mentors in ' : 'Teachers in '}
+                {filters.location}
+              </span>
+            </h2>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+              {filteredTeachers.map((teacher) => (
+                <Link
+                  to={`/teachers-details/${teacher.id}`}
                   key={teacher.id}
                   className="group"
-            >
-            <motion.div
-              key={teacher.id}
-              className="bg-white rounded-xl shadow-lg hover:shadow-2xl transition-all duration-300 overflow-hidden flex flex-col"
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.3 }}
-              whileHover={{ y: -5 }}
-            >
-              <div className="relative h-48 w-full overflow-hidden">
-                <img
-                  src={teacher.image}
-                  alt={teacher.name}
-                  className="w-full h-full object-cover transition-transform duration-500 hover:scale-110"
-                />
-                {teacher.demoAvailable && (
-                  <div className="absolute top-4 left-4 bg-yellow-500 text-dark text-xs font-bold px-3 py-1 rounded-full shadow-lg">
-                    Demo Available
-                  </div>
-                )}
-                <div className="absolute top-4 right-4 flex items-center bg-white/90 text-orange-600 px-3 py-1 rounded-full shadow-lg backdrop-blur-sm">
-                  <span className="font-bold mr-1">{teacher.rating}</span>
-                  <FaStar className="w-4 h-4 fill-current" />
-                </div>
-              </div>
-              <div className="p-4 flex flex-col flex-grow">
-                <h3 className="text-xl font-bold text-gray-900">{teacher.name}</h3>
-                <p className="text-sm text-orange-600 font-medium mt-1">
-                  {teacher.qualification}
-                </p>
-                
-                <div className="mt-3 flex flex-wrap gap-2">
-                  {teacher.subjects.map((subject, index) => (
-                    <span key={index} className="bg-orange-100 text-orange-800 text-xs px-2 py-1 rounded">
-                      {subject}
-                    </span>
-                  ))}
-                </div>
-
-                <div className="mt-4 space-y-2">
-                  <div className="flex items-center text-sm text-gray-600">
-                    <FaGraduationCap className="mr-2 text-orange-500" />
-                    <span>{teacher.experience} experience</span>
-                  </div>
-                  <div className="flex items-center text-sm text-gray-600">
-                    <IoLocationSharp className="mr-2 text-orange-500" />
-                    <span>{teacher.location}</span>
-                  </div>
-                  <div className="flex items-center text-sm text-gray-600">
-                    <BsCashStack className="mr-2 text-orange-500" />
-                    <span>{teacher.fees}</span>
-                  </div>
-                  <div className="flex items-center text-sm text-gray-600">
-                    <FaChalkboardTeacher className="mr-2 text-orange-500" />
-                    <span>{teacher.teachingMode.join(', ')}</span>
-                  </div>
-                </div>
-
-                <div className="mt-auto pt-4">
-                  <div className="flex justify-between items-center space-x-2">
-                    <motion.button
-                      className="bg-orange-600 hover:bg-orange-700 text-white text-sm font-medium py-2 px-3 rounded-lg w-full transition duration-300"
-                      whileHover={{ scale: 1.02 }}
-                      whileTap={{ scale: 0.98 }}
-                    >
-                      View Profile
-                    </motion.button>
-                    <motion.button
-                      className="bg-transparent border border-orange-600 text-orange-600 hover:bg-orange-50 font-medium rounded-lg w-10 h-10 flex items-center justify-center transition duration-300"
-                      whileHover={{ scale: 1.02 }}
-                      whileTap={{ scale: 0.98 }}
-                    >
-                      <FaPhone />
-                    </motion.button>
-                  </div>
-                </div>
-              </div>
-            </motion.div>
-            </Link>
-            
-          ))}
-        </div>
-
-        {filteredTeachers.length === 0 && (
-          <div className="bg-white rounded-xl shadow-sm p-8 text-center">
-            <h3 className="text-xl font-semibold text-gray-700 mb-2">No teachers found</h3>
-            <p className="text-gray-600 mb-4">Try adjusting your filters or search query</p>
+                >
+                  <motion.div
+                    className="bg-white rounded-xl shadow-lg hover:shadow-2xl transition-all duration-300 overflow-hidden flex flex-col"
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.5 }}
+                    whileHover={{ y: -5 }}
+                  >
+                    <div className="relative h-48 w-full overflow-hidden">
+                      <img
+                        src={teacher.profileImage || 'https://via.placeholder.com/150'}
+                        alt={teacher.name}
+                        className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+                      />
+                      {/* {teacher.demoFee?.toLowerCase() === 'free' && (
+                        <div className="absolute top-4 left-4 bg-yellow-500 text-dark text-xs font-bold px-3 py-1 rounded-full shadow-lg">
+                          Free Demo
+                        </div>
+                      )} */}
+                      {/* <div className="absolute top-4 right-4 flex items-center bg-white/90 text-orange-600 px-3 py-1 rounded-full shadow-lg backdrop-blur-sm">
+                        <span className="font-bold mr-1">{teacher.rating || 'N/A'}</span>
+                        <FaStar className="w-4 h-4 fill-current" />
+                      </div> */}
+                    </div>
+                    <div className="p-4 flex flex-col flex-grow">
+                      <p className="text-xs font-semibold text-orange-500 uppercase tracking-wide">
+                        {teacher.institutionType || 'N/A'}
+                        {teacher.specialization && ` • ${teacher.specialization}`}
+                      </p>
+                      <h3 className="text-lg font-bold text-gray-900 mt-1 line-clamp-2">{teacher.name}</h3>
+                      <p className="text-sm text-gray-500 flex items-center mt-2">
+                        <FaMapMarkerAlt className="mr-1 text-orange-400" />
+                        <span className="line-clamp-1">{teacher.city}</span>
+                      </p>
+                      <div className="mt-3 flex flex-wrap gap-2">
+                        {teacher.subjects?.split(',').map((subject, index) => (
+                          <span key={index} className="bg-orange-100 text-orange-800 text-xs px-2 py-1 rounded">
+                            {subject.trim()}
+                          </span>
+                        ))}
+                      </div>
+                      <div className="mt-3 space-y-2">
+                        <div className="flex items-center text-sm text-gray-600">
+                          <FaGraduationCap className="mr-2 text-orange-500" />
+                          <span>{teacher.qualification}</span>
+                        </div>
+                        <div className="flex items-center text-sm text-gray-600">
+                          <BsFillCalendar2CheckFill className="mr-2 text-orange-500" />
+                          <span>{teacher.experience} experience</span>
+                        </div>
+                        <div className="flex items-center text-sm text-gray-600">
+                          <BsCashStack className="mr-2 text-orange-500" />
+                          <span>{teacher.hourlyRate || 'N/A'}</span>
+                        </div>
+                        <div className="flex items-center text-sm text-gray-600">
+                          <FaChalkboardTeacher className="mr-2 text-orange-500" />
+                          <span>{teacher.teachingMode}</span>
+                        </div>
+                      </div>
+                      <div className="mt-auto pt-4">
+                        <div className="flex justify-between items-center space-x-2">
+                          <motion.button
+                            className="bg-orange-600 hover:bg-orange-700 text-white text-sm font-medium py-2 px-3 rounded-lg w-full transition duration-300"
+                            whileHover={{ scale: 1.02 }}
+                            whileTap={{ scale: 0.98 }}
+                          >
+                            View Profile
+                          </motion.button>
+                          <motion.button
+                            className="bg-transparent border border-orange-600 text-orange-600 hover:bg-orange-50 font-medium rounded-lg w-10 h-10 flex items-center justify-center transition duration-300"
+                            whileHover={{ scale: 1.02 }}
+                            whileTap={{ scale: 0.98 }}
+                          >
+                            <FaPhone />
+                          </motion.button>
+                        </div>
+                      </div>
+                    </div>
+                  </motion.div>
+                </Link>
+              ))}
+            </div>
+          </div>
+        )}
+        {!loading && !error && filteredTeachers.length === 0 && (
+          <div className="text-center py-8">
+            <p className="text-lg text-gray-600">
+              No {isProfessionalView ? 'professional teachers' : isPersonalView ? 'personal mentors' : 'teachers'} found in {filters.location}.
+            </p>
             <button
               onClick={resetFilters}
-              className="bg-orange-600 hover:bg-orange-700 text-white font-medium py-2 px-6 rounded-lg transition duration-300"
+              className="mt-4 bg-orange-600 hover:bg-orange-700 text-white font-medium py-2 px-6 rounded-lg transition duration-300"
             >
               Reset Filters
             </button>
@@ -386,13 +524,31 @@ function TeachersList() {
             >
               <div className="p-6">
                 <div className="flex justify-between items-center border-b pb-4 mb-4">
-                  <h2 className="text-2xl font-bold text-gray-800">Filter Teachers</h2>
+                  <h2 className="text-2xl font-bold text-gray-800">Filter {isProfessionalView ? 'Professional Teachers' : isPersonalView ? 'Personal Mentors' : 'Teachers'}</h2>
                   <button
                     onClick={() => setIsFilterOpen(false)}
                     className="text-gray-500 hover:text-gray-700"
                   >
                     <FaTimes className="text-xl" />
                   </button>
+                </div>
+
+                {/* Institution Type Filter */}
+                <div className="mb-6">
+                  <h3 className="text-lg font-semibold mb-3 text-gray-700">Institution Type</h3>
+                  <div className="grid grid-cols-2 gap-3">
+                    {institutionTypeOptions.map((type) => (
+                      <label key={type} className="flex items-center">
+                        <input
+                          type="checkbox"
+                          checked={filters.institutionType.includes(type)}
+                          onChange={() => handleFilterChange('institutionType', type)}
+                          className="h-4 w-4 text-orange-600 focus:ring-orange-500 border-gray-300 rounded"
+                        />
+                        <span className="ml-2 text-gray-700">{type}</span>
+                      </label>
+                    ))}
+                  </div>
                 </div>
 
                 {/* Experience Range Filter */}
@@ -422,7 +578,7 @@ function TeachersList() {
                 <div className="mb-6">
                   <h3 className="text-lg font-semibold mb-3 text-gray-700">Minimum Rating</h3>
                   <div className="flex flex-wrap gap-3">
-                    {[0, 3, 3.5, 4, 4.5].map((rating) => (
+                    {ratingOptions.map((rating) => (
                       <button
                         key={rating}
                         onClick={() => handleFilterChange('minRating', rating)}
@@ -469,6 +625,26 @@ function TeachersList() {
                     ))}
                   </div>
                 </div>
+
+                {/* Specialization Filter (for Personal Mentors) */}
+                {isPersonalView && (
+                  <div className="mb-6">
+                    <h3 className="text-lg font-semibold mb-3 text-gray-700">Specialization</h3>
+                    <div className="grid grid-cols-2 gap-3">
+                      {specializationOptions.map((specialization) => (
+                        <label key={specialization} className="flex items-center">
+                          <input
+                            type="checkbox"
+                            checked={filters.specialization.includes(specialization)}
+                            onChange={() => handleFilterChange('specialization', specialization)}
+                            className="h-4 w-4 text-orange-600 focus:ring-orange-500 border-gray-300 rounded"
+                          />
+                          <span className="ml-2 text-gray-700">{specialization}</span>
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+                )}
 
                 {/* Teaching Mode Filter */}
                 <div className="mb-6">

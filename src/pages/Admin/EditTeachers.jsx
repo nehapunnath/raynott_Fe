@@ -1,13 +1,13 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { FaBookOpen, FaSearch, FaMapMarkerAlt, FaGraduationCap, FaRupeeSign, FaChalkboardTeacher, FaBook, FaClock, FaUserTie, FaVideo, FaCertificate, FaChartLine, FaSchool, FaPhone, FaEnvelope, FaGlobe, FaFacebook, FaTwitter, FaInstagram, FaLinkedin, FaLanguage, FaAward } from 'react-icons/fa';
+import { useParams, useNavigate } from 'react-router-dom';
 import { teacherApi } from '../../services/TeacherApi';
 
-const AddTeachers = () => {
-  // List of cities for the dropdown
+const EditTeachers = () => {
+  const { id } = useParams();
+  const navigate = useNavigate();
   const cities = ['Bangalore', 'Hyderabad', 'Mumbai', 'Kolkata', 'Delhi', 'Chennai'];
-
-  // List of institution types
   const institutionTypes = ['School', 'College', 'PU College', 'Coaching Institute', 'Personal Mentor'];
 
   const [formData, setFormData] = useState({
@@ -42,12 +42,75 @@ const AddTeachers = () => {
     socialMedia: { facebook: '', twitter: '', instagram: '', linkedin: '' },
     googleMapsEmbedUrl: '',
     teachingProcess: '',
-    profileImage: null, // Changed to store file object instead of URL
+    profileImage: '',
+    photos: [],
     facilities: [],
   });
 
+  const [profileImageFile, setProfileImageFile] = useState(null);
+  const [photoFiles, setPhotoFiles] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [error, setError] = useState(null);
+  const [submitStatus, setSubmitStatus] = useState({ success: null, message: '' });
+
+  useEffect(() => {
+    const fetchTeacher = async () => {
+      try {
+        setIsLoading(true);
+        setSubmitStatus({ success: null, message: '' });
+        const response = await teacherApi.getTeacher(id);
+        console.log('API Response:', response);
+
+        if (response.success && response.data) {
+          setFormData({
+            name: response.data.name || '',
+            institutionType: response.data.institutionType || '',
+            subjects: response.data.subjects || '',
+            qualification: response.data.qualification || '',
+            experience: response.data.experience || '',
+            teachingMode: response.data.teachingMode || '',
+            languages: response.data.languages || '',
+            specialization: response.data.specialization || '',
+            certifications: response.data.certifications || '',
+            about: response.data.about || '',
+            availability: response.data.availability || '',
+            hourlyRate: response.data.hourlyRate || '',
+            monthlyPackage: response.data.monthlyPackage || '',
+            examPreparation: response.data.examPreparation || '',
+            demoFee: response.data.demoFee || '',
+            teachingApproach: response.data.teachingApproach || '',
+            studyMaterials: response.data.studyMaterials || '',
+            sessionDuration: response.data.sessionDuration || '',
+            studentLevel: response.data.studentLevel || '',
+            classSize: response.data.classSize || '',
+            onlinePlatform: response.data.onlinePlatform || '',
+            progressReports: response.data.progressReports || '',
+            performanceTracking: response.data.performanceTracking || '',
+            address: response.data.address || '',
+            city: response.data.city || '',
+            phone: response.data.phone || '',
+            email: response.data.email || '',
+            website: response.data.website || '',
+            socialMedia: response.data.socialMedia || { facebook: '', twitter: '', instagram: '', linkedin: '' },
+            googleMapsEmbedUrl: response.data.googleMapsEmbedUrl || '',
+            teachingProcess: response.data.teachingProcess || '',
+            profileImage: response.data.profileImage || '',
+            photos: Array.isArray(response.data.photos) ? response.data.photos : [],
+            facilities: Array.isArray(response.data.facilities) ? response.data.facilities : [],
+          });
+        } else {
+          setSubmitStatus({ success: false, message: response.message || 'Failed to fetch teacher data' });
+        }
+      } catch (error) {
+        console.error('Error fetching teacher:', error);
+        setSubmitStatus({ success: false, message: error.message || 'Failed to fetch teacher data' });
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchTeacher();
+  }, [id]);
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -72,96 +135,145 @@ const AddTeachers = () => {
     }));
   };
 
-  const handleImageUpload = (e) => {
-    const file = e.target.files[0];
-    if (file) {
-      setFormData(prev => ({ ...prev, profileImage: file }));
+  const handleRadioChange = (e) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({ ...prev, [name]: value }));
+  };
+
+  const handleImageUpload = (e, type) => {
+    const files = Array.from(e.target.files);
+    if (type === 'profileImage') {
+      if (files.length > 0) {
+        setFormData(prev => ({ ...prev, profileImage: URL.createObjectURL(files[0]) }));
+        setProfileImageFile(files[0]);
+      }
+    } else if (type === 'gallery') {
+      if (formData.photos.length + files.length > 6) {
+        alert('You can upload a maximum of 6 gallery images.');
+        return;
+      }
+      const newImages = files.map(file => URL.createObjectURL(file));
+      setFormData(prev => ({ ...prev, photos: [...prev.photos, ...newImages] }));
+      setPhotoFiles(prev => [...prev, ...files]);
     }
   };
 
+  const removePhoto = (index) => {
+    setFormData(prev => ({
+      ...prev,
+      photos: prev.photos.filter((_, i) => i !== index),
+    }));
+    setPhotoFiles(prev => prev.filter((_, i) => i !== index));
+  };
+
+  const validateForm = () => {
+    const errors = [];
+    const requiredFields = ['name', 'institutionType', 'subjects', 'city'];
+    requiredFields.forEach(field => {
+      if (!formData[field]) {
+        errors.push(`${field} is required`);
+      }
+    });
+    return errors;
+  };
+
   const handleSubmit = async () => {
+    const validationErrors = validateForm();
+    if (validationErrors.length > 0) {
+      setSubmitStatus({ success: false, message: validationErrors.join(', ') });
+      return;
+    }
+
     setIsSubmitting(true);
-    setError(null);
+    setSubmitStatus({ success: null, message: '' });
 
     try {
       const formDataToSend = new FormData();
-
-      // Append all form data fields
       Object.keys(formData).forEach(key => {
-        if (key === 'socialMedia' || key === 'facilities') {
+        if (key === 'socialMedia' || key === 'facilities' || key === 'photos') {
           formDataToSend.append(key, JSON.stringify(formData[key]));
-        } else if (key === 'profileImage' && formData[key]) {
-          formDataToSend.append('profileImage', formData[key]);
         } else if (key !== 'profileImage') {
           formDataToSend.append(key, formData[key]);
         }
       });
 
-      // Send POST request to backend
-      const response = await teacherApi.addTeacher(formDataToSend);
-      console.log('Teacher added:', response);
-      alert('Teacher added successfully!');
-      
-      // Reset form after successful submission
-      setFormData({
-        name: '',
-        institutionType: '',
-        subjects: '',
-        qualification: '',
-        experience: '',
-        teachingMode: '',
-        languages: '',
-        specialization: '',
-        certifications: '',
-        about: '',
-        availability: '',
-        hourlyRate: '',
-        monthlyPackage: '',
-        examPreparation: '',
-        demoFee: '',
-        teachingApproach: '',
-        studyMaterials: '',
-        sessionDuration: '',
-        studentLevel: '',
-        classSize: '',
-        onlinePlatform: '',
-        progressReports: '',
-        performanceTracking: '',
-        address: '',
-        city: '',
-        phone: '',
-        email: '',
-        website: '',
-        socialMedia: { facebook: '', twitter: '', instagram: '', linkedin: '' },
-        googleMapsEmbedUrl: '',
-        teachingProcess: '',
-        profileImage: null,
-        facilities: [],
-      });
+      if (profileImageFile) {
+        formDataToSend.append('profileImage', profileImageFile);
+      }
+
+      if (photoFiles.length > 0) {
+        photoFiles.forEach(file => {
+          formDataToSend.append('photos', file);
+        });
+      }
+
+      // Log FormData for debugging
+      for (let pair of formDataToSend.entries()) {
+        console.log(`${pair[0]}: ${pair[1]}`);
+      }
+
+      const response = await teacherApi.updateTeacher(id, formDataToSend);
+      console.log('Update response:', response);
+
+      if (response.success) {
+        setSubmitStatus({ success: true, message: 'Teacher updated successfully!' });
+        setTimeout(() => navigate('/admin/dashboard'), 2000);
+      } else {
+        setSubmitStatus({ success: false, message: response.message || 'Failed to update teacher' });
+      }
     } catch (error) {
-      console.error('Error submitting teacher data:', error);
-      setError(error.message || 'Failed to add teacher. Please try again.');
-      alert(error.message || 'Failed to add teacher. Please try again.');
+      console.error('Error updating teacher:', error);
+      setSubmitStatus({ success: false, message: error.message || 'Failed to update teacher' });
     } finally {
       setIsSubmitting(false);
     }
   };
 
+  if (isLoading) {
+    return (
+      <div className="flex justify-center items-center h-64">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-600"></div>
+      </div>
+    );
+  }
+
+  if (submitStatus.success === false && !formData.name) {
+    return (
+      <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded max-w-7xl mx-auto mt-8">
+        <p>Error: {submitStatus.message}</p>
+        <button
+          onClick={() => navigate('/admin/teachers')}
+          className="mt-2 bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700"
+        >
+          Back to Teachers List
+        </button>
+      </div>
+    );
+  }
+
   return (
-    <div className="min-h-screen bg-gradient-to-b from-orange-50 to-white">
+    <div className="min-h-screen w-full bg-gradient-to-b from-orange-50 to-white">
+      {/* Status Message */}
+      {submitStatus.message && (
+        <motion.div
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className={`fixed top-4 right-4 p-4 rounded-lg shadow-lg z-50 ${
+            submitStatus.success ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+          }`}
+        >
+          {submitStatus.message}
+        </motion.div>
+      )}
+
       {/* Form */}
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.6 }}
-        className="max-w-7xl mx-auto mt-8 px-4 pb-8"
+        className="w-full px-6 py-8"
       >
-        <h1 className="text-4xl font-bold text-center text-gray-800 mb-8">Add New Teacher</h1>
-        {error && (
-          <div className="mb-4 p-4 bg-red-100 text-red-700 rounded-lg">
-            {error}
-          </div>
-        )}
+        <h1 className="text-4xl font-bold text-center text-gray-800 mb-8">Edit Teacher</h1>
         <div className="bg-white rounded-2xl shadow-xl p-8 border border-orange-100">
           {/* Basic Information */}
           <motion.div
@@ -183,6 +295,7 @@ const AddTeachers = () => {
                 onChange={handleInputChange}
                 className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
                 whileFocus={{ scale: 1.02 }}
+                required
               />
               <motion.select
                 name="institutionType"
@@ -190,6 +303,7 @@ const AddTeachers = () => {
                 onChange={handleInputChange}
                 className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
                 whileFocus={{ scale: 1.02 }}
+                required
               >
                 <option value="">Select Institution Type</option>
                 {institutionTypes.map(type => (
@@ -204,6 +318,7 @@ const AddTeachers = () => {
                 onChange={handleInputChange}
                 className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
                 whileFocus={{ scale: 1.02 }}
+                required
               />
               <motion.input
                 type="text"
@@ -283,6 +398,7 @@ const AddTeachers = () => {
                 onChange={handleInputChange}
                 className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
                 whileFocus={{ scale: 1.02 }}
+                required
               >
                 <option value="">Select City</option>
                 {cities.map(city => (
@@ -424,24 +540,35 @@ const AddTeachers = () => {
                 className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
                 whileFocus={{ scale: 1.02 }}
               />
-              <motion.input
-                type="text"
-                name="progressReports"
-                placeholder="Progress Reports (e.g., Monthly)"
-                value={formData.progressReports}
-                onChange={handleInputChange}
-                className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
-                whileFocus={{ scale: 1.02 }}
-              />
-              <motion.input
-                type="text"
-                name="performanceTracking"
-                placeholder="Performance Tracking (e.g., Regular Tests)"
-                value={formData.performanceTracking}
-                onChange={handleInputChange}
-                className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
-                whileFocus={{ scale: 1.02 }}
-              />
+              {['progressReports', 'performanceTracking'].map(field => (
+                <div key={field} className="flex items-center space-x-4">
+                  <label className="text-gray-700 capitalize">{field.replace(/([A-Z])/g, ' $1').trim()}</label>
+                  <div className="flex space-x-4">
+                    <label>
+                      <input
+                        type="radio"
+                        name={field}
+                        value="Yes"
+                        checked={formData[field] === 'Yes'}
+                        onChange={handleRadioChange}
+                        className="h-4 w-4 text-orange-600 focus:ring-orange-500"
+                      />
+                      <span className="ml-2">Yes</span>
+                    </label>
+                    <label>
+                      <input
+                        type="radio"
+                        name={field}
+                        value="No"
+                        checked={formData[field] === 'No'}
+                        onChange={handleRadioChange}
+                        className="h-4 w-4 text-orange-600 focus:ring-orange-500"
+                      />
+                      <span className="ml-2">No</span>
+                    </label>
+                  </div>
+                </div>
+              ))}
             </div>
           </motion.div>
 
@@ -577,7 +704,7 @@ const AddTeachers = () => {
             <motion.input
               type="file"
               accept="image/*"
-              onChange={handleImageUpload}
+              onChange={(e) => handleImageUpload(e, 'profileImage')}
               className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
               whileFocus={{ scale: 1.02 }}
             />
@@ -587,11 +714,56 @@ const AddTeachers = () => {
                 whileHover={{ scale: 1.02 }}
               >
                 <img
-                  src={formData.profileImage instanceof File ? URL.createObjectURL(formData.profileImage) : formData.profileImage}
+                  src={formData.profileImage}
                   alt="Teacher Profile Image"
                   className="w-full h-full object-cover"
                 />
               </motion.div>
+            )}
+          </motion.div>
+
+          {/* Teacher Gallery */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, delay: 0.6 }}
+            className="mb-8"
+          >
+            <h2 className="text-2xl font-bold text-gray-800 mb-4 flex items-center">
+              <span className="w-2 h-8 bg-orange-600 rounded-full mr-3"></span>
+              Teacher Gallery (Max 6 Images)
+            </h2>
+            <motion.input
+              type="file"
+              accept="image/*"
+              multiple
+              onChange={(e) => handleImageUpload(e, 'gallery')}
+              className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
+              whileFocus={{ scale: 1.02 }}
+            />
+            <p className="text-sm text-gray-500 mt-2">You can upload up to 6 images for the gallery.</p>
+            {formData.photos.length > 0 && (
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 mt-4">
+                {formData.photos.map((photo, index) => (
+                  <motion.div
+                    key={index}
+                    className="relative aspect-square overflow-hidden rounded-xl group"
+                    whileHover={{ scale: 1.02 }}
+                  >
+                    <img
+                      src={photo}
+                      alt={`Gallery Photo ${index + 1}`}
+                      className="w-full h-full object-cover"
+                    />
+                    <button
+                      onClick={() => removePhoto(index)}
+                      className="absolute top-2 right-2 bg-red-500 text-white p-1 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+                    >
+                      ×
+                    </button>
+                  </motion.div>
+                ))}
+              </div>
             )}
           </motion.div>
 
@@ -601,13 +773,11 @@ const AddTeachers = () => {
             disabled={isSubmitting}
             whileHover={{ scale: isSubmitting ? 1 : 1.03, boxShadow: isSubmitting ? 'none' : '0 4px 15px rgba(249, 115, 22, 0.3)' }}
             whileTap={{ scale: isSubmitting ? 1 : 0.98 }}
-            className={`w-full py-3 rounded-lg font-bold transition-all shadow-lg ${
-              isSubmitting
-                ? 'bg-gray-400 cursor-not-allowed'
-                : 'bg-gradient-to-r from-orange-500 to-amber-600 text-white hover:from-orange-600 hover:to-amber-700'
+            className={`w-full bg-gradient-to-r from-orange-500 to-amber-600 text-white py-3 rounded-lg font-bold transition-all shadow-lg ${
+              isSubmitting ? 'opacity-70 cursor-not-allowed' : 'hover:from-orange-600 hover:to-amber-700'
             }`}
           >
-            {isSubmitting ? 'Submitting...' : 'Submit Teacher Details'}
+            {isSubmitting ? 'Updating...' : 'Update Teacher Details'}
           </motion.button>
         </div>
       </motion.div>
@@ -615,4 +785,4 @@ const AddTeachers = () => {
   );
 };
 
-export default AddTeachers;
+export default EditTeachers;

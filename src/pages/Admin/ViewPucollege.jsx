@@ -123,7 +123,7 @@ const ViewPucollege = () => {
                     onClick={() => navigate('/admin/dashboard')}
                     className="mt-2 bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700"
                 >
-                    Back to PU Colleges
+                    Back 
                 </button>
             </div>
         );
@@ -456,7 +456,7 @@ const ViewPucollege = () => {
                                 whileTap={{ scale: 0.98 }}
                                 className="w-full bg-gradient-to-r from-orange-500 to-amber-600 text-white py-3 rounded-lg font-bold transition-all shadow-lg hover:from-orange-600 hover:to-amber-700"
                             >
-                                Back to PU Colleges
+                                Back 
                             </motion.button>
                             <motion.button
                                 onClick={() => navigate(`/admin/edit-pucollege/${id}`)}
