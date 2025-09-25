@@ -239,7 +239,7 @@ function Professional() {
                             ) : (
                                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
                                     {filteredTeachers.map((teacher) => (
-                                        <Link to={`/professional-teachers-details/${id}`} key={teacher.id} className="group">
+                                        <Link to={`/professional-teachers-details/${teacher.id}`} key={teacher.id} className="group">
                                             <motion.div
                                                 className="bg-white rounded-xl shadow-lg hover:shadow-2xl transition-all duration-300 overflow-hidden flex flex-col h-full"
                                                 initial={{ opacity: 0, y: 20 }}
