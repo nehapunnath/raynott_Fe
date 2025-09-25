@@ -58,6 +58,47 @@ export const teacherApi = {
       throw new Error(error.response?.data?.message || 'Failed to fetch teachers');
     }
   },
+ getProfessionalTeachers: async (params = {}) => {
+    try {
+      const response = await api.get('/admin/professional-teachers', { 
+        params: {
+          city: params.city,
+          subjects: params.subjects,
+          institutionType: params.institutionType,
+          teachingMode: params.teachingMode,
+          minHourlyRate: params.minHourlyRate,
+          maxHourlyRate: params.maxHourlyRate,
+          experience: params.experience ? params.experience.join(',') : undefined,
+          qualification: params.qualification,
+          minRating: params.minRating,
+        }
+      });
+      return response.data;
+    } catch (error) {
+      throw new Error(error.response?.data?.message || 'Failed to fetch professional teachers');
+    }
+  },
+
+  getPersonalMentors: async (params = {}) => {
+    try {
+      const response = await api.get('/admin/personal-mentors', { 
+        params: {
+          city: params.city,
+          subjects: params.subjects,
+          institutionType: params.institutionType,
+          teachingMode: params.teachingMode,
+          minHourlyRate: params.minHourlyRate,
+          maxHourlyRate: params.maxHourlyRate,
+          experience: params.experience ? params.experience.join(',') : undefined,
+          qualification: params.qualification,
+          minRating: params.minRating,
+        }
+      });
+      return response.data;
+    } catch (error) {
+      throw new Error(error.response?.data?.message || 'Failed to fetch personal mentors');
+    }
+  },
 
   // Get a single teacher by ID
   getTeacher: async (id) => {
@@ -102,6 +143,23 @@ export const teacherApi = {
       throw new Error(error.response?.data?.message || 'Failed to fetch filtered teachers');
     }
   },
+  getProfessionalTeacherDetails: async (id) => {
+    try {
+      const response = await api.get(`/admin/professional-teachers/${id}`);
+      return response.data;
+    } catch (error) {
+      throw new Error(error.response?.data?.message || 'Failed to fetch professional teacher details');
+    }
+  },
+  getPersonalMentorDetails: async (id) => {
+    try {
+      const response = await api.get(`/admin/personal-mentors/${id}`);
+      return response.data;
+    } catch (error) {
+      throw new Error(error.response?.data?.message || 'Failed to fetch personal mentor details');
+    }
+  },
+  
 };
 
 export default teacherApi;

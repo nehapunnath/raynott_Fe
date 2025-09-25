@@ -43,6 +43,9 @@ import EditCoaching from './pages/Admin/EditCoaching'
 import ViewCoaching from './pages/Admin/ViewCoaching'
 import EditTeachers from './pages/Admin/EditTeachers'
 import ViewTeacher from './pages/Admin/ViewTeacher'
+import Professional from './pages/Professional'
+import PersonalTeachers from './pages/PersonalTeachers'
+import PersonalDetails from './pages/PersonalDetails'
 
 function App() {
   const location = useLocation()
@@ -74,6 +77,11 @@ function App() {
         <Route path='/all-tuition' element={<AllTuition/>}/>
         <Route path='/all-teachers' element={<AllTeachers/>}/>
         <Route path='/best-sellers' element={<BestSellers/>}/>
+        <Route path='/professional' element={<Professional/>}/>
+        <Route path='/personal' element={<PersonalTeachers/>}/>
+
+
+
 
         <Route path='/login' element={<LoginPage/>}/>
         <Route path='/bookdemo' element={<BookaDemo/>}/>
@@ -83,7 +91,9 @@ function App() {
         <Route path='/pucollege-details/:id' element={<PUCollegeDetails/>}/>
         <Route path='/coaching-details/:id' element={<CoachingDetail/>}/>
         <Route path='/tuition-details' element={<TuitionDetails/>}/>
-        <Route path='/teachers-details/:id' element={<TeachersDetails/>}/>
+        <Route path='/professional-teachers-details/:id' element={<TeachersDetails/>}/>   {/*professionalteachers */}
+        <Route path='/personal-teachers-details/:id' element={<PersonalDetails/>}/>   {/*professionalteachers */}
+
 
         <Route path='/register' element={<Register/>}/>
         <Route path='/register-form' element={<RegisterForm/>}/>
