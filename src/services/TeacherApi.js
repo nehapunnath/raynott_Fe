@@ -159,7 +159,47 @@ export const teacherApi = {
       throw new Error(error.response?.data?.message || 'Failed to fetch personal mentor details');
     }
   },
-  
+  searchProfessionalTeachersByName: async (name, additionalFilters = {}) => {
+    try {
+      const response = await api.get('/teachers/search/professional', {
+        params: {
+          name,
+          city: additionalFilters.city,
+          subjects: additionalFilters.subjects,
+          teachingMode: additionalFilters.teachingMode,
+          minHourlyRate: additionalFilters.minHourlyRate,
+          maxHourlyRate: additionalFilters.maxHourlyRate,
+          experience: additionalFilters.experience ? additionalFilters.experience.join(',') : undefined,
+          qualification: additionalFilters.qualification,
+          minRating: additionalFilters.minRating,
+        },
+      });
+      return response.data;
+    } catch (error) {
+      throw new Error(error.response?.data?.message || 'Failed to search professional teachers');
+    }
+  },
+
+  searchPersonalMentorsByName: async (name, additionalFilters = {}) => {
+    try {
+      const response = await api.get('/teachers/search/personal', {
+        params: {
+          name,
+          city: additionalFilters.city,
+          subjects: additionalFilters.subjects,
+          teachingMode: additionalFilters.teachingMode,
+          minHourlyRate: additionalFilters.minHourlyRate,
+          maxHourlyRate: additionalFilters.maxHourlyRate,
+          experience: additionalFilters.experience ? additionalFilters.experience.join(',') : undefined,
+          qualification: additionalFilters.qualification,
+          minRating: additionalFilters.minRating,
+        },
+      });
+      return response.data;
+    } catch (error) {
+      throw new Error(error.response?.data?.message || 'Failed to search personal mentors');
+    }
+  },
 };
 
 export default teacherApi;

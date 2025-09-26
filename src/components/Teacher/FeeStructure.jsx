@@ -1,29 +1,85 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { 
   FaRupeeSign, FaChalkboardTeacher, FaBook, 
   FaClock, FaGraduationCap, FaUserTie,
   FaVideo, FaCertificate, FaChartLine, FaSchool
 } from 'react-icons/fa';
+import { useParams } from 'react-router-dom';
+import { teacherApi } from '../../services/TeacherApi';
 
 const FeeStructure = () => {
-  const feeDetails = [
-    { icon: <FaRupeeSign className="text-amber-700" />, label: 'Hourly Rate', value: '₹800 - ₹1200/hr' },
-    { icon: <FaRupeeSign className="text-amber-600" />, label: 'Monthly Package', value: '₹15,000 - ₹20,000' },
-    { icon: <FaRupeeSign className="text-amber-600" />, label: 'Exam Preparation', value: '₹25,000 (3 months)' },
-    { icon: <FaRupeeSign className="text-amber-600" />, label: 'Demo Class', value: 'Free' }
-  ];
+  const { id } = useParams(); // Get the teacher ID from the URL
+  const [teacher, setTeacher] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
-  const teachingDetails = [
-    { icon: <FaChalkboardTeacher className="text-amber-700" />, label: 'Teaching Approach', value: 'Conceptual & Practical' },
-    { icon: <FaBook className="text-amber-600" />, label: 'Study Materials', value: 'Provided (Digital & Print)' },
-    { icon: <FaClock className="text-amber-500" />, label: 'Session Duration', value: '60-90 minutes' },
-    { icon: <FaGraduationCap className="text-amber-500" />, label: 'Student Level', value: 'Grade 6 to 12' },
-    { icon: <FaUserTie className="text-amber-400" />, label: 'Class Size', value: '1:1 or Small Groups' },
-    { icon: <FaVideo className="text-amber-400" />, label: 'Online Platform', value: 'Zoom, Google Meet' },
-    { icon: <FaCertificate className="text-amber-300" />, label: 'Progress Reports', value: 'Monthly' },
-    { icon: <FaChartLine className="text-amber-300" />, label: 'Performance Tracking', value: 'Regular Tests' }
-  ];
+  // Fetch teacher details when the component mounts
+  useEffect(() => {
+    const fetchTeacherDetails = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+        const response = await teacherApi.getProfessionalTeacherDetails(id);
+        if (response.success) {
+          setTeacher(response.data);
+        } else {
+          setError('Failed to fetch teacher details');
+        }
+      } catch (err) {
+        console.error('Error fetching teacher details:', err);
+        setError(err.message || 'Failed to load teacher details');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchTeacherDetails();
+  }, [id]);
+
+  // Generate fee details from teacher data
+  const generateFeeDetails = (teacherData) => {
+    return [
+      { icon: <FaRupeeSign className="text-amber-700" />, label: 'Hourly Rate', value: teacherData?.teachingDetails?.hourlyRate || 'Not specified' },
+      { icon: <FaRupeeSign className="text-amber-600" />, label: 'Monthly Package', value: teacherData?.teachingDetails?.monthlyPackage || 'Not specified' },
+      { icon: <FaRupeeSign className="text-amber-600" />, label: 'Exam Preparation', value: teacherData?.teachingDetails?.examPreparation || 'Not specified' },
+      { icon: <FaRupeeSign className="text-amber-600" />, label: 'Demo Class', value: teacherData?.teachingDetails?.demoFee || 'Not specified' }
+    ];
+  };
+
+  // Generate teaching details from teacher data
+  const generateTeachingDetails = (teacherData) => {
+    return [
+      { icon: <FaChalkboardTeacher className="text-amber-700" />, label: 'Teaching Approach', value: teacherData?.teachingDetails?.teachingApproach || 'Not specified' },
+      { icon: <FaBook className="text-amber-600" />, label: 'Study Materials', value: teacherData?.teachingDetails?.studyMaterials || 'Not specified' },
+      { icon: <FaClock className="text-amber-500" />, label: 'Session Duration', value: teacherData?.teachingDetails?.sessionDuration || 'Not specified' },
+      { icon: <FaGraduationCap className="text-amber-500" />, label: 'Student Level', value: teacherData?.teachingDetails?.studentLevel || 'Not specified' },
+      { icon: <FaUserTie className="text-amber-400" />, label: 'Class Size', value: teacherData?.teachingDetails?.classSize || 'Not specified' },
+      { icon: <FaVideo className="text-amber-400" />, label: 'Online Platform', value: teacherData?.teachingDetails?.onlinePlatform || 'Not specified' },
+      { icon: <FaCertificate className="text-amber-300" />, label: 'Progress Reports', value: teacherData?.teachingDetails?.progressReports || 'Not specified' },
+      { icon: <FaChartLine className="text-amber-300" />, label: 'Performance Tracking', value: teacherData?.teachingDetails?.performanceTracking || 'Not specified' }
+    ];
+  };
+
+  if (loading) {
+    return (
+      <div className="p-8 text-center">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-600 mx-auto"></div>
+        <p className="text-gray-600 mt-2">Loading fee structure...</p>
+      </div>
+    );
+  }
+
+  if (error || !teacher) {
+    return (
+      <div className="p-8 text-center">
+        <p className="text-red-600">{error || 'Fee structure not found'}</p>
+      </div>
+    );
+  }
+
+  const feeDetails = generateFeeDetails(teacher);
+  const teachingDetails = generateTeachingDetails(teacher);
 
   return (
     <div className="space-y-8">
@@ -144,7 +200,7 @@ const FeeStructure = () => {
               </div>
               <div className="bg-gradient-to-r from-amber-100 to-orange-100 p-5 rounded-xl border border-amber-300">
                 <p className="text-gray-700 text-center">
-                  Sessions begin with an assessment of student's current level, followed by customized lesson plans. Regular progress evaluations and parent-teacher meetings ensure continuous improvement.
+                  {teacher.availability.teachingProcess || 'Sessions begin with an assessment of the student\'s current level, followed by customized lesson plans. Regular progress evaluations and parent-teacher meetings ensure continuous improvement.'}
                 </p>
               </div>
             </div>

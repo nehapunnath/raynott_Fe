@@ -23,10 +23,10 @@ import { IoMdTime } from 'react-icons/io';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import StickyButton from '../components/StickyButton';
 import BasicInfo from '../components/Teacher/BasicInfo';
-import TeachingDetails from '../components/Teacher/FeeStructure';
 import Contact from '../components/Teacher/Contact';
 import Review from '../components/Teacher/Review';
 import { teacherApi } from '../services/TeacherApi';
+import FeeStructure from '../components/Teacher/FeeStructure';
 
 const TeachersDetails = () => {
   const [selectedImage, setSelectedImage] = useState(null);
@@ -91,30 +91,7 @@ const TeachersDetails = () => {
     }
   };
 
-  // Static similar teachers (replace with API call if needed)
-  const similarTeachers = [
-    {
-      name: 'Prof. Ramesh Kumar',
-      subjects: ['Computer Science'],
-      rating: 4.7,
-      image: 'https://images.unsplash.com/photo-1560250097-0b93528c311a?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&q=80',
-      link: '/teacher/ramesh-kumar'
-    },
-    {
-      name: 'Ms. Ananya Patel',
-      subjects: ['English', 'Social Studies'],
-      rating: 4.8,
-      image: 'https://images.unsplash.com/photo-1544725176-7c40e5a71c5e?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&q=80',
-      link: '/teacher/ananya-patel'
-    },
-    {
-      name: 'Mr. Arjun Singh',
-      subjects: ['Chemistry', 'Biology'],
-      rating: 4.6,
-      image: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&q=80',
-      link: '/teacher/arjun-singh'
-    }
-  ];
+ 
 
   const scrollToSection = (id) => {
     const section = document.getElementById(id);
@@ -262,10 +239,10 @@ const TeachersDetails = () => {
 
           <div className="flex flex-wrap items-center justify-between">
             <div className="flex items-center space-x-6">
-              <div className="flex items-center text-amber-300 text-xl">
+              {/* <div className="flex items-center text-amber-300 text-xl">
                 <FaStar className="mr-1" /> {teacher.rating}
               </div>
-              <p className="text-xl font-semibold text-white">{teacher.fees}</p>
+              <p className="text-xl font-semibold text-white">{teacher.fees}</p> */}
             </div>
 
             <div className="flex space-x-4">
@@ -300,7 +277,7 @@ const TeachersDetails = () => {
       >
         <div className="bg-white rounded-xl shadow-lg overflow-hidden">
           <div className="flex overflow-x-auto scrollbar-hide justify-center bg-gradient-to-r from-orange-50 to-amber-50 rounded-xl p-1 shadow-inner">
-            {['Basic Info', 'Teaching', 'Gallery', 'Contact', 'Reviews'].map((section) => (
+            {['Basic Info', 'Fee Structure', 'Contact', 'Reviews'].map((section) => (
               <motion.button
                 key={section}
                 onClick={() => scrollToSection(section.replace(/\s+/g, '').toLowerCase())}
@@ -341,7 +318,7 @@ const TeachersDetails = () => {
                 <span className="w-2 h-8 bg-orange-600 rounded-full mr-3"></span>
                 About the Teacher
               </h2>
-              <BasicInfo teacher={teacher} />
+              <BasicInfo  />
             </div>
           </motion.div>
 
@@ -357,14 +334,14 @@ const TeachersDetails = () => {
             <div className="p-6">
               <h2 className="text-2xl font-bold text-gray-800 mb-4 flex items-center">
                 <span className="w-2 h-8 bg-orange-600 rounded-full mr-3"></span>
-                Teaching Details
+                Fee Structure
               </h2>
-              <TeachingDetails teacher={teacher} />
+              <FeeStructure />
             </div>
           </motion.div>
 
           {/* Gallery Section */}
-          <motion.div
+          {/* <motion.div
             id="gallery"
             className="bg-white rounded-2xl shadow-lg overflow-hidden"
             initial={{ opacity: 0, y: 20 }}
@@ -403,7 +380,7 @@ const TeachersDetails = () => {
                 Click on any photo to view in full size
               </p>
             </div>
-          </motion.div>
+          </motion.div> */}
 
           {/* Contact */}
           <motion.div
@@ -419,7 +396,7 @@ const TeachersDetails = () => {
                 <span className="w-2 h-8 bg-orange-600 rounded-full mr-3"></span>
                 Contact Details
               </h2>
-              <Contact teacher={teacher} />
+              <Contact  />
             </div>
           </motion.div>
 
@@ -569,7 +546,7 @@ const TeachersDetails = () => {
       </div>
 
       {/* Similar Teachers */}
-      <motion.div
+      {/* <motion.div
         initial={{ opacity: 0, y: 20 }}
         whileInView={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5 }}
@@ -619,7 +596,7 @@ const TeachersDetails = () => {
             </motion.div>
           ))}
         </div>
-      </motion.div>
+      </motion.div> */}
 
       {/* Image Modal */}
       {selectedImage && (

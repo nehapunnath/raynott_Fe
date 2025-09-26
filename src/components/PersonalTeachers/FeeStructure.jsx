@@ -1,29 +1,81 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { 
   FaRupeeSign, FaChalkboardTeacher, FaBook, 
   FaClock, FaGraduationCap, FaUserTie,
   FaVideo, FaCertificate, FaChartLine, FaSchool
 } from 'react-icons/fa';
+import { useParams } from 'react-router-dom';
+import { teacherApi } from '../../services/TeacherApi';
 
 const FeeStructure = () => {
-  const feeDetails = [
-    { icon: <FaRupeeSign className="text-amber-700" />, label: 'Hourly Rate', value: '₹800 - ₹1200/hr' },
-    { icon: <FaRupeeSign className="text-amber-600" />, label: 'Monthly Package', value: '₹15,000 - ₹20,000' },
-    { icon: <FaRupeeSign className="text-amber-600" />, label: 'Exam Preparation', value: '₹25,000 (3 months)' },
-    { icon: <FaRupeeSign className="text-amber-600" />, label: 'Demo Class', value: 'Free' }
-  ];
+  const { id } = useParams(); // Get mentor ID from URL params
+  const [mentorDetails, setMentorDetails] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
-  const teachingDetails = [
-    { icon: <FaChalkboardTeacher className="text-amber-700" />, label: 'Teaching Approach', value: 'Conceptual & Practical' },
-    { icon: <FaBook className="text-amber-600" />, label: 'Study Materials', value: 'Provided (Digital & Print)' },
-    { icon: <FaClock className="text-amber-500" />, label: 'Session Duration', value: '60-90 minutes' },
-    { icon: <FaGraduationCap className="text-amber-500" />, label: 'Student Level', value: 'Grade 6 to 12' },
-    { icon: <FaUserTie className="text-amber-400" />, label: 'Class Size', value: '1:1 or Small Groups' },
-    { icon: <FaVideo className="text-amber-400" />, label: 'Online Platform', value: 'Zoom, Google Meet' },
-    { icon: <FaCertificate className="text-amber-300" />, label: 'Progress Reports', value: 'Monthly' },
-    { icon: <FaChartLine className="text-amber-300" />, label: 'Performance Tracking', value: 'Regular Tests' }
-  ];
+  // Fetch mentor details when component mounts
+  useEffect(() => {
+    const fetchMentorDetails = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+        const response = await teacherApi.getPersonalMentorDetails(id);
+        console.log('API response:', response); // Debug: Log the full response
+
+        if (response.success && response.data) {
+          const { mentoringDetails = {}, availability = {}, teachingProcess } = response.data;
+          const mappedDetails = {
+            feeDetails: [
+              { icon: <FaRupeeSign className="text-amber-700" />, label: 'Hourly Rate', value: mentoringDetails.hourlyRate || 'Not specified' },
+              { icon: <FaRupeeSign className="text-amber-600" />, label: 'Monthly Package', value: mentoringDetails.monthlyPackage || 'Not specified' },
+              { icon: <FaRupeeSign className="text-amber-600" />, label: 'Exam Preparation', value: mentoringDetails.examPreparation || 'Not specified' },
+              { icon: <FaRupeeSign className="text-amber-600" />, label: 'Demo Class', value: mentoringDetails.demoFee || 'Not specified' },
+            ],
+            teachingDetails: [
+              { icon: <FaChalkboardTeacher className="text-amber-700" />, label: 'Mentoring Approach', value: mentoringDetails.mentoringApproach || 'Not specified' },
+              { icon: <FaBook className="text-amber-600" />, label: 'Study Materials', value: mentoringDetails.studyMaterials || 'Not specified' },
+              { icon: <FaClock className="text-amber-500" />, label: 'Session Duration', value: mentoringDetails.sessionDuration || 'Not specified' },
+              { icon: <FaGraduationCap className="text-amber-500" />, label: 'Student Level', value: mentoringDetails.studentLevel || 'Not specified' },
+              { icon: <FaUserTie className="text-amber-400" />, label: 'Class Size', value: mentoringDetails.classSize || 'Not specified' },
+              { icon: <FaVideo className="text-amber-400" />, label: 'Online Platform', value: mentoringDetails.onlinePlatform || 'Not specified' },
+              { icon: <FaCertificate className="text-amber-300" />, label: 'Progress Reports', value: availability.personalizedGuidance || 'Not specified' },
+              { icon: <FaChartLine className="text-amber-300" />, label: 'Performance Tracking', value: availability.progressTracking || 'Not specified' },
+            ],
+            teachingProcess: teachingProcess || 'Mentoring sessions are tailored to individual student needs, with regular assessments and personalized guidance to ensure progress.'
+          };
+          console.log('Mapped mentor details:', mappedDetails); // Debug: Log mapped data
+          setMentorDetails(mappedDetails);
+        } else {
+          setError('Failed to fetch mentor details');
+        }
+      } catch (err) {
+        console.error('Error fetching mentor details:', err);
+        setError(err.message || 'Failed to load mentor details');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchMentorDetails();
+  }, [id]);
+
+  if (loading) {
+    return (
+      <div className="p-6 bg-gradient-to-br from-amber-50 to-orange-50 rounded-2xl shadow-xl border border-amber-200 text-center">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-amber-600 mx-auto"></div>
+        <p className="text-gray-600 mt-2">Loading mentor details...</p>
+      </div>
+    );
+  }
+
+  if (error || !mentorDetails) {
+    return (
+      <div className="p-6 bg-gradient-to-br from-amber-50 to-orange-50 rounded-2xl shadow-xl border border-amber-200 text-center">
+        <p className="text-red-600">{error || 'Mentor details not found'}</p>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-8">
@@ -46,13 +98,13 @@ const FeeStructure = () => {
               <div className="flex items-center justify-center bg-white p-3 rounded-full shadow-md mb-3">
                 <FaRupeeSign className="text-3xl text-amber-700" />
               </div>
-              <p className="text-2xl font-bold text-amber-800">{feeDetails[0].value}</p>
+              <p className="text-2xl font-bold text-amber-800">{mentorDetails.feeDetails[0].value}</p>
               <p className="text-center text-amber-700 mt-2">Flexible payment options available</p>
             </div>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {feeDetails.slice(1).map((item, index) => (
+            {mentorDetails.feeDetails.slice(1).map((item, index) => (
               <motion.div
                 key={index}
                 whileHover={{ y: -5, boxShadow: '0 10px 15px -3px rgba(245, 158, 11, 0.2)' }}
@@ -81,12 +133,12 @@ const FeeStructure = () => {
         <div className="p-6">
           <div className="flex items-center justify-center mb-6">
             <h2 className="text-3xl font-bold text-center text-transparent bg-clip-text bg-gradient-to-r from-amber-600 to-orange-600">
-              <span className="border-b-4 border-amber-400 pb-2">Teaching Methodology</span>
+              <span className="border-b-4 border-amber-400 pb-2">Mentoring Methodology</span>
             </h2>
           </div>
           
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-            {teachingDetails.map((item, index) => (
+            {mentorDetails.teachingDetails.map((item, index) => (
               <motion.div
                 key={index}
                 whileHover={{ scale: 1.03 }}
@@ -140,11 +192,11 @@ const FeeStructure = () => {
                 <div className="bg-amber-100 p-3 rounded-full mr-3">
                   <FaChalkboardTeacher className="text-2xl text-amber-700" />
                 </div>
-                <h3 className="text-xl font-semibold text-gray-700">Teaching Process</h3>
+                <h3 className="text-xl font-semibold text-gray-700">Mentoring Process</h3>
               </div>
               <div className="bg-gradient-to-r from-amber-100 to-orange-100 p-5 rounded-xl border border-amber-300">
                 <p className="text-gray-700 text-center">
-                  Sessions begin with an assessment of student's current level, followed by customized lesson plans. Regular progress evaluations and parent-teacher meetings ensure continuous improvement.
+                  {mentorDetails.teachingProcess}
                 </p>
               </div>
             </div>

@@ -242,10 +242,10 @@ const PersonalDetails = () => {
           </div>
           <div className="flex flex-wrap items-center justify-between">
             <div className="flex items-center space-x-6">
-              <div className="flex items-center text-amber-300 text-xl">
+              {/* <div className="flex items-center text-amber-300 text-xl">
                 <FaStar className="mr-1" /> {mentor.rating}
-              </div>
-              <p className="text-xl font-semibold text-white">{mentor.fees}</p>
+              </div> */}
+              {/* <p className="text-xl font-semibold text-white">{mentor.fees}</p> */}
             </div>
             <div className="flex space-x-4">
               {mentor.demoAvailable && (
@@ -331,7 +331,7 @@ const PersonalDetails = () => {
             <div className="p-6">
               <h2 className="text-2xl font-bold text-gray-800 mb-4 flex items-center">
                 <span className="w-2 h-8 bg-orange-600 rounded-full mr-3"></span>
-                M Details
+                Fee Structure
               </h2>
               <FeeStructure  />
             </div>
