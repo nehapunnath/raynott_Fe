@@ -367,7 +367,7 @@ const SchoolDetails = () => {
           </motion.div>
 
           {/* Reviews */}
-          {/* <motion.div
+          <motion.div
             id="reviews"
             className="bg-white rounded-2xl shadow-lg overflow-hidden"
             initial={{ opacity: 0, y: 20 }}
@@ -380,9 +380,9 @@ const SchoolDetails = () => {
                 <span className="w-2 h-8 bg-orange-600 rounded-full mr-3"></span>
                 Parent Reviews
               </h2>
-              <Review school={school} />
+              <Review  />
             </div>
-          </motion.div> */}
+          </motion.div>
         </div>
 
         {/* Right Column - Fixed Form */}

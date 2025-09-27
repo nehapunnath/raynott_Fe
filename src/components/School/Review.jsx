@@ -1,50 +1,91 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { FaStar, FaRegStar, FaThumbsUp, FaThumbsDown, FaReply } from 'react-icons/fa';
+import { schoolApi } from '../../services/schoolApi';
+import { useParams } from 'react-router-dom';
 
 const Review = () => {
   const [userRating, setUserRating] = useState(0);
   const [reviewText, setReviewText] = useState('');
-  const [reviews, setReviews] = useState([
-    { id: 1, text: 'Great school with excellent teachers! My child has improved significantly in both academics and extracurricular activities.', rating: 4, likes: 15, dislikes: 2, date: '2023-05-15', author: 'Alex' },
-    { id: 2, text: 'Good facilities but fees are high. The quality of education justifies the cost to some extent.', rating: 3, likes: 8, dislikes: 3, date: '2023-04-22', author: 'Maria John' },
-    { id: 3, text: 'Outstanding curriculum and caring staff. The school focuses on holistic development.', rating: 5, likes: 25, dislikes: 1, date: '2023-06-10', author: 'Felix' },
-  ]);
+  const [reviews, setReviews] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const { id: schoolId } = useParams();
+
+  // Fetch reviews when component mounts
+  useEffect(() => {
+    const fetchReviews = async () => {
+      setLoading(true);
+      try {
+        const response = await schoolApi.getReviews(schoolId);
+        setReviews(response.data || []);
+      } catch (err) {
+        setError(err.message || 'Failed to fetch reviews');
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchReviews();
+  }, [schoolId]);
 
   const handleStarClick = (rating) => {
     setUserRating(rating);
   };
 
-  const handleReviewSubmit = (e) => {
+  const handleReviewSubmit = async (e) => {
     e.preventDefault();
     if (userRating > 0 && reviewText.trim()) {
-      const newReview = { 
-        id: Date.now(), 
-        text: reviewText, 
-        rating: userRating, 
-        likes: 0, 
-        dislikes: 0,
-        date: new Date().toISOString().split('T')[0],
-        author: 'You'
-      };
-      setReviews([newReview, ...reviews]);
-      setUserRating(0);
-      setReviewText('');
+      try {
+        const newReview = {
+          text: reviewText,
+          rating: userRating,
+          schoolId,
+          author: 'You' // Replace with actual user data if available
+        };
+        const response = await schoolApi.addReview(schoolId, newReview);
+        setReviews([response.data, ...reviews]);
+        setUserRating(0);
+        setReviewText('');
+      } catch (err) {
+        setError(err.message || 'Failed to submit review');
+      }
     }
   };
 
-  const handleLike = (id) => {
-    setReviews(reviews.map(review => review.id === id ? { ...review, likes: review.likes + 1 } : review));
+  const handleLike = async (reviewId) => {
+    try {
+      await schoolApi.likeReview(schoolId, reviewId);
+      setReviews(reviews.map(review =>
+        review.id === reviewId ? { ...review, likes: (review.likes || 0) + 1 } : review
+      ));
+    } catch (err) {
+      setError(err.message || 'Failed to like review');
+    }
   };
 
-  const handleDislike = (id) => {
-    setReviews(reviews.map(review => review.id === id ? { ...review, dislikes: review.dislikes + 1 } : review));
+  const handleDislike = async (reviewId) => {
+    try {
+      await schoolApi.dislikeReview(schoolId, reviewId);
+      setReviews(reviews.map(review =>
+        review.id === reviewId ? { ...review, dislikes: (review.dislikes || 0) + 1 } : review
+      ));
+    } catch (err) {
+      setError(err.message || 'Failed to dislike review');
+    }
   };
 
   // Calculate average ratings
-  const parentsAvgRating = 4.5;
-  const raynottAvgRating = 4.3;
-  const parentsReviewCount = 150;
-  const raynottReviewCount = 200;
+  const parentsAvgRating = reviews.length
+    ? (reviews.reduce((sum, review) => sum + review.rating, 0) / reviews.length).toFixed(1)
+    : 0;
+  const parentsReviewCount = reviews.length;
+
+  if (loading) {
+    return <div className="text-center text-gray-600">Loading reviews...</div>;
+  }
+
+  if (error) {
+    return <div className="text-center text-red-600">{error}</div>;
+  }
 
   return (
     <div className="p-6 bg-gradient-to-br from-orange-50 to-amber-50 rounded-2xl shadow-xl border border-orange-100">
@@ -61,7 +102,7 @@ const Review = () => {
           <h3 className="text-xl font-semibold text-gray-800 mb-2">Parents Rating</h3>
           <div className="flex items-center justify-between">
             <div className="flex items-center">
-              <div className="text-4xl font-bold text-amber-600 mr-4">{parentsAvgRating.toFixed(1)}</div>
+              <div className="text-4xl font-bold text-amber-600 mr-4">{parentsAvgRating}</div>
               <div>
                 <div className="flex mb-1">
                   {[...Array(5)].map((_, i) => (
@@ -74,30 +115,7 @@ const Review = () => {
               </div>
             </div>
             <div className="bg-orange-100 text-orange-800 px-3 py-1 rounded-full text-sm font-medium">
-              Excellent
-            </div>
-          </div>
-        </div>
-
-        {/* Raynott Rating Card */}
-        <div className="bg-white p-5 rounded-xl shadow-md border-l-4 border-amber-500 hover:shadow-lg transition-shadow">
-          <h3 className="text-xl font-semibold text-gray-800 mb-2">Raynott Rating</h3>
-          <div className="flex items-center justify-between">
-            <div className="flex items-center">
-              <div className="text-4xl font-bold text-amber-600 mr-4">{raynottAvgRating.toFixed(1)}</div>
-              <div>
-                <div className="flex mb-1">
-                  {[...Array(5)].map((_, i) => (
-                    i < Math.floor(raynottAvgRating) ? 
-                      <FaStar key={i} className="text-yellow-400" /> : 
-                      (i < raynottAvgRating ? <FaStar key={i} className="text-yellow-400 opacity-70" /> : <FaRegStar key={i} className="text-gray-300" />)
-                  ))}
-                </div>
-                <div className="text-sm text-gray-500">{raynottReviewCount} reviews</div>
-              </div>
-            </div>
-            <div className="bg-amber-100 text-amber-800 px-3 py-1 rounded-full text-sm font-medium">
-              Very Good
+              {parentsAvgRating >= 4 ? 'Excellent' : parentsAvgRating >= 3 ? 'Good' : 'Average'}
             </div>
           </div>
         </div>
@@ -172,7 +190,7 @@ const Review = () => {
                           <FaRegStar key={i} className="text-gray-300" size={18} />
                       ))}
                     </div>
-                    <span className="text-sm text-gray-500">{review.date}</span>
+                    <span className="text-sm text-gray-500">{review.createdAt.split('T')[0]}</span>
                   </div>
                   <h4 className="font-medium text-gray-800">{review.author}</h4>
                 </div>
@@ -181,13 +199,13 @@ const Review = () => {
                     onClick={() => handleLike(review.id)} 
                     className="flex items-center text-green-600 hover:text-green-800 transition"
                   >
-                    <FaThumbsUp className="mr-1" /> {review.likes}
+                    <FaThumbsUp className="mr-1" /> {review.likes || 0}
                   </button>
                   <button 
                     onClick={() => handleDislike(review.id)} 
                     className="flex items-center text-red-600 hover:text-red-800 transition"
                   >
-                    <FaThumbsDown className="mr-1" /> {review.dislikes}
+                    <FaThumbsDown className="mr-1" /> {review.dislikes || 0}
                   </button>
                 </div>
               </div>

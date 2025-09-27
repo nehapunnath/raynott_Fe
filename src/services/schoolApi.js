@@ -102,6 +102,41 @@ export const schoolApi = {
       throw new Error(error.response?.data?.message || 'Failed to fetch filtered schools');
     }
   },
+   addReview: async (schoolId, reviewData) => {
+    try {
+      const response = await api.post(`/admin/schools/${schoolId}/reviews`, reviewData);
+      return response.data;
+    } catch (error) {
+      throw new Error(error.response?.data?.message || 'Failed to add review');
+    }
+  },
+
+  getReviews: async (schoolId) => {
+    try {
+      const response = await api.get(`/schools/${schoolId}/reviews`);
+      return response.data;
+    } catch (error) {
+      throw new Error(error.response?.data?.message || 'Failed to fetch reviews');
+    }
+  },
+
+  likeReview: async (schoolId, reviewId) => {
+    try {
+      const response = await api.put(`/schools/${schoolId}/reviews/${reviewId}/like`);
+      return response.data;
+    } catch (error) {
+      throw new Error(error.response?.data?.message || 'Failed to like review');
+    }
+  },
+
+  dislikeReview: async (schoolId, reviewId) => {
+    try {
+      const response = await api.put(`/schools/${schoolId}/reviews/${reviewId}/dislike`);
+      return response.data;
+    } catch (error) {
+      throw new Error(error.response?.data?.message || 'Failed to dislike review');
+    }
+  }
 };
 
 export default schoolApi;
