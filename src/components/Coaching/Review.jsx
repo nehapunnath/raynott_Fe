@@ -1,56 +1,101 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { FaStar, FaRegStar, FaThumbsUp, FaThumbsDown, FaReply } from 'react-icons/fa';
+import { TuitionCoachingApi } from '../../services/TuitionCoachingApi';
+import { useParams } from 'react-router-dom';
 
 const Review = () => {
   const [userRating, setUserRating] = useState(0);
   const [reviewText, setReviewText] = useState('');
-  const [reviews, setReviews] = useState([
-    { id: 1, text: 'Great coaching with excellent teachers! My child has improved significantly in both academics', rating: 4, likes: 15, dislikes: 2, date: '2023-05-15', author: 'Alex' },
-    { id: 2, text: 'Good facilities but fees are high. The quality of education justifies the cost to some extent.', rating: 3, likes: 8, dislikes: 3, date: '2023-04-22', author: 'Maria John' },
-    { id: 3, text: 'Outstanding curriculum and caring staff. The school focuses on holistic development.', rating: 5, likes: 25, dislikes: 1, date: '2023-06-10', author: 'Felix' },
-  ]);
+  const [reviews, setReviews] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const { id: tuitionCoachingId } = useParams();
+
+  // Fetch reviews when component mounts
+  useEffect(() => {
+    const fetchReviews = async () => {
+      setLoading(true);
+      try {
+        const response = await TuitionCoachingApi.getReviews(tuitionCoachingId);
+        setReviews(response.data || []);
+      } catch (err) {
+        setError(err.message || 'Failed to fetch reviews');
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchReviews();
+  }, [tuitionCoachingId]);
 
   const handleStarClick = (rating) => {
     setUserRating(rating);
   };
 
-  const handleReviewSubmit = (e) => {
+  const handleReviewSubmit = async (e) => {
     e.preventDefault();
     if (userRating > 0 && reviewText.trim()) {
-      const newReview = { 
-        id: Date.now(), 
-        text: reviewText, 
-        rating: userRating, 
-        likes: 0, 
-        dislikes: 0,
-        date: new Date().toISOString().split('T')[0],
-        author: 'You'
-      };
-      setReviews([newReview, ...reviews]);
-      setUserRating(0);
-      setReviewText('');
+      try {
+        const newReview = {
+          text: reviewText,
+          rating: userRating,
+          entityId: tuitionCoachingId,
+          entityType: 'tuitionCoaching',
+          author: 'You' // Replace with actual user data if available
+        };
+        const response = await TuitionCoachingApi.addReview(tuitionCoachingId, newReview);
+        setReviews([response.data, ...reviews]);
+        setUserRating(0);
+        setReviewText('');
+      } catch (err) {
+        const errorMessage = err.response?.data?.errors
+          ? err.response.data.errors.join(', ')
+          : err.message || 'Failed to submit review';
+        setError(errorMessage);
+      }
     }
   };
 
-  const handleLike = (id) => {
-    setReviews(reviews.map(review => review.id === id ? { ...review, likes: review.likes + 1 } : review));
+  const handleLike = async (reviewId) => {
+    try {
+      await TuitionCoachingApi.likeReview(tuitionCoachingId, reviewId);
+      setReviews(reviews.map(review =>
+        review.id === reviewId ? { ...review, likes: (review.likes || 0) + 1 } : review
+      ));
+    } catch (err) {
+      setError(err.message || 'Failed to like review');
+    }
   };
 
-  const handleDislike = (id) => {
-    setReviews(reviews.map(review => review.id === id ? { ...review, dislikes: review.dislikes + 1 } : review));
+  const handleDislike = async (reviewId) => {
+    try {
+      await TuitionCoachingApi.dislikeReview(tuitionCoachingId, reviewId);
+      setReviews(reviews.map(review =>
+        review.id === reviewId ? { ...review, dislikes: (review.dislikes || 0) + 1 } : review
+      ));
+    } catch (err) {
+      setError(err.message || 'Failed to dislike review');
+    }
   };
 
   // Calculate average ratings
-  const parentsAvgRating = 4.5;
-  const raynottAvgRating = 4.3;
-  const parentsReviewCount = 150;
-  const raynottReviewCount = 200;
+  const parentsAvgRating = reviews.length
+    ? (reviews.reduce((sum, review) => sum + review.rating, 0) / reviews.length).toFixed(1)
+    : 0;
+  const parentsReviewCount = reviews.length;
+
+  if (loading) {
+    return <div className="text-center text-gray-600">Loading reviews...</div>;
+  }
+
+  if (error) {
+    return <div className="text-center text-red-600">{error}</div>;
+  }
 
   return (
     <div className="p-6 bg-gradient-to-br from-orange-50 to-amber-50 rounded-2xl shadow-xl border border-orange-100">
       <h2 className="text-3xl font-bold text-center mb-6">
         <span className="bg-clip-text text-transparent bg-gradient-to-r from-orange-500 to-amber-600">
-          School Reviews
+          Tuition/Coaching Center Reviews
         </span>
       </h2>
 
@@ -58,10 +103,10 @@ const Review = () => {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
         {/* Parents Rating Card */}
         <div className="bg-white p-5 rounded-xl shadow-md border-l-4 border-orange-500 hover:shadow-lg transition-shadow">
-          <h3 className="text-xl font-semibold text-gray-800 mb-2">Parents Rating</h3>
+          <h3 className="text-xl font-semibold text-gray-800 mb-2">Parents/Students Rating</h3>
           <div className="flex items-center justify-between">
             <div className="flex items-center">
-              <div className="text-4xl font-bold text-amber-600 mr-4">{parentsAvgRating.toFixed(1)}</div>
+              <div className="text-4xl font-bold text-amber-600 mr-4">{parentsAvgRating}</div>
               <div>
                 <div className="flex mb-1">
                   {[...Array(5)].map((_, i) => (
@@ -74,30 +119,7 @@ const Review = () => {
               </div>
             </div>
             <div className="bg-orange-100 text-orange-800 px-3 py-1 rounded-full text-sm font-medium">
-              Excellent
-            </div>
-          </div>
-        </div>
-
-        {/* Raynott Rating Card */}
-        <div className="bg-white p-5 rounded-xl shadow-md border-l-4 border-amber-500 hover:shadow-lg transition-shadow">
-          <h3 className="text-xl font-semibold text-gray-800 mb-2">Raynott Rating</h3>
-          <div className="flex items-center justify-between">
-            <div className="flex items-center">
-              <div className="text-4xl font-bold text-amber-600 mr-4">{raynottAvgRating.toFixed(1)}</div>
-              <div>
-                <div className="flex mb-1">
-                  {[...Array(5)].map((_, i) => (
-                    i < Math.floor(raynottAvgRating) ? 
-                      <FaStar key={i} className="text-yellow-400" /> : 
-                      (i < raynottAvgRating ? <FaStar key={i} className="text-yellow-400 opacity-70" /> : <FaRegStar key={i} className="text-gray-300" />)
-                  ))}
-                </div>
-                <div className="text-sm text-gray-500">{raynottReviewCount} reviews</div>
-              </div>
-            </div>
-            <div className="bg-amber-100 text-amber-800 px-3 py-1 rounded-full text-sm font-medium">
-              Very Good
+              {parentsAvgRating >= 4 ? 'Excellent' : parentsAvgRating >= 3 ? 'Good' : 'Average'}
             </div>
           </div>
         </div>
@@ -133,7 +155,7 @@ const Review = () => {
               id="review"
               value={reviewText}
               onChange={(e) => setReviewText(e.target.value)}
-              placeholder="Share details of your experience at this school..."
+              placeholder="Share details of your experience at this tuition/coaching center..."
               className="w-full p-4 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-300 focus:border-transparent transition"
               rows="5"
             />
@@ -152,7 +174,7 @@ const Review = () => {
       <div>
         <h3 className="text-2xl font-semibold text-gray-800 mb-6 flex items-center">
           <span className="bg-gradient-to-r from-orange-500 to-amber-600 bg-clip-text text-transparent">
-            What Parents Say
+            What Parents/Students Say
           </span>
           <span className="ml-auto bg-orange-100 text-orange-800 px-3 py-1 rounded-full text-sm font-medium">
             {reviews.length} Reviews
@@ -172,31 +194,31 @@ const Review = () => {
                           <FaRegStar key={i} className="text-gray-300" size={18} />
                       ))}
                     </div>
-                    <span className="text-sm text-gray-500">{review.date}</span>
+                    <span className="text-sm text-gray-500">{review.createdAt.split('T')[0]}</span>
                   </div>
-                  <h4 className="font-medium text-gray-800">{review.author}</h4>
+                  {/* <h4 className="font-medium text-gray-800">{review.author}</h4> */}
                 </div>
                 <div className="flex space-x-3">
                   <button 
                     onClick={() => handleLike(review.id)} 
                     className="flex items-center text-green-600 hover:text-green-800 transition"
                   >
-                    <FaThumbsUp className="mr-1" /> {review.likes}
+                    <FaThumbsUp className="mr-1" /> {review.likes || 0}
                   </button>
                   <button 
                     onClick={() => handleDislike(review.id)} 
                     className="flex items-center text-red-600 hover:text-red-800 transition"
                   >
-                    <FaThumbsDown className="mr-1" /> {review.dislikes}
+                    <FaThumbsDown className="mr-1" /> {review.dislikes || 0}
                   </button>
                 </div>
               </div>
               
               <p className="text-gray-700 mb-4">{review.text}</p>
               
-              <button className="text-amber-600 hover:text-amber-800 font-medium flex items-center transition">
+              {/* <button className="text-amber-600 hover:text-amber-800 font-medium flex items-center transition">
                 <FaReply className="mr-2" /> Reply
-              </button>
+              </button> */}
             </div>
           ))}
         </div>

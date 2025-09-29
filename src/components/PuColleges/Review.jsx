@@ -1,6 +1,7 @@
+
 import React, { useState, useEffect } from 'react';
 import { FaStar, FaRegStar, FaThumbsUp, FaThumbsDown, FaReply } from 'react-icons/fa';
-import { collegeApi } from '../../services/collegeApi';
+import { puCollegeApi } from '../../services/pucollegeApi';
 import { useParams } from 'react-router-dom';
 
 const Review = () => {
@@ -9,23 +10,25 @@ const Review = () => {
   const [reviews, setReviews] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const { id: collegeId } = useParams();
+  const { id: puCollegeId } = useParams();
 
   // Fetch reviews when component mounts
   useEffect(() => {
     const fetchReviews = async () => {
       setLoading(true);
       try {
-        const response = await collegeApi.getReviews(collegeId);
+        const response = await puCollegeApi.getReviews(puCollegeId);
         setReviews(response.data || []);
+        setError(null);
       } catch (err) {
-        setError(err.message || 'Failed to fetch reviews');
+        const errorMessage = err.errors ? err.errors.join(', ') : err.message || 'Failed to fetch reviews';
+        setError(errorMessage);
       } finally {
         setLoading(false);
       }
     };
     fetchReviews();
-  }, [collegeId]);
+  }, [puCollegeId]);
 
   const handleStarClick = (rating) => {
     setUserRating(rating);
@@ -38,88 +41,90 @@ const Review = () => {
         const newReview = {
           text: reviewText,
           rating: userRating,
-          collegeId,
+          puCollegeId,
           author: 'You' // Replace with actual user data if available
         };
-        const response = await collegeApi.addReview(collegeId, newReview);
+        const response = await puCollegeApi.addReview(puCollegeId, newReview);
         setReviews([response.data, ...reviews]);
         setUserRating(0);
         setReviewText('');
+        setError(null);
       } catch (err) {
-        const errorMessage = err.response?.data?.errors
-          ? err.response.data.errors.join(', ')
-          : err.message || 'Failed to submit review';
+        const errorMessage = err.errors ? err.errors.join(', ') : err.message || 'Failed to submit review';
         setError(errorMessage);
       }
+    } else {
+      setError('Please provide a rating and review text');
     }
   };
 
   const handleLike = async (reviewId) => {
     try {
-      await collegeApi.likeReview(collegeId, reviewId);
+      await puCollegeApi.likeReview(puCollegeId, reviewId);
       setReviews(reviews.map(review =>
         review.id === reviewId ? { ...review, likes: (review.likes || 0) + 1 } : review
       ));
+      setError(null);
     } catch (err) {
-      setError(err.message || 'Failed to like review');
+      const errorMessage = err.message || 'Failed to like review';
+      setError(errorMessage);
     }
   };
 
   const handleDislike = async (reviewId) => {
     try {
-      await collegeApi.dislikeReview(collegeId, reviewId);
+      await puCollegeApi.dislikeReview(puCollegeId, reviewId);
       setReviews(reviews.map(review =>
         review.id === reviewId ? { ...review, dislikes: (review.dislikes || 0) + 1 } : review
       ));
+      setError(null);
     } catch (err) {
-      setError(err.message || 'Failed to dislike review');
+      const errorMessage = err.message || 'Failed to dislike review';
+      setError(errorMessage);
     }
   };
 
   // Calculate average ratings
-  const parentsAvgRating = reviews.length
+  const avgRating = reviews.length
     ? (reviews.reduce((sum, review) => sum + review.rating, 0) / reviews.length).toFixed(1)
     : 0;
-  const parentsReviewCount = reviews.length;
+  const reviewCount = reviews.length;
 
   if (loading) {
     return <div className="text-center text-gray-600">Loading reviews...</div>;
   }
 
-  if (error) {
-    return <div className="text-center text-red-600">{error}</div>;
-  }
-
   return (
     <div className="p-6 bg-gradient-to-br from-orange-50 to-amber-50 rounded-2xl shadow-xl border border-orange-100">
+      {error && (
+        <div className="text-center text-red-600 mb-4">{error}</div>
+      )}
+
       <h2 className="text-3xl font-bold text-center mb-6">
         <span className="bg-clip-text text-transparent bg-gradient-to-r from-orange-500 to-amber-600">
-          College Reviews
+          PU College Reviews
         </span>
       </h2>
 
-      {/* Rating Summary Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-        {/* Parents Rating Card */}
-        <div className="bg-white p-5 rounded-xl shadow-md border-l-4 border-orange-500 hover:shadow-lg transition-shadow">
-          <h3 className="text-xl font-semibold text-gray-800 mb-2">Parents/Students Rating</h3>
-          <div className="flex items-center justify-between">
-            <div className="flex items-center">
-              <div className="text-4xl font-bold text-amber-600 mr-4">{parentsAvgRating}</div>
-              <div>
-                <div className="flex mb-1">
-                  {[...Array(5)].map((_, i) => (
-                    i < Math.floor(parentsAvgRating) ? 
-                      <FaStar key={i} className="text-yellow-400" /> : 
-                      (i < parentsAvgRating ? <FaStar key={i} className="text-yellow-400 opacity-70" /> : <FaRegStar key={i} className="text-gray-300" />)
-                  ))}
-                </div>
-                <div className="text-sm text-gray-500">{parentsReviewCount} reviews</div>
+      {/* Rating Summary Card */}
+      <div className="bg-white p-5 rounded-xl shadow-md border-l-4 border-orange-500 hover:shadow-lg transition-shadow mb-8">
+        <h3 className="text-xl font-semibold text-gray-800 mb-2">Parents/Students Rating</h3>
+        <div className="flex items-center justify-between">
+          <div className="flex items-center">
+            <div className="text-4xl font-bold text-amber-600 mr-4">{avgRating}</div>
+            <div>
+              <div className="flex mb-1">
+                {[...Array(5)].map((_, i) => (
+                  i < Math.floor(avgRating) ? 
+                    <FaStar key={i} className="text-yellow-400" /> : 
+                    (i < avgRating ? <FaStar key={i} className="text-yellow-400 opacity-70" /> : <FaRegStar key={i} className="text-gray-300" />)
+                ))}
               </div>
+              <div className="text-sm text-gray-500">{reviewCount} reviews</div>
             </div>
-            <div className="bg-orange-100 text-orange-800 px-3 py-1 rounded-full text-sm font-medium">
-              {parentsAvgRating >= 4 ? 'Excellent' : parentsAvgRating >= 3 ? 'Good' : 'Average'}
-            </div>
+          </div>
+          <div className="bg-orange-100 text-orange-800 px-3 py-1 rounded-full text-sm font-medium">
+            {avgRating >= 4 ? 'Excellent' : avgRating >= 3 ? 'Good' : 'Average'}
           </div>
         </div>
       </div>
@@ -154,7 +159,7 @@ const Review = () => {
               id="review"
               value={reviewText}
               onChange={(e) => setReviewText(e.target.value)}
-              placeholder="Share details of your experience at this college..."
+              placeholder="Share details of your experience at this PU college..."
               className="w-full p-4 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-300 focus:border-transparent transition"
               rows="5"
             />
@@ -181,45 +186,49 @@ const Review = () => {
         </h3>
 
         <div className="space-y-6">
-          {reviews.map((review) => (
-            <div key={review.id} className="bg-white p-6 rounded-xl shadow-sm hover:shadow-md transition-shadow border-l-4 border-orange-200">
-              <div className="flex justify-between items-start mb-3">
-                <div>
-                  <div className="flex items-center mb-1">
-                    <div className="flex mr-3">
-                      {[...Array(5)].map((_, i) => (
-                        i < review.rating ? 
-                          <FaStar key={i} className="text-yellow-400" size={18} /> : 
-                          <FaRegStar key={i} className="text-gray-300" size={18} />
-                      ))}
+          {reviews.length === 0 ? (
+            <p className="text-gray-600 text-center">No reviews yet. Be the first to share your experience!</p>
+          ) : (
+            reviews.map((review) => (
+              <div key={review.id} className="bg-white p-6 rounded-xl shadow-sm hover:shadow-md transition-shadow border-l-4 border-orange-200">
+                <div className="flex justify-between items-start mb-3">
+                  <div>
+                    <div className="flex items-center mb-1">
+                      <div className="flex mr-3">
+                        {[...Array(5)].map((_, i) => (
+                          i < review.rating ? 
+                            <FaStar key={i} className="text-yellow-400" size={18} /> : 
+                            <FaRegStar key={i} className="text-gray-300" size={18} />
+                        ))}
+                      </div>
+                      <span className="text-sm text-gray-500">{review.createdAt.split('T')[0]}</span>
                     </div>
-                    <span className="text-sm text-gray-500">{review.createdAt.split('T')[0]}</span>
+                    {/* <h4 className="font-medium text-gray-800">{review.author}</h4> */}
                   </div>
-                  {/* <h4 className="font-medium text-gray-800">{review.author}</h4> */}
+                  <div className="flex space-x-3">
+                    <button 
+                      onClick={() => handleLike(review.id)} 
+                      className="flex items-center text-green-600 hover:text-green-800 transition"
+                    >
+                      <FaThumbsUp className="mr-1" /> {review.likes || 0}
+                    </button>
+                    <button 
+                      onClick={() => handleDislike(review.id)} 
+                      className="flex items-center text-red-600 hover:text-red-800 transition"
+                    >
+                      <FaThumbsDown className="mr-1" /> {review.dislikes || 0}
+                    </button>
+                  </div>
                 </div>
-                <div className="flex space-x-3">
-                  <button 
-                    onClick={() => handleLike(review.id)} 
-                    className="flex items-center text-green-600 hover:text-green-800 transition"
-                  >
-                    <FaThumbsUp className="mr-1" /> {review.likes || 0}
-                  </button>
-                  <button 
-                    onClick={() => handleDislike(review.id)} 
-                    className="flex items-center text-red-600 hover:text-red-800 transition"
-                  >
-                    <FaThumbsDown className="mr-1" /> {review.dislikes || 0}
-                  </button>
-                </div>
+                
+                <p className="text-gray-700 mb-4">{review.text}</p>
+                
+                {/* <button className="text-amber-600 hover:text-amber-800 font-medium flex items-center transition">
+                  <FaReply className="mr-2" /> Reply
+                </button> */}
               </div>
-              
-              <p className="text-gray-700 mb-4">{review.text}</p>
-              
-              {/* <button className="text-amber-600 hover:text-amber-800 font-medium flex items-center transition">
-                <FaReply className="mr-2" /> Reply
-              </button> */}
-            </div>
-          ))}
+            ))
+          )}
         </div>
       </div>
     </div>

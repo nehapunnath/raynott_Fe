@@ -73,10 +73,10 @@ const TeachersDetails = () => {
           photos: response.data.facilities && response.data.facilities.length > 0
             ? response.data.facilities // Use facilities as photos if available
             : [
-                'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?ixlib=rb-4.0.3&auto=format&fit=crop&w=1470&q=80',
-                'https://images.unsplash.com/photo-1588072432836-e10032774350?ixlib=rb-4.0.3&auto=format&fit=crop&w=1470&q=80',
-                'https://images.unsplash.com/photo-1523240795612-9a054b0db644?ixlib=rb-4.0.3&auto=format&fit=crop&w=1470&q=80'
-              ], // Fallback photos if none provided
+              'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?ixlib=rb-4.0.3&auto=format&fit=crop&w=1470&q=80',
+              'https://images.unsplash.com/photo-1588072432836-e10032774350?ixlib=rb-4.0.3&auto=format&fit=crop&w=1470&q=80',
+              'https://images.unsplash.com/photo-1523240795612-9a054b0db644?ixlib=rb-4.0.3&auto=format&fit=crop&w=1470&q=80'
+            ], // Fallback photos if none provided
           phone: response.data.contact.phone || 'Not specified'
         };
         setTeacher(teacherData);
@@ -91,7 +91,7 @@ const TeachersDetails = () => {
     }
   };
 
- 
+
 
   const scrollToSection = (id) => {
     const section = document.getElementById(id);
@@ -318,7 +318,7 @@ const TeachersDetails = () => {
                 <span className="w-2 h-8 bg-orange-600 rounded-full mr-3"></span>
                 About the Teacher
               </h2>
-              <BasicInfo  />
+              <BasicInfo />
             </div>
           </motion.div>
 
@@ -396,7 +396,7 @@ const TeachersDetails = () => {
                 <span className="w-2 h-8 bg-orange-600 rounded-full mr-3"></span>
                 Contact Details
               </h2>
-              <Contact  />
+              <Contact />
             </div>
           </motion.div>
 
@@ -412,9 +412,9 @@ const TeachersDetails = () => {
             <div className="p-6">
               <h2 className="text-2xl font-bold text-gray-800 mb-4 flex items-center">
                 <span className="w-2 h-8 bg-orange-600 rounded-full mr-3"></span>
-                Student Reviews
+                Reviews
               </h2>
-              <Review teacher={teacher} />
+              <Review teacherId={id} type="professional" />
             </div>
           </motion.div>
         </div>

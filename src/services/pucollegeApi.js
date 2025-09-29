@@ -112,6 +112,44 @@ export const puCollegeApi = {
       throw error.response?.data || error.message;
     }
   },
+   addReview: async (puCollegeId, reviewData) => {
+    try {
+      const response = await api.post(`/admin/pucolleges/${puCollegeId}/reviews`, reviewData);
+      return response.data;
+    } catch (error) {
+      throw error.response?.data || error.message;
+    }
+  },
+
+  // Get reviews for a PU College
+  getReviews: async (puCollegeId) => {
+    try {
+      const response = await api.get(`/pucolleges/${puCollegeId}/reviews`);
+      return response.data;
+    } catch (error) {
+      throw error.response?.data || error.message;
+    }
+  },
+
+  // Like a review
+  likeReview: async (puCollegeId, reviewId) => {
+    try {
+      const response = await api.put(`/pucolleges/${puCollegeId}/reviews/${reviewId}/like`);
+      return response.data;
+    } catch (error) {
+      throw error.response?.data || error.message;
+    }
+  },
+
+  // Dislike a review
+  dislikeReview: async (puCollegeId, reviewId) => {
+    try {
+      const response = await api.put(`/pucolleges/${puCollegeId}/reviews/${reviewId}/dislike`);
+      return response.data;
+    } catch (error) {
+      throw error.response?.data || error.message;
+    }
+  },
 };
 
 // PU College Type management functions

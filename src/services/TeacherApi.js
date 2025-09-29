@@ -200,6 +200,57 @@ export const teacherApi = {
       throw new Error(error.response?.data?.message || 'Failed to search personal mentors');
     }
   },
+  addReview: async (teacherId, reviewData, type) => {
+    try {
+      const endpoint = type === 'professional' 
+        ? `/teachers/professional/${teacherId}/reviews`
+        : `/teachers/personal/${teacherId}/reviews`;
+      const response = await api.post(endpoint, reviewData);
+      return response.data;
+    } catch (error) {
+      console.error(`Add ${type} review error:`, error);
+      throw new Error(error.response?.data?.message || `Failed to add ${type} review`);
+    }
+  },
+
+  getReviews: async (teacherId, type) => {
+    try {
+      const endpoint = type === 'professional'
+        ? `/teachers/professional/${teacherId}/reviews`
+        : `/teachers/personal/${teacherId}/reviews`;
+      const response = await api.get(endpoint);
+      return response.data;
+    } catch (error) {
+      console.error(`Get ${type} reviews error:`, error);
+      throw new Error(error.response?.data?.message || `Failed to fetch ${type} reviews`);
+    }
+  },
+
+  likeReview: async (teacherId, reviewId, type) => {
+    try {
+      const endpoint = type === 'professional'
+        ? `/teachers/professional/${teacherId}/reviews/${reviewId}/like`
+        : `/teachers/personal/${teacherId}/reviews/${reviewId}/like`;
+      const response = await api.put(endpoint);
+      return response.data;
+    } catch (error) {
+      console.error(`Like ${type} review error:`, error);
+      throw new Error(error.response?.data?.message || `Failed to like ${type} review`);
+    }
+  },
+
+  dislikeReview: async (teacherId, reviewId, type) => {
+    try {
+      const endpoint = type === 'professional'
+        ? `/teachers/professional/${teacherId}/reviews/${reviewId}/dislike`
+        : `/teachers/personal/${teacherId}/reviews/${reviewId}/dislike`;
+      const response = await api.put(endpoint);
+      return response.data;
+    } catch (error) {
+      console.error(`Dislike ${type} review error:`, error);
+      throw new Error(error.response?.data?.message || `Failed to dislike ${type} review`);
+    }
+  },
 };
 
 export default teacherApi;

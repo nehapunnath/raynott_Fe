@@ -28,6 +28,7 @@ import BasicInfo from '../components/PersonalTeachers/BasicInfo';
 // import Review from '../components/School/Review';
 import Contact from '../components/PersonalTeachers/Contact';
 import FeeStructure from '../components/PersonalTeachers/FeeStructure';
+import Review from '../components/PersonalTeachers/Review';
 
 const PersonalDetails = () => {
   const [selectedImage, setSelectedImage] = useState(null);
@@ -391,7 +392,7 @@ const PersonalDetails = () => {
             </div>
           </motion.div>
 
-          {/* <motion.div
+          <motion.div
             id="reviews"
             className="bg-white rounded-2xl shadow-lg overflow-hidden"
             initial={{ opacity: 0, y: 20 }}
@@ -402,11 +403,11 @@ const PersonalDetails = () => {
             <div className="p-6">
               <h2 className="text-2xl font-bold text-gray-800 mb-4 flex items-center">
                 <span className="w-2 h-8 bg-orange-600 rounded-full mr-3"></span>
-                Mentee Reviews
+                Reviews
               </h2>
-              <Review />
+              <Review teacherId={id} type="personal" />
             </div>
-          </motion.div> */}
+          </motion.div>
         </div>
 
         <motion.div

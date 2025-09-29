@@ -113,12 +113,49 @@ export const TuitionCoachingApi = {
     }
   },
 
-  // Get similar tuition/coaching centers
-  getSimilarTuitionCoachings: async (city = '', subjects = '') => {
+  // getSimilarTuitionCoachings: async (city = '', subjects = '') => {
+  //   try {
+  //     const response = await api.get(`/admin/search/tuitioncoaching`, {
+  //       params: { city, subjects },
+  //     });
+  //     return response.data;
+  //   } catch (error) {
+  //     throw error.response?.data || error.message;
+  //   }
+  // },
+  addReview: async (tuitionCoachingId, reviewData) => {
     try {
-      const response = await api.get(`/admin/search/tuitioncoaching`, {
-        params: { city, subjects },
-      });
+      const response = await api.post(`/admin/tuitioncoaching/${tuitionCoachingId}/reviews`, reviewData);
+      return response.data;
+    } catch (error) {
+      throw error.response?.data || error.message;
+    }
+  },
+
+  // Get reviews for a tuition/coaching center
+  getReviews: async (tuitionCoachingId) => {
+    try {
+      const response = await api.get(`/tuitioncoaching/${tuitionCoachingId}/reviews`);
+      return response.data;
+    } catch (error) {
+      throw error.response?.data || error.message;
+    }
+  },
+
+  // Like a review
+  likeReview: async (tuitionCoachingId, reviewId) => {
+    try {
+      const response = await api.put(`/tuitioncoaching/${tuitionCoachingId}/reviews/${reviewId}/like`);
+      return response.data;
+    } catch (error) {
+      throw error.response?.data || error.message;
+    }
+  },
+
+  // Dislike a review
+  dislikeReview: async (tuitionCoachingId, reviewId) => {
+    try {
+      const response = await api.put(`/tuitioncoaching/${tuitionCoachingId}/reviews/${reviewId}/dislike`);
       return response.data;
     } catch (error) {
       throw error.response?.data || error.message;

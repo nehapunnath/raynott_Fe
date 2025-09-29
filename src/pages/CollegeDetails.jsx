@@ -390,22 +390,22 @@ const CollegeDetails = () => {
           </motion.div>
 
           {/* Reviews */}
-          {/* <motion.div
+          <motion.div
             id="reviews"
             className="bg-white rounded-2xl shadow-lg overflow-hidden"
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5 }}
             viewport={{ once: true, margin: '-100px' }}
-          > */}
-            {/* <div className="p-6">
+          > 
+            <div className="p-6">
               <h2 className="text-2xl font-bold text-gray-800 mb-4 flex items-center">
                 <span className="w-2 h-8 bg-orange-600 rounded-full mr-3"></span>
-                Student Reviews
+                Reviews
               </h2>
               <Review college={college} />
-            </div> */}
-          {/* </motion.div> */}
+            </div>
+          </motion.div>
         </div>
 
         {/* Right Column - Fixed Form */}

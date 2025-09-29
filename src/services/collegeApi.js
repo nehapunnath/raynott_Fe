@@ -113,6 +113,45 @@ export const collegeApi = {
       throw error.response?.data || error.message;
     }
   },
+    addReview: async (collegeId, reviewData) => {
+    try {
+      const response = await api.post(`/admin/colleges/${collegeId}/reviews`, reviewData);
+      return response.data;
+    } catch (error) {
+      throw new Error(error.response?.data?.message || 'Failed to add review');
+    }
+  },
+
+  // Get reviews for a college
+  getReviews: async (collegeId) => {
+    try {
+      const response = await api.get(`/colleges/${collegeId}/reviews`);
+      return response.data;
+    } catch (error) {
+      throw new Error(error.response?.data?.message || 'Failed to fetch reviews');
+    }
+  },
+
+  // Like a review
+  likeReview: async (collegeId, reviewId) => {
+    try {
+      const response = await api.put(`/colleges/${collegeId}/reviews/${reviewId}/like`);
+      return response.data;
+    } catch (error) {
+      throw new Error(error.response?.data?.message || 'Failed to like review');
+    }
+  },
+
+  // Dislike a review
+  dislikeReview: async (collegeId, reviewId) => {
+    try {
+      const response = await api.put(`/colleges/${collegeId}/reviews/${reviewId}/dislike`);
+      return response.data;
+    } catch (error) {
+      throw new Error(error.response?.data?.message || 'Failed to dislike review');
+    }
+  }
+
   
 };
 

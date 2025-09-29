@@ -192,7 +192,7 @@ const Review = () => {
                     </div>
                     <span className="text-sm text-gray-500">{review.createdAt.split('T')[0]}</span>
                   </div>
-                  <h4 className="font-medium text-gray-800">{review.author}</h4>
+                  {/* <h4 className="font-medium text-gray-800">{review.author}</h4> */}
                 </div>
                 <div className="flex space-x-3">
                   <button 
@@ -212,9 +212,9 @@ const Review = () => {
               
               <p className="text-gray-700 mb-4">{review.text}</p>
               
-              <button className="text-amber-600 hover:text-amber-800 font-medium flex items-center transition">
+              {/* <button className="text-amber-600 hover:text-amber-800 font-medium flex items-center transition">
                 <FaReply className="mr-2" /> Reply
-              </button>
+              </button> */}
             </div>
           ))}
         </div>

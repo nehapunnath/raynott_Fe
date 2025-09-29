@@ -1,10 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { 
-  FaRupeeSign, FaChalkboardTeacher, FaBook, 
-  FaClock, FaGraduationCap, FaUserTie,
-  FaVideo, FaCertificate, FaChartLine, FaSchool
-} from 'react-icons/fa';
+import { FaRupeeSign, FaChalkboardTeacher, FaBook, FaClock, FaGraduationCap, FaUserTie,FaVideo, FaCertificate, FaChartLine, FaSchool} from 'react-icons/fa';
 import { useParams } from 'react-router-dom';
 import { teacherApi } from '../../services/TeacherApi';
 

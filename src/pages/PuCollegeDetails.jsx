@@ -1,17 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import {
-    FaBookOpen,
-    FaSearch,
-    FaStar,
-    FaPhone,
-    FaMapMarkerAlt,
-    FaGraduationCap,
-    FaChevronLeft,
-    FaChevronRight,
-    FaTimes
-} from 'react-icons/fa';
+import { FaBookOpen, FaSearch, FaStar, FaPhone, FaMapMarkerAlt, FaGraduationCap, FaChevronLeft, FaChevronRight, FaTimes } from 'react-icons/fa';
 import { IoMdTime } from 'react-icons/io';
 import { Link, useParams, useNavigate } from 'react-router-dom';
 import { puCollegeApi } from '../services/pucollegeApi';
@@ -19,18 +9,19 @@ import StickyButton from '../components/StickyButton';
 import BasicInfo from '../components/PuColleges/BasicInfo';
 import FeeStructure from '../components/PuColleges/FeeStructure';
 import Contact from '../components/PuColleges/Contact';
+import Review from '../components/PuColleges/Review';
 
 
 // City name normalization map for display purposes
 const cityNormalizationMap = {
-  'bangalore': 'Bengaluru',
-  'bengaluru': 'Bengaluru',
-  'mumbai': 'Mumbai',
-  'delhi': 'Delhi',
-  'chennai': 'Chennai',
-  'hyderabad': 'Hyderabad',
-  'kolkata': 'Kolkata',
-  'pune': 'Pune',
+    'bangalore': 'Bengaluru',
+    'bengaluru': 'Bengaluru',
+    'mumbai': 'Mumbai',
+    'delhi': 'Delhi',
+    'chennai': 'Chennai',
+    'hyderabad': 'Hyderabad',
+    'kolkata': 'Kolkata',
+    'pune': 'Pune',
 };
 
 const PUCollegeDetails = () => {
@@ -71,23 +62,23 @@ const PUCollegeDetails = () => {
                     name: collegeData.name || 'Unnamed College',
                     address: collegeData.address || 'Unknown Location',
                     city: normalizeCity(collegeData.city || collegeData.addressCity || collegeData.location || 'Unknown'),
-                    fees: collegeData.totalAnnualFee 
+                    fees: collegeData.totalAnnualFee
                         ? `₹${Number(collegeData.totalAnnualFee).toLocaleString()}/year`
                         : '₹30,000/year',
                     rating: collegeData.rating || (Math.random() * (5 - 4) + 4).toFixed(1),
                     board: collegeData.board || 'Karnataka PU Board',
                     phone: collegeData.phone || '+91 9876543210',
-                    image: collegeData.collegeImage || 
-                           'https://images.unsplash.com/photo-1588072432836-e10032774350?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80',
+                    image: collegeData.collegeImage ||
+                        'https://images.unsplash.com/photo-1588072432836-e10032774350?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80',
                     established: collegeData.established || 2010,
-                    streams: Array.isArray(collegeData.streams) 
-                        ? collegeData.streams 
+                    streams: Array.isArray(collegeData.streams)
+                        ? collegeData.streams
                         : (typeof collegeData.streams === 'string' ? collegeData.streams.split(', ') : ['Science', 'Commerce']),
-                    facilities: Array.isArray(collegeData.facilities) 
-                        ? collegeData.facilities 
+                    facilities: Array.isArray(collegeData.facilities)
+                        ? collegeData.facilities
                         : (typeof collegeData.facilities === 'string' ? collegeData.facilities.split(', ') : ['Smart Classes', 'Laboratories', 'Library']),
-                    photos: collegeData.photos && Array.isArray(collegeData.photos) && collegeData.photos.length > 0 
-                        ? collegeData.photos 
+                    photos: collegeData.photos && Array.isArray(collegeData.photos) && collegeData.photos.length > 0
+                        ? collegeData.photos
                         : [
                             'https://images.unsplash.com/photo-1523050854058-8df90110c9f1?ixlib=rb-4.0.3&auto=format&fit=crop&w=1470&q=80',
                             'https://images.unsplash.com/photo-1523240795612-9a054b0db644?ixlib=rb-4.0.3&auto=format&fit=crop&w=1470&q=80',
@@ -102,15 +93,15 @@ const PUCollegeDetails = () => {
 
                 let collegesArray = [];
                 if (allCollegesResponse.success && allCollegesResponse.data) {
-                    collegesArray = Array.isArray(allCollegesResponse.data) 
-                        ? allCollegesResponse.data 
+                    collegesArray = Array.isArray(allCollegesResponse.data)
+                        ? allCollegesResponse.data
                         : Object.values(allCollegesResponse.data);
                 }
 
                 // Filter similar colleges (e.g., same city or streams, excluding the current college)
                 const similarColleges = collegesArray
                     .filter(college => college.id !== id && (
-                        college.city === collegeData.city || 
+                        college.city === collegeData.city ||
                         (Array.isArray(college.streams) && college.streams.some(s => mappedCollege.streams.includes(s)))
                     ))
                     .slice(0, 3) // Limit to 3 similar colleges
@@ -119,8 +110,8 @@ const PUCollegeDetails = () => {
                         name: college.name || 'Unnamed College',
                         address: college.address || 'Unknown Location',
                         rating: college.rating || (Math.random() * (5 - 4) + 4).toFixed(1),
-                        image: college.collegeImage || 
-                               'https://images.unsplash.com/photo-1522202176988-66273c2fd55f?ixlib=rb-4.0.3&auto=format&fit=crop&w=1470&q=80',
+                        image: college.collegeImage ||
+                            'https://images.unsplash.com/photo-1522202176988-66273c2fd55f?ixlib=rb-4.0.3&auto=format&fit=crop&w=1470&q=80',
                         link: `/pucollege-details/${college.id || college._id}`
                     }));
 
@@ -455,6 +446,22 @@ const PUCollegeDetails = () => {
                                         Contact Details
                                     </h2>
                                     <Contact />
+                                </div>
+                            </motion.div>
+                            <motion.div
+                                id="reviews"
+                                className="bg-white rounded-2xl shadow-lg overflow-hidden"
+                                initial={{ opacity: 0, y: 20 }}
+                                whileInView={{ opacity: 1, y: 0 }}
+                                transition={{ duration: 0.5 }}
+                                viewport={{ once: true, margin: '-100px' }}
+                            >
+                                <div className="p-6">
+                                    <h2 className="text-2xl font-bold text-gray-800 mb-4 flex items-center">
+                                        <span className="w-2 h-8 bg-orange-600 rounded-full mr-3"></span>
+                                        Reviews
+                                    </h2>
+                                    <Review/>
                                 </div>
                             </motion.div>
                         </div>
