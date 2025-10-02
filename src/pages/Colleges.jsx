@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
-import { FaUniversity, FaSearch, FaFilter, FaBookOpen, FaTimes, FaHome } from "react-icons/fa";
-import { IoLocationSharp } from "react-icons/io5";
-import { BsFillCalendar2CheckFill } from "react-icons/bs";
+import { FaUniversity, FaSearch, FaFilter, FaBookOpen, FaTimes, FaHome, FaSpinner } from 'react-icons/fa';
+import { IoLocationSharp } from 'react-icons/io5';
+import { BsFillCalendar2CheckFill } from 'react-icons/bs';
 import { collegeApi } from '../services/collegeApi';
 import Footer from '../components/Footer';
 import StickyButton from '../components/StickyButton';
@@ -14,9 +14,11 @@ function Colleges() {
     feesRange: [0, 300000],
     type: [],
     specialization: [],
-    location: ''
+    location: '',
   });
   const [colleges, setColleges] = useState([]);
+  const [filteredColleges, setFilteredColleges] = useState([]);
+  const [searchQuery, setSearchQuery] = useState('');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
@@ -26,36 +28,39 @@ function Colleges() {
   const typeOptions = ['Private', 'Government', 'Autonomous', 'Deemed University', 'Private University'];
   const specializationOptions = ['Engineering', 'Medical', 'Arts', 'Commerce', 'Science', 'Law', 'Management'];
 
-  // Extract query parameters from URL
   useEffect(() => {
     const queryParams = new URLSearchParams(location.search);
     const type = queryParams.get('type') || '';
     const city = queryParams.get('city') || 'Bengaluru';
 
-    setFilters(prev => ({
+    setFilters((prev) => ({
       ...prev,
       location: city,
-      specialization: type ? [type] : []
+      specialization: type ? [type] : [],
     }));
 
-    // Fetch colleges based on type and city
     const fetchColleges = async () => {
       try {
         setLoading(true);
+        setError(null);
         const response = await collegeApi.searchColleges({
           typeOfCollege: type,
-          city: city
+          city: city,
         });
-        
+
         if (response.success && response.data) {
           const collegesArray = Object.values(response.data);
           setColleges(collegesArray);
+          setFilteredColleges(collegesArray); 
         } else {
           setColleges([]);
+          setFilteredColleges([]);
         }
       } catch (err) {
+        console.error('Error fetching colleges:', err);
         setError(err.message || 'Failed to fetch colleges');
         setColleges([]);
+        setFilteredColleges([]);
       } finally {
         setLoading(false);
       }
@@ -64,53 +69,95 @@ function Colleges() {
     fetchColleges();
   }, [location.search]);
 
+  // Apply search filter when searchQuery or colleges change
+  useEffect(() => {
+    if (searchQuery.trim()) {
+      setFilteredColleges(
+        colleges.filter(
+          (college) =>
+            college.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+            college.city?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+            college.coursesOffered?.some((course) =>
+              course.toLowerCase().includes(searchQuery.toLowerCase())
+            )
+        )
+      );
+    } else {
+      setFilteredColleges(colleges);
+    }
+  }, [searchQuery, colleges]);
+
+  // Handle search input change
+  const handleSearchChange = (e) => {
+    setSearchQuery(e.target.value);
+  };
+
   const handleFilterChange = (filterType, value) => {
-    setFilters(prev => {
+    setFilters((prev) => {
       if (filterType === 'feesRange') {
         return { ...prev, feesRange: value };
       } else {
         const currentValues = [...prev[filterType]];
         const index = currentValues.indexOf(value);
-
         if (index === -1) {
           currentValues.push(value);
         } else {
           currentValues.splice(index, 1);
         }
-
         return { ...prev, [filterType]: currentValues };
       }
     });
   };
 
   const resetFilters = () => {
+    const queryParams = new URLSearchParams(location.search);
+    const city = queryParams.get('city') || 'Bengaluru';
     setFilters({
       feesRange: [0, 300000],
       type: [],
       specialization: [],
-      location: filters.location
+      location: city,
     });
+    setSearchQuery('');
   };
 
   const applyFilters = async () => {
     console.log('Applied filters:', filters);
     try {
       setLoading(true);
+      setError(null);
       const response = await collegeApi.searchColleges({
         city: filters.location,
-        typeOfCollege: filters.specialization.join(','),
-        type: filters.type.join(','),
-        maxFee: filters.feesRange[1]
+        typeOfCollege: filters.type.join(','),
+        courses: filters.specialization.join(','),
+        maxFee: filters.feesRange[1],
       });
 
       if (response.success && response.data) {
-        setColleges(Object.values(response.data));
+        const collegesArray = Object.values(response.data);
+        setColleges(collegesArray);
+        // Apply search filter if searchQuery exists
+        setFilteredColleges(
+          searchQuery.trim()
+            ? collegesArray.filter(
+                (college) =>
+                  college.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                  college.city?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                  college.coursesOffered?.some((course) =>
+                    course.toLowerCase().includes(searchQuery.toLowerCase())
+                  )
+              )
+            : collegesArray
+        );
       } else {
         setColleges([]);
+        setFilteredColleges([]);
       }
     } catch (err) {
+      console.error('Error applying filters:', err);
       setError(err.message || 'Failed to fetch colleges');
       setColleges([]);
+      setFilteredColleges([]);
     } finally {
       setIsFilterOpen(false);
       setLoading(false);
@@ -128,12 +175,12 @@ function Colleges() {
                 Raynott
               </motion.span>
             </Link>
-
             <div className="md:hidden flex space-x-2">
               <motion.button
                 className="bg-white text-orange-600 font-semibold py-2 px-4 rounded-full transition duration-300"
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
+                onClick={() => navigate('/bookdemo')}
               >
                 Demo
               </motion.button>
@@ -151,9 +198,19 @@ function Colleges() {
             <FaSearch className="absolute left-4 top-1/2 transform -translate-y-1/2 text-orange-400" />
             <input
               type="text"
-              placeholder={`Search Colleges, Locations in ${filters.location}...`}
-              className="pl-12 pr-4 py-3 rounded-full bg-white border border-transparent text-gray-800 focus:outline-none w-full focus:ring-2 focus:ring-orange-200 focus:border-transparent shadow-sm"
+              placeholder={`Search Colleges by Name in ${filters.location}...`}
+              value={searchQuery}
+              onChange={handleSearchChange}
+              className="pl-12 pr-10 py-3 rounded-full bg-white border border-transparent text-gray-800 focus:outline-none w-full focus:ring-2 focus:ring-orange-200 focus:border-transparent shadow-sm"
             />
+            {searchQuery && (
+              <button
+                onClick={() => setSearchQuery('')}
+                className="absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700"
+              >
+                <FaTimes />
+              </button>
+            )}
           </div>
 
           <div className="hidden md:flex space-x-4 ml-8">
@@ -187,7 +244,7 @@ function Colleges() {
             </h1>
             <p className="text-lg text-gray-600 flex items-center mt-1">
               <BsFillCalendar2CheckFill className="mr-2 text-orange-500" />
-              {colleges.length} Colleges | List Updated on Aug 1, 2025
+              {filteredColleges.length} Colleges | List Updated on Aug 1, 2025
             </p>
           </div>
           <motion.button
@@ -197,22 +254,40 @@ function Colleges() {
             onClick={() => setIsFilterOpen(true)}
           >
             <FaFilter className="mr-2" />
-            Filters ({filters.type.length + filters.specialization.length})
+            Filters ({filters.type.length + filters.specialization.length + (filters.location ? 1 : 0)})
           </motion.button>
         </div>
 
         {/* Colleges List */}
         {loading ? (
           <div className="text-center py-12">
+            <FaSpinner className="animate-spin text-4xl text-orange-600 mx-auto mb-4" />
             <p className="text-lg text-gray-600">Loading colleges...</p>
           </div>
         ) : error ? (
           <div className="text-center py-12">
             <p className="text-lg text-red-600">{error}</p>
+            <button
+              onClick={() => applyFilters()}
+              className="mt-4 bg-orange-600 text-white px-4 py-2 rounded-lg hover:bg-orange-700"
+            >
+              Try Again
+            </button>
           </div>
-        ) : colleges.length === 0 ? (
+        ) : filteredColleges.length === 0 ? (
           <div className="text-center py-12">
-            <p className="text-lg text-gray-600">No colleges found for the selected criteria.</p>
+            <FaUniversity className="text-5xl text-gray-400 mx-auto mb-4" />
+            <p className="text-lg text-gray-600">
+              {searchQuery
+                ? `No colleges found matching "${searchQuery}" in ${filters.location}.`
+                : `No colleges found in ${filters.location}.`}
+            </p>
+            <button
+              onClick={resetFilters}
+              className="mt-4 bg-orange-600 text-white px-4 py-2 rounded-lg hover:bg-orange-700"
+            >
+              Reset Filters
+            </button>
           </div>
         ) : (
           <div className="mb-12">
@@ -223,7 +298,7 @@ function Colleges() {
               <span className="ml-2">{filters.specialization.length > 0 ? filters.specialization.join(', ') : 'All Colleges'} in {filters.location}</span>
             </h2>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-              {colleges.map((college) => (
+              {filteredColleges.map((college) => (
                 <Link
                   to={`/college-details/${college.id}`}
                   key={college.id}
@@ -242,18 +317,18 @@ function Colleges() {
                         alt={college.name}
                         className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
                       />
-                      <div className="absolute top-4 left-4 bg-yellow-500 text-dark text-xs font-bold px-3 py-1 rounded-full shadow-lg">
+                      {/* <div className="absolute top-4 left-4 bg-yellow-500 text-dark text-xs font-bold px-3 py-1 rounded-full shadow-lg">
                         Admissions Open
-                      </div>
+                      </div> */}
                       <div className="absolute top-4 right-4 flex items-center bg-white/90 text-orange-600 px-3 py-1 rounded-full shadow-lg backdrop-blur-sm">
-                        <span className="font-bold mr-1">{college.rating || 4.5}</span>
+                        <span className="font-bold mr-1">{college.rating || 'N/A'}</span>
                         <svg className="w-4 h-4 fill-current" viewBox="0 0 20 20">
                           <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
                         </svg>
                       </div>
                     </div>
                     <div className="p-4 flex flex-col flex-grow h-64">
-                      <p className="text-xs font-semibold text-orange-500 uppercase tracking-wide">{college.typeOfCollege}</p>
+                      <p className="text-xs font-semibold text-orange-500 uppercase tracking-wide">{college.typeOfCollege || 'N/A'}</p>
                       <h3 className="text-lg font-bold text-gray-900 mt-1 line-clamp-2 min-h-[4rem]">{college.name}</h3>
                       <p className="text-sm text-gray-500 flex items-center mt-2">
                         <IoLocationSharp className="mr-1 text-orange-400" />
@@ -305,7 +380,7 @@ function Colleges() {
               initial={{ y: 50, opacity: 0 }}
               animate={{ y: 0, opacity: 1 }}
               exit={{ y: 50, opacity: 0 }}
-              transition={{ type: "spring", damping: 25 }}
+              transition={{ type: 'spring', damping: 25 }}
             >
               <div className="p-6">
                 <div className="flex justify-between items-center border-b pb-4 mb-4">

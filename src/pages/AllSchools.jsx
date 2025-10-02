@@ -22,6 +22,7 @@ function AllSchools() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [totalSchools, setTotalSchools] = useState(0);
+  const [searchQuery, setSearchQuery] = useState(''); // New state for search query
 
   const boardOptions = ['CBSE', 'ICSE', 'IB', 'IGCSE', 'State Board'];
   const schoolTypeOptions = ['Government', 'Private', 'International', 'Public'];
@@ -32,12 +33,21 @@ function AllSchools() {
   // Format school data for rendering
   const formatSchools = (schools, place = 'All Locations') => {
     console.log('Formatting schools:', schools);
+    let filteredSchools = Object.values(schools);
+
+    // Apply search query filter if searchQuery is not empty
+    if (searchQuery.trim()) {
+      filteredSchools = filteredSchools.filter((school) =>
+        school.name?.toLowerCase().includes(searchQuery.toLowerCase())
+      );
+    }
+
     return [
       {
         category: 'Schools',
         icon: <FaSchool className="text-white" />,
         place,
-        items: Object.values(schools).map((school) => {
+        items: filteredSchools.map((school) => {
           console.log('Processing school:', school);
           return {
             id: school.id || 'unknown-id',
@@ -67,7 +77,7 @@ function AllSchools() {
       const schools = response.data || {};
       const formattedSchools = formatSchools(schools);
       setSchoolsData(formattedSchools);
-      setTotalSchools(Object.keys(schools).length);
+      setTotalSchools(formattedSchools[0].items.length); // Update based on filtered items
       if (Object.keys(schools).length === 0) {
         setError('No schools available in the database.');
       }
@@ -92,7 +102,7 @@ function AllSchools() {
       const schools = response.data || {};
       const formattedSchools = formatSchools(schools, filterParams.city || 'Filtered Locations');
       setSchoolsData(formattedSchools);
-      setTotalSchools(Object.keys(schools).length);
+      setTotalSchools(formattedSchools[0].items.length); // Update based on filtered items
       if (Object.keys(schools).length === 0) {
         setError('No schools found for the selected filters.');
       }
@@ -106,11 +116,14 @@ function AllSchools() {
     }
   };
 
-  // Fetch all schools on mount
+  // Fetch schools on mount or when searchQuery changes
   useEffect(() => {
-    fetchAllSchools();
-    window.scrollTo(0, 0);
-  }, []);
+    if (filters.location || filters.board.length || filters.schoolType.length || filters.gender.length || filters.feesRange[0] !== 0 || filters.feesRange[1] !== 300000) {
+      applyFilters();
+    } else {
+      fetchAllSchools();
+    }
+  }, [searchQuery]); // Re-run when searchQuery changes
 
   // Handle filter changes
   const handleFilterChange = (filterType, value) => {
@@ -132,6 +145,11 @@ function AllSchools() {
     });
   };
 
+  // Handle search input change
+  const handleSearchChange = (e) => {
+    setSearchQuery(e.target.value);
+  };
+
   // Reset filters
   const resetFilters = () => {
     setFilters({
@@ -142,6 +160,7 @@ function AllSchools() {
       location: '',
       category: 'Schools',
     });
+    setSearchQuery(''); // Reset search query
     fetchAllSchools();
   };
 
@@ -174,7 +193,9 @@ function AllSchools() {
             <FaSearch className="absolute left-4 top-1/2 transform -translate-y-1/2 text-orange-400" />
             <input
               type="text"
-              placeholder="Search Schools, Locations..."
+              placeholder="Search Schools by Name..."
+              value={searchQuery}
+              onChange={handleSearchChange}
               className="pl-12 pr-4 py-3 rounded-full bg-white border border-transparent text-gray-800 focus:outline-none w-full focus:ring-2 focus:ring-orange-200 focus:border-transparent shadow-sm"
             />
           </div>
@@ -236,7 +257,9 @@ function AllSchools() {
         )}
         {!loading && !error && schoolsData.length > 0 && schoolsData[0].items.length === 0 && (
           <div className="text-center py-8">
-            <p className="text-lg text-gray-600">No schools found.</p>
+            <p className="text-lg text-gray-600">
+              {searchQuery ? `No schools found matching "${searchQuery}".` : 'No schools found.'}
+            </p>
           </div>
         )}
 
@@ -264,9 +287,6 @@ function AllSchools() {
                           alt={item.name}
                           className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
                         />
-                        {/* <div className="absolute top-4 left-4 bg-yellow-500 text-dark text-xs font-bold px-3 py-1 rounded-full shadow-lg">
-                          Admissions Open
-                        </div> */}
                         <div className="absolute top-4 right-4 flex items-center bg-white/90 text-orange-600 px-3 py-1 rounded-full shadow-lg backdrop-blur-sm">
                           <span className="font-bold mr-1">{item.rating}</span>
                           <svg className="w-4 h-4 fill-current" viewBox="0 0 20 20">
@@ -275,7 +295,7 @@ function AllSchools() {
                         </div>
                       </div>
                       <div className="p-4 flex flex-col flex-grow h-64">
-                        <p className="text-xs font-semibold text-orange-500 uppercase tracking-wide">{item.affiliation}</p>
+                        {/* <p className="text-xs font-semibold text-orange-500 uppercase tracking-wide">{item.board}</p> */}
                         <h3 className="text-lg font-bold text-gray-900 mt-1 line-clamp-2 min-h-[4rem]">{item.name}</h3>
                         <p className="text-sm text-gray-500 flex items-center mt-2">
                           <IoLocationSharp className="mr-1 text-orange-400" />

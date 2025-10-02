@@ -1,17 +1,19 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
-import { FaSchool, FaSearch, FaFilter, FaBookOpen, FaTimes, FaHome } from "react-icons/fa";
-import { IoLocationSharp } from "react-icons/io5";
-import { BsFillCalendar2CheckFill } from "react-icons/bs";
+import { FaSchool, FaSearch, FaFilter, FaBookOpen, FaTimes, FaHome } from 'react-icons/fa';
+import { IoLocationSharp } from 'react-icons/io5';
+import { BsFillCalendar2CheckFill } from 'react-icons/bs';
 import Footer from '../components/Footer';
 import StickyButton from '../components/StickyButton';
-import { schoolApi } from '../services/schoolApi'; // Import schoolApi
+import { schoolApi } from '../services/schoolApi';
 
 function Listing() {
   const [searchParams] = useSearchParams();
   const cityFromQuery = searchParams.get('city') || 'Bengaluru'; // Default to Bengaluru if no city is provided
   const [schools, setSchools] = useState([]); // State to store fetched schools
+  const [filteredSchools, setFilteredSchools] = useState([]); // State to store search-filtered schools
+  const [searchQuery, setSearchQuery] = useState(''); // New state for search query
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const [filters, setFilters] = useState({
     feesRange: [0, 300000],
@@ -29,7 +31,7 @@ function Listing() {
 
   const nav = useNavigate();
 
-  // Fetch schools when component mounts or city changes
+  // Fetch schools when component mounts or filters change
   useEffect(() => {
     const fetchSchools = async () => {
       try {
@@ -41,6 +43,8 @@ function Listing() {
           city: cityFromQuery,
           typeOfSchool: filters.schoolType.join(',') || undefined,
           board: filters.board.join(',') || undefined,
+          gender: filters.gender.join(',') || undefined,
+          minFee: filters.feesRange[0] || undefined,
           maxFee: filters.feesRange[1] || undefined,
         });
 
@@ -52,13 +56,23 @@ function Listing() {
             ? response.data
             : Object.values(response.data);
           setSchools(schoolsData);
+          // Apply search filter initially
+          setFilteredSchools(
+            searchQuery.trim()
+              ? schoolsData.filter((school) =>
+                  school.name?.toLowerCase().includes(searchQuery.toLowerCase())
+                )
+              : schoolsData
+          );
         } else {
           setSchools([]);
+          setFilteredSchools([]);
         }
       } catch (err) {
         console.error('Error fetching schools:', err);
         setError('Failed to load schools. Please try again.');
         setSchools([]);
+        setFilteredSchools([]);
       } finally {
         setLoading(false);
       }
@@ -67,6 +81,25 @@ function Listing() {
     fetchSchools();
   }, [cityFromQuery, filters]); // Re-fetch when city or filters change
 
+  // Update filtered schools when searchQuery changes
+  useEffect(() => {
+    if (searchQuery.trim()) {
+      setFilteredSchools(
+        schools.filter((school) =>
+          school.name?.toLowerCase().includes(searchQuery.toLowerCase())
+        )
+      );
+    } else {
+      setFilteredSchools(schools);
+    }
+  }, [searchQuery, schools]);
+
+  // Handle search input change
+  const handleSearchChange = (e) => {
+    setSearchQuery(e.target.value);
+  };
+
+  // Handle filter changes
   const handleFilterChange = (filterType, value) => {
     setFilters((prev) => {
       if (filterType === 'feesRange') {
@@ -86,6 +119,7 @@ function Listing() {
     });
   };
 
+  // Reset filters
   const resetFilters = () => {
     setFilters({
       feesRange: [0, 300000],
@@ -94,25 +128,19 @@ function Listing() {
       gender: [],
       location: cityFromQuery,
     });
+    setSearchQuery(''); // Reset search query
   };
 
+  // Apply filters
   const applyFilters = () => {
     console.log('Applied filters:', filters);
     setIsFilterOpen(false);
   };
 
-  // Group schools by city (optional, if you want to display multiple cities)
-  const groupedSchools = schools.reduce((acc, school) => {
-    const city = school.city || 'Unknown';
-    if (!acc[city]) {
-      acc[city] = [];
-    }
-    acc[city].push(school);
-    return acc;
-  }, {});
-
-  // Use only the selected city for display
-  const selectedCitySchools = groupedSchools[cityFromQuery] || [];
+  // Use filteredSchools for display
+  const selectedCitySchools = filteredSchools.filter(
+    (school) => school.city?.toLowerCase() === cityFromQuery.toLowerCase()
+  );
 
   return (
     <div className="bg-orange-50 min-h-screen font-sans">
@@ -148,7 +176,9 @@ function Listing() {
             <FaSearch className="absolute left-4 top-1/2 transform -translate-y-1/2 text-orange-400" />
             <input
               type="text"
-              placeholder={`Search Schools, Locations in ${cityFromQuery}...`}
+              placeholder={`Search Schools in ${cityFromQuery}...`}
+              value={searchQuery}
+              onChange={handleSearchChange}
               className="pl-12 pr-4 py-3 rounded-full bg-white border border-transparent text-gray-800 focus:outline-none w-full focus:ring-2 focus:ring-orange-200 focus:border-transparent shadow-sm"
             />
           </div>
@@ -222,7 +252,7 @@ function Listing() {
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
               {selectedCitySchools.map((school) => (
                 <Link
-                  to={`/school-details/${school.id}`} // Assuming school has an id field
+                  to={`/school-details/${school.id}`}
                   key={school.id}
                   className="group"
                 >
@@ -235,13 +265,10 @@ function Listing() {
                   >
                     <div className="relative h-48 w-full overflow-hidden">
                       <img
-                        src={school.schoolImage || 'https://via.placeholder.com/800x400'} // Use schoolImage or fallback
+                        src={school.schoolImage || 'https://via.placeholder.com/800x400'}
                         alt={school.name}
                         className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
                       />
-                      {/* <div className="absolute top-4 left-4 bg-yellow-500 text-dark text-xs font-bold px-3 py-1 rounded-full shadow-lg">
-                        Admissions Open
-                      </div> */}
                       <div className="absolute top-4 right-4 flex items-center bg-white/90 text-orange-600 px-3 py-1 rounded-full shadow-lg backdrop-blur-sm">
                         <span className="font-bold mr-1">{school.rating || 4.5}</span>
                         <svg className="w-4 h-4 fill-current" viewBox="0 0 20 20">
@@ -250,7 +277,7 @@ function Listing() {
                       </div>
                     </div>
                     <div className="p-4 flex flex-col flex-grow h-64">
-                      <p className="text-xs font-semibold text-orange-500 uppercase tracking-wide">{school.board || 'N/A'}</p>
+                      {/* <p className="text-xs font-semibold text-orange-500 uppercase tracking-wide">{school.board || 'N/A'}</p> */}
                       <h3 className="text-lg font-bold text-gray-900 mt-1 line-clamp-2 min-h-[4rem]">{school.name}</h3>
                       <p className="text-sm text-gray-500 flex items-center mt-2">
                         <IoLocationSharp className="mr-1 text-orange-400" />
@@ -290,7 +317,11 @@ function Listing() {
         )}
         {!loading && !error && selectedCitySchools.length === 0 && (
           <div className="text-center py-8">
-            <p className="text-lg text-gray-600">No schools found in {cityFromQuery}.</p>
+            <p className="text-lg text-gray-600">
+              {searchQuery
+                ? `No schools found matching "${searchQuery}" in ${cityFromQuery}.`
+                : `No schools found in ${cityFromQuery}.`}
+            </p>
           </div>
         )}
       </main>
@@ -309,7 +340,7 @@ function Listing() {
               initial={{ y: 50, opacity: 0 }}
               animate={{ y: 0, opacity: 1 }}
               exit={{ y: 50, opacity: 0 }}
-              transition={{ type: "spring", damping: 25 }}
+              transition={{ type: 'spring', damping: 25 }}
             >
               <div className="p-6">
                 <div className="flex justify-between items-center border-b pb-4 mb-4">

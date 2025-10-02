@@ -166,14 +166,14 @@ const CollegeDetails = () => {
               </motion.button>
             </div>
           </div>
-          <div className="relative w-full max-w-2xl md:max-w-xl flex-grow md:ml-8">
+          {/* <div className="relative w-full max-w-2xl md:max-w-xl flex-grow md:ml-8">
             <FaSearch className="absolute left-4 top-1/2 transform -translate-y-1/2 text-orange-400" />
             <input
               type="text"
               placeholder="Search Colleges, Locations..."
               className="pl-12 pr-4 py-3 rounded-full bg-white border border-transparent text-gray-800 focus:outline-none w-full focus:ring-2 focus:ring-orange-200 focus:border-transparent shadow-sm"
             />
-          </div>
+          </div> */}
           <div className="hidden md:flex space-x-4 ml-8">
             <motion.button
               className="bg-white border border-white text-orange-600 hover:bg-orange-100 font-semibold py-2 px-4 rounded-full transition duration-300"

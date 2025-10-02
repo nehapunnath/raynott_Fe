@@ -1,12 +1,12 @@
 import React, { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Link, useNavigate } from 'react-router-dom';
-import { FaUniversity, FaSearch, FaFilter, FaBookOpen, FaTimes, FaHome, FaSpinner } from "react-icons/fa";
-import { IoLocationSharp } from "react-icons/io5";
-import { BsFillCalendar2CheckFill } from "react-icons/bs";
+import { FaUniversity, FaSearch, FaFilter, FaBookOpen, FaTimes, FaHome, FaSpinner } from 'react-icons/fa';
+import { IoLocationSharp } from 'react-icons/io5';
+import { BsFillCalendar2CheckFill } from 'react-icons/bs';
 import Footer from '../components/Footer';
 import StickyButton from '../components/StickyButton';
-import { collegeApi } from '../services/collegeApi'; // Import your API functions
+import { collegeApi } from '../services/collegeApi';
 
 function AllColleges() {
   const [isFilterOpen, setIsFilterOpen] = useState(false);
@@ -19,7 +19,7 @@ function AllColleges() {
     feesRange: [0, 300000],
     type: [],
     location: '',
-    courses: []
+    courses: [],
   });
 
   const typeOptions = ['Private', 'Government', 'Autonomous', 'Deemed University', 'Private University'];
@@ -40,6 +40,7 @@ function AllColleges() {
   const fetchColleges = async () => {
     try {
       setLoading(true);
+      setError(null);
       const response = await collegeApi.getColleges();
       
       if (response.success) {
@@ -49,33 +50,35 @@ function AllColleges() {
         setFilteredColleges(collegesArray);
       } else {
         setError('Failed to fetch colleges');
+        setColleges([]);
+        setFilteredColleges([]);
       }
     } catch (err) {
       console.error('Error fetching colleges:', err);
       setError('Failed to load colleges. Please try again later.');
+      setColleges([]);
+      setFilteredColleges([]);
     } finally {
       setLoading(false);
     }
   };
 
   const handleSearch = (e) => {
-    setSearchQuery(e.target.value.toLowerCase());
+    setSearchQuery(e.target.value);
   };
 
   const handleFilterChange = (filterType, value) => {
-    setFilters(prev => {
+    setFilters((prev) => {
       if (filterType === 'feesRange') {
         return { ...prev, feesRange: value };
       } else {
         const currentValues = [...prev[filterType]];
         const index = currentValues.indexOf(value);
-
         if (index === -1) {
           currentValues.push(value);
         } else {
           currentValues.splice(index, 1);
         }
-
         return { ...prev, [filterType]: currentValues };
       }
     });
@@ -83,46 +86,48 @@ function AllColleges() {
 
   const applyFilters = () => {
     let result = [...colleges];
-    
+
     // Apply search filter
-    if (searchQuery) {
-      result = result.filter(college => 
-        college.name.toLowerCase().includes(searchQuery) ||
-        (college.city && college.city.toLowerCase().includes(searchQuery)) ||
-        (college.coursesOffered && college.coursesOffered.some(course => 
-          course.toLowerCase().includes(searchQuery)
+    if (searchQuery.trim()) {
+      result = result.filter((college) =>
+        college.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        (college.city?.toLowerCase().includes(searchQuery.toLowerCase())) ||
+        (college.coursesOffered?.some((course) =>
+          course.toLowerCase().includes(searchQuery.toLowerCase())
         ))
       );
     }
-    
+
     // Apply fee range filter
-    result = result.filter(college => 
-      college.totalAnnualFee >= filters.feesRange[0] && 
-      college.totalAnnualFee <= filters.feesRange[1]
-    );
-    
+    if (filters.feesRange[0] !== 0 || filters.feesRange[1] !== 300000) {
+      result = result.filter(
+        (college) =>
+          college.totalAnnualFee >= filters.feesRange[0] &&
+          college.totalAnnualFee <= filters.feesRange[1]
+      );
+    }
+
     // Apply type filter
     if (filters.type.length > 0) {
-      result = result.filter(college => 
+      result = result.filter((college) =>
         college.typeOfCollege && filters.type.includes(college.typeOfCollege)
       );
     }
-    
+
     // Apply location filter
     if (filters.location) {
-      result = result.filter(college => 
-        college.city && college.city.toLowerCase() === filters.location.toLowerCase()
+      result = result.filter((college) =>
+        college.city?.toLowerCase() === filters.location.toLowerCase()
       );
     }
-    
+
     // Apply course filter
     if (filters.courses.length > 0) {
-      result = result.filter(college => 
-        college.coursesOffered && 
-        college.coursesOffered.some(course => filters.courses.includes(course))
+      result = result.filter((college) =>
+        college.coursesOffered?.some((course) => filters.courses.includes(course))
       );
     }
-    
+
     setFilteredColleges(result);
     setIsFilterOpen(false);
   };
@@ -132,17 +137,16 @@ function AllColleges() {
       feesRange: [0, 300000],
       type: [],
       location: '',
-      courses: []
+      courses: [],
     });
     setSearchQuery('');
   };
 
   const getUniqueCities = () => {
     const cities = colleges
-      .map(college => college.city)
-      .filter(city => city)
+      .map((college) => college.city)
+      .filter((city) => city)
       .filter((city, index, self) => self.indexOf(city) === index);
-    
     return cities.sort();
   };
 
@@ -166,7 +170,7 @@ function AllColleges() {
       <div className="min-h-screen flex items-center justify-center bg-orange-50">
         <div className="text-center">
           <p className="text-red-600 mb-4">{error}</p>
-          <button 
+          <button
             onClick={fetchColleges}
             className="bg-orange-600 text-white px-4 py-2 rounded-lg hover:bg-orange-700"
           >
@@ -188,17 +192,42 @@ function AllColleges() {
                 Raynott
               </motion.span>
             </Link>
+            <div className="md:hidden flex space-x-2">
+              <motion.button
+                className="bg-white text-orange-600 font-semibold py-2 px-4 rounded-full transition duration-300"
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                onClick={() => nav('/bookdemo')}
+              >
+                Demo
+              </motion.button>
+              <motion.button
+                className="bg-white text-orange-600 font-semibold py-2 px-4 rounded-full transition duration-300"
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+              >
+                <FaBookOpen />
+              </motion.button>
+            </div>
           </div>
 
           <div className="relative w-full max-w-2xl md:max-w-xl flex-grow md:ml-8">
             <FaSearch className="absolute left-4 top-1/2 transform -translate-y-1/2 text-orange-400" />
             <input
               type="text"
-              placeholder="Search Colleges, Locations..."
+              placeholder="Search Colleges by Name"
               value={searchQuery}
               onChange={handleSearch}
-              className="pl-12 pr-4 py-3 rounded-full bg-white border border-transparent text-gray-800 focus:outline-none w-full focus:ring-2 focus:ring-orange-200 focus:border-transparent shadow-sm"
+              className="pl-12 pr-10 py-3 rounded-full bg-white border border-transparent text-gray-800 focus:outline-none w-full focus:ring-2 focus:ring-orange-200 focus:border-transparent shadow-sm"
             />
+            {searchQuery && (
+              <button
+                onClick={() => setSearchQuery('')}
+                className="absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700"
+              >
+                <FaTimes />
+              </button>
+            )}
           </div>
 
           <div className="hidden md:flex space-x-4 ml-8">
@@ -242,7 +271,7 @@ function AllColleges() {
             onClick={() => setIsFilterOpen(true)}
           >
             <FaFilter className="mr-2" />
-            Filters
+            Filters ({filters.type.length + filters.courses.length + (filters.location ? 1 : 0)})
           </motion.button>
         </div>
 
@@ -264,13 +293,16 @@ function AllColleges() {
                 >
                   <div className="relative h-48 w-full overflow-hidden">
                     <img
-                      src={college.collegeImage || "https://images.unsplash.com/photo-1523050854058-8df90110c9f1?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=800&q=80"}
+                      src={college.collegeImage || 'https://images.unsplash.com/photo-1523050854058-8df90110c9f1?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80'}
                       alt={college.name}
                       className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
                     />
-                    {/* <div className="absolute top-4 left-4 bg-yellow-500 text-dark text-xs font-bold px-3 py-1 rounded-full shadow-lg">
-                      Admissions Open
-                    </div> */}
+                    <div className="absolute top-4 right-4 flex items-center bg-white/90 text-orange-600 px-3 py-1 rounded-full shadow-lg backdrop-blur-sm">
+                      <span className="font-bold mr-1">{college.rating || 'N/A'}</span>
+                      <svg className="w-4 h-4 fill-current" viewBox="0 0 20 20">
+                        <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                      </svg>
+                    </div>
                   </div>
                   <div className="p-4 flex flex-col flex-grow h-64">
                     <p className="text-xs font-semibold text-orange-500 uppercase tracking-wide">
@@ -285,13 +317,11 @@ function AllColleges() {
                         {college.city}, {college.state}
                       </span>
                     </p>
-
                     <div className="mt-3">
                       <p className="text-base font-bold text-gray-700">
                         ₹{college.totalAnnualFee ? college.totalAnnualFee.toLocaleString() : 'N/A'}
                       </p>
                     </div>
-
                     <div className="mt-auto pt-4">
                       <div className="flex justify-between items-center space-x-2">
                         <motion.button
@@ -320,7 +350,9 @@ function AllColleges() {
         ) : (
           <div className="text-center py-12">
             <FaUniversity className="text-5xl text-gray-400 mx-auto mb-4" />
-            <h3 className="text-xl font-semibold text-gray-700">No colleges found</h3>
+            <h3 className="text-xl font-semibold text-gray-700">
+              {searchQuery ? `No colleges found matching "${searchQuery}"` : 'No colleges found'}
+            </h3>
             <p className="text-gray-500 mt-2">
               Try adjusting your filters or search query
             </p>
@@ -348,7 +380,7 @@ function AllColleges() {
               initial={{ y: 50, opacity: 0 }}
               animate={{ y: 0, opacity: 1 }}
               exit={{ y: 50, opacity: 0 }}
-              transition={{ type: "spring", damping: 25 }}
+              transition={{ type: 'spring', damping: 25 }}
             >
               <div className="p-6">
                 <div className="flex justify-between items-center border-b pb-4 mb-4">
@@ -407,12 +439,14 @@ function AllColleges() {
                   <h3 className="text-lg font-semibold mb-3 text-gray-700">Location</h3>
                   <select
                     value={filters.location}
-                    onChange={(e) => setFilters({...filters, location: e.target.value})}
+                    onChange={(e) => setFilters({ ...filters, location: e.target.value })}
                     className="w-full p-2 border border-gray-300 rounded-lg focus:ring-orange-500 focus:border-orange-500"
                   >
                     <option value="">All Locations</option>
-                    {getUniqueCities().map(city => (
-                      <option key={city} value={city}>{city}</option>
+                    {getUniqueCities().map((city) => (
+                      <option key={city} value={city}>
+                        {city}
+                      </option>
                     ))}
                   </select>
                 </div>
@@ -463,7 +497,8 @@ function AllColleges() {
           </motion.div>
         )}
       </AnimatePresence>
-      <StickyButton/>
+      {/* <Footer /> */}
+      <StickyButton />
     </div>
   );
 }
