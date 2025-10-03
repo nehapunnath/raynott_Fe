@@ -285,7 +285,7 @@ function CoachingList() {
             </h1>
             <p className="text-lg text-gray-600 flex items-center mt-1">
               <BsFillCalendar2CheckFill className="mr-2 text-orange-500" />
-              {finalFilteredCenters.length} Centers {searchQuery && `matching "${searchQuery}"`} | List Updated on Aug 1, 2025
+              {finalFilteredCenters.length} Centers  | List Updated on Aug 1, 2025
             </p>
           </div>
           <motion.button
