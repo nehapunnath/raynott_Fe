@@ -1,9 +1,9 @@
 import React, { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Link, useNavigate } from 'react-router-dom';
-import { FaSchool, FaSearch, FaFilter, FaBookOpen, FaTimes, FaHome } from "react-icons/fa";
-import { IoLocationSharp } from "react-icons/io5";
-import { BsFillCalendar2CheckFill } from "react-icons/bs";
+import { FaSchool, FaSearch, FaFilter, FaTimes, FaHome } from 'react-icons/fa';
+import { IoLocationSharp } from 'react-icons/io5';
+import { BsFillCalendar2CheckFill } from 'react-icons/bs';
 import { puCollegeApi } from '../services/pucollegeApi';
 import Footer from '../components/Footer';
 import StickyButton from '../components/StickyButton';
@@ -21,18 +21,20 @@ const cityNormalizationMap = {
 };
 
 function AllPuColleges() {
-  const navigate = useNavigate();
+  const nav = useNavigate();
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const [filters, setFilters] = useState({
     feesRange: [0, 100000],
     streams: [],
     collegeType: [],
-    category: "PU Colleges"
+    location: '',
+    category: 'PU Colleges',
   });
-  const [puColleges, setPUColleges] = useState([]);
-  const [filteredColleges, setFilteredColleges] = useState([]);
+  const [puCollegesData, setPUCollegesData] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [totalColleges, setTotalColleges] = useState(0);
+  const [searchQuery, setSearchQuery] = useState('');
 
   const streamsOptions = ['Science', 'Commerce', 'Arts'];
   const collegeTypeOptions = ['Government', 'Private', 'Composite'];
@@ -44,106 +46,154 @@ function AllPuColleges() {
     return cityNormalizationMap[cleanCity] || city;
   };
 
-  // Fetch PU Colleges from API
-  useEffect(() => {
-    const fetchPUColleges = async () => {
-      try {
-        setLoading(true);
-        setError(null);
-        const response = await puCollegeApi.getPUColleges();
-        console.log('PU Colleges API response:', response);
+  // Format PU college data for rendering
+  const formatPUColleges = (colleges, place = 'All Locations') => {
+    console.log('Formatting PU colleges:', colleges);
+    let filteredColleges = Object.values(colleges);
 
-        let collegesArray = [];
-        if (response.success && response.data) {
-          collegesArray = Array.isArray(response.data) 
-            ? response.data 
-            : Object.values(response.data);
-        }
+    // Apply search query filter if searchQuery is not empty
+    if (searchQuery.trim()) {
+      filteredColleges = filteredColleges.filter((college) =>
+        college.name?.toLowerCase().includes(searchQuery.toLowerCase())
+      );
+    }
 
-        console.log('Raw colleges array:', collegesArray);
-
-        const mappedColleges = collegesArray.map(college => ({
-          id: college.id || college._id || Math.random().toString(36).substr(2, 9),
-          name: college.name || 'Unnamed College',
-          location: college.address || 'Unknown Location',
-          city: normalizeCity(college.city || college.addressCity || college.location || 'Unknown'),
-          fees: college.totalAnnualFee 
-            ? `₹${Number(college.totalAnnualFee).toLocaleString()} - ₹${(Number(college.totalAnnualFee) + 10000).toLocaleString()}`
-            : '₹30,000 - ₹50,000',
-          views: `${Math.floor(Math.random() * 5000 + 5000)} Views`,
-          streams: Array.isArray(college.streams) 
-            ? college.streams.join(', ') 
-            : (typeof college.streams === 'string' ? college.streams : 'Science, Commerce'),
-          rating: college.rating || (Math.random() * (5 - 4) + 4).toFixed(1),
-          image: college.collegeImage || 
-                 'https://images.unsplash.com/photo-1523050854058-8df90110c9f1?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80',
-          typeOfCollege: college.typeOfCollege || 'PU College'
-        }));
-
-        console.log('Mapped colleges:', mappedColleges);
-        setPUColleges(mappedColleges);
-        setFilteredColleges(mappedColleges); // Initially show all colleges
-      } catch (err) {
-        console.error('Error fetching PU Colleges:', err);
-        setError('Failed to load PU Colleges. Please try again later.');
-        setPUColleges([]);
-        setFilteredColleges([]);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchPUColleges();
-    window.scrollTo(0, 0);
-  }, []);
-
-  // Apply filters to PU Colleges
-  const applyFilters = () => {
-    const filtered = puColleges.filter(college => {
-      const feeRange = college.fees
-        .split(' - ')
-        .map(fee => parseInt(fee.replace(/₹|,/g, '')));
-      const collegeStreams = college.streams.split(', ').map(s => s.trim());
-      const isFeeInRange = feeRange[0] >= filters.feesRange[0] && feeRange[1] <= filters.feesRange[1];
-      const isStreamMatch = filters.streams.length === 0 || 
-                           filters.streams.some(stream => collegeStreams.includes(stream));
-      const isTypeMatch = filters.collegeType.length === 0 || 
-                         filters.collegeType.includes(college.typeOfCollege);
-      return isFeeInRange && isStreamMatch && isTypeMatch;
-    });
-
-    setFilteredColleges(filtered);
-    console.log('Applied filters:', filters, 'Filtered colleges:', filtered);
-    setIsFilterOpen(false);
+    return [
+      {
+        category: 'PU Colleges',
+        icon: <FaSchool className="text-white" />,
+        place,
+        items: filteredColleges.map((college) => {
+          console.log('Processing PU college:', college);
+          return {
+            id: college.id || college._id || Math.random().toString(36).substr(2, 9),
+            name: college.name || 'Unnamed PU College',
+            location: college.address || college.city || 'Unknown Location',
+            fees: college.totalAnnualFee
+              ? `₹${Number(college.totalAnnualFee).toLocaleString()}`
+              : 'Fees not available',
+            views: college.views ? `${(college.views / 1000).toFixed(1)}K Views` : `${Math.floor(Math.random() * 5000 + 5000)} Views`,
+            streams: Array.isArray(college.streams)
+              ? college.streams.join(', ')
+              : (typeof college.streams === 'string' ? college.streams : 'Science, Commerce'),
+            rating: college.rating || (Math.random() * (5 - 4) + 4).toFixed(1),
+            image: college.collegeImage ||
+                   'https://images.unsplash.com/photo-1523050854058-8df90110c9f1?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80',
+            typeOfCollege: college.typeOfCollege || 'PU College',
+          };
+        }),
+      },
+    ];
   };
 
+  // Fetch all PU colleges
+  const fetchAllPUColleges = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      console.log('Fetching all PU colleges');
+      const response = await puCollegeApi.getPUColleges();
+      console.log('API response (all PU colleges):', response);
+      const colleges = response.data || {};
+      const formattedColleges = formatPUColleges(colleges);
+      setPUCollegesData(formattedColleges);
+      setTotalColleges(formattedColleges[0].items.length);
+      if (Object.keys(colleges).length === 0) {
+        setError('No PU colleges available in the database.');
+      }
+    } catch (err) {
+      console.error('Error fetching all PU colleges:', err);
+      setError(err.response?.data?.message || err.message || 'Failed to fetch PU colleges');
+      setPUCollegesData([]);
+      setTotalColleges(0);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Fetch filtered PU colleges
+  const fetchFilteredPUColleges = async (filterParams) => {
+    setLoading(true);
+    setError(null);
+    try {
+      console.log('Fetching filtered PU colleges with params:', filterParams);
+      const response = await puCollegeApi.searchPUColleges(filterParams);
+      console.log('API response (filtered PU colleges):', response);
+      const colleges = response.data || {};
+      const formattedColleges = formatPUColleges(colleges, filterParams.city || 'Filtered Locations');
+      setPUCollegesData(formattedColleges);
+      setTotalColleges(formattedColleges[0].items.length);
+      if (Object.keys(colleges).length === 0) {
+        setError('No PU colleges found for the selected filters.');
+      }
+    } catch (err) {
+      console.error('Error fetching filtered PU colleges:', err);
+      setError(err.response?.data?.message || err.message || 'Failed to fetch filtered PU colleges');
+      setPUCollegesData([]);
+      setTotalColleges(0);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Fetch colleges on mount or when searchQuery changes
+  useEffect(() => {
+    if (filters.location || filters.streams.length || filters.collegeType.length || filters.feesRange[0] !== 0 || filters.feesRange[1] !== 100000) {
+      applyFilters();
+    } else {
+      fetchAllPUColleges();
+    }
+  }, [searchQuery]);
+
+  // Handle filter changes
   const handleFilterChange = (filterType, value) => {
-    setFilters(prev => {
+    setFilters((prev) => {
       if (filterType === 'feesRange') {
         return { ...prev, feesRange: value };
+      } else if (filterType === 'location') {
+        return { ...prev, location: value };
       } else {
         const currentValues = [...prev[filterType]];
         const index = currentValues.indexOf(value);
-
         if (index === -1) {
           currentValues.push(value);
         } else {
           currentValues.splice(index, 1);
         }
-
         return { ...prev, [filterType]: currentValues };
       }
     });
   };
 
+  // Handle search input change
+  const handleSearchChange = (e) => {
+    setSearchQuery(e.target.value);
+  };
+
+  // Reset filters
   const resetFilters = () => {
     setFilters({
       feesRange: [0, 100000],
       streams: [],
       collegeType: [],
-      category: "PU Colleges"
+      location: '',
+      category: 'PU Colleges',
     });
-    setFilteredColleges(puColleges); // Reset to show all colleges
+    setSearchQuery('');
+    fetchAllPUColleges();
+  };
+
+  // Apply filters
+  const applyFilters = () => {
+    const filterParams = {
+      city: filters.location || undefined,
+      streams: filters.streams.length > 0 ? filters.streams.join(',') : undefined,
+      typeOfCollege: filters.collegeType.length > 0 ? filters.collegeType[0] : undefined,
+      maxFee: filters.feesRange[1],
+    };
+    console.log('Applied filters:', filterParams);
+    fetchFilteredPUColleges(filterParams);
+    setIsFilterOpen(false);
   };
 
   return (
@@ -153,43 +203,33 @@ function AllPuColleges() {
         <div className="max-w-7xl mx-auto px-4 py-4 md:py-6 flex flex-col md:flex-row items-center justify-between">
           <div className="flex w-full md:w-auto justify-between items-center mb-4 md:mb-0">
             <Link to="/" className="text-3xl font-extrabold text-white">
-              <motion.span whileHover={{ scale: 1.05 }}>
-                Raynott
-              </motion.span>
+              <motion.span whileHover={{ scale: 1.05 }}>Raynott</motion.span>
             </Link>
-            <div className="md:hidden flex space-x-2">
-              <motion.button
-                className="bg-white text-orange-600 font-semibold py-2 px-4 rounded-full transition duration-300"
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-              >
-                Demo
-              </motion.button>
-              <motion.button
-                className="bg-white text-orange-600 font-semibold py-2 px-4 rounded-full transition duration-300"
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-              >
-                <FaBookOpen />
-              </motion.button>
-            </div>
           </div>
-
           <div className="relative w-full max-w-2xl md:max-w-xl flex-grow md:ml-8">
             <FaSearch className="absolute left-4 top-1/2 transform -translate-y-1/2 text-orange-400" />
             <input
               type="text"
-              placeholder="Search PU Colleges across India..."
-              className="pl-12 pr-4 py-3 rounded-full bg-white border border-transparent text-gray-800 focus:outline-none w-full focus:ring-2 focus:ring-orange-200 focus:border-transparent shadow-sm"
+              placeholder="Search PU Colleges by Name..."
+              value={searchQuery}
+              onChange={handleSearchChange}
+              className="pl-12 pr-10 py-3 rounded-full bg-white border border-transparent text-gray-800 focus:outline-none w-full focus:ring-2 focus:ring-orange-200 focus:border-transparent shadow-sm"
             />
+            {searchQuery && (
+              <button
+                onClick={() => setSearchQuery('')}
+                className="absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700"
+              >
+                <FaTimes />
+              </button>
+            )}
           </div>
-
           <div className="hidden md:flex space-x-4 ml-8">
             <motion.button
               className="bg-white border border-white text-orange-600 hover:bg-orange-100 font-semibold py-2 px-4 rounded-full transition duration-300"
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
-              onClick={() => navigate('/bookdemo')}
+              onClick={() => nav('/bookdemo')}
             >
               Book A Demo
             </motion.button>
@@ -215,7 +255,7 @@ function AllPuColleges() {
             </h1>
             <p className="text-lg text-gray-600 flex items-center mt-1">
               <BsFillCalendar2CheckFill className="mr-2 text-orange-500" />
-              {filteredColleges.length} PU Colleges | List Updated on Aug 1, 2025
+              {totalColleges} PU Colleges | List Updated on Aug 1, 2025
             </p>
           </div>
           <motion.button
@@ -225,106 +265,109 @@ function AllPuColleges() {
             onClick={() => setIsFilterOpen(true)}
           >
             <FaFilter className="mr-2" />
-            Filters ({filters.streams.length + filters.collegeType.length + (filters.feesRange[0] !== 0 || filters.feesRange[1] !== 100000 ? 1 : 0)})
+            Filters ({filters.streams.length + filters.collegeType.length})
           </motion.button>
         </div>
 
-        {/* Loading State */}
+        {/* Loading and Error States */}
         {loading && (
-          <div className="flex justify-center items-center h-64">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-600"></div>
+          <div className="text-center py-8">
+            <p className="text-lg text-gray-600">Loading PU Colleges...</p>
           </div>
         )}
-
-        {/* Error State */}
-        {error && !loading && (
-          <div className="text-center text-red-600 font-medium p-4">
-            {error}
+        {error && (
+          <div className="text-center py-8">
+            <p className="text-lg text-red-600">{error}</p>
+            <button
+              onClick={fetchAllPUColleges}
+              className="mt-4 bg-orange-600 text-white px-4 py-2 rounded-lg hover:bg-orange-700"
+            >
+              Try Again
+            </button>
+          </div>
+        )}
+        {!loading && !error && puCollegesData.length > 0 && puCollegesData[0].items.length === 0 && (
+          <div className="text-center py-8">
+            <p className="text-lg text-gray-600">
+              {searchQuery ? `No PU colleges found matching "${searchQuery}".` : 'No PU colleges found.'}
+            </p>
+            <button
+              onClick={resetFilters}
+              className="mt-4 bg-orange-600 text-white px-4 py-2 rounded-lg hover:bg-orange-700"
+            >
+              Reset Filters
+            </button>
           </div>
         )}
 
         {/* PU Colleges List */}
-        {!loading && !error && filteredColleges.length > 0 && (
-          <div className="mb-12">
-            <h2 className="text-2xl font-bold text-gray-800 mb-6 flex items-center">
-              <span className="p-2 bg-orange-600 rounded-full mr-3">
-                <FaSchool className="text-white" />
-              </span>
-              <span className="ml-2">{filters.category} in India</span>
-            </h2>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-              {filteredColleges.map((college) => (
-                <Link
-                  to={`/pucollege-details/${college.id}`}
-                  key={college.id}
-                  className="group"
-                >
-                  <motion.div
-                    className="bg-white rounded-xl shadow-lg hover:shadow-2xl transition-all duration-300 overflow-hidden flex flex-col w-full h-full"
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.5 }}
-                    whileHover={{ y: -5 }}
-                  >
-                    <div className="relative h-48 w-full overflow-hidden">
-                      <img
-                        src={college.image}
-                        alt={college.name}
-                        className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
-                      />
-                      {/* <div className="absolute top-4 left-4 bg-yellow-500 text-dark text-xs font-bold px-3 py-1 rounded-full shadow-lg">
-                        Admissions Open
-                      </div> */}
-                      <div className="absolute top-4 right-4 flex items-center bg-white/90 text-orange-600 px-3 py-1 rounded-full shadow-lg backdrop-blur-sm">
-                        <span className="font-bold mr-1">{college.rating}</span>
-                        <svg className="w-4 h-4 fill-current" viewBox="0 0 20 20">
-                          <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-                        </svg>
-                      </div>
-                    </div>
-                    <div className="p-4 flex flex-col flex-grow h-64">
-                      <p className="text-xs font-semibold text-orange-500 uppercase tracking-wide">{college.streams}</p>
-                      <h3 className="text-lg font-bold text-gray-900 mt-1 line-clamp-2 min-h-[4rem]">{college.name}</h3>
-                      <p className="text-sm text-gray-500 flex items-center mt-2">
-                        <IoLocationSharp className="mr-1 text-orange-400" />
-                        <span className="line-clamp-1">{college.location}, {college.city}</span>
-                      </p>
-                      <div className="mt-3">
-                        <p className="text-base font-bold text-gray-700">{college.fees}</p>
-                      </div>
-                      <div className="mt-auto pt-4">
-                        <div className="flex justify-between items-center space-x-2">
-                          <motion.button
-                            className="bg-orange-600 hover:bg-orange-700 text-white text-sm font-medium py-2 px-3 rounded-lg w-full transition duration-300"
-                            whileHover={{ scale: 1.02 }}
-                            whileTap={{ scale: 0.98 }}
-                            onClick={(e) => e.preventDefault()}
-                          >
-                            Enquire Now
-                          </motion.button>
-                          <motion.button
-                            className="bg-transparent border border-orange-600 text-orange-600 hover:bg-orange-50 font-medium rounded-lg w-10 h-10 flex items-center justify-center transition duration-300"
-                            whileHover={{ scale: 1.02 }}
-                            whileTap={{ scale: 0.98 }}
-                            onClick={(e) => e.preventDefault()}
-                          >
-                            <i className="fas fa-phone-alt"></i>
-                          </motion.button>
+        {!loading && !error && puCollegesData.length > 0 && puCollegesData[0].items.length > 0 && (
+          puCollegesData.map((section, index) => (
+            <div key={index} className="mb-12">
+              <h2 className="text-2xl font-bold text-gray-800 mb-6 flex items-center">
+                <span className="p-2 bg-orange-600 rounded-full mr-3">{section.icon}</span>
+                <span className="ml-2">{section.category} in {section.place}</span>
+              </h2>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+                {section.items.map((item) => (
+                  <Link to={`/pucollege-details/${item.id}`} key={item.id} className="group">
+                    <motion.div
+                      className="bg-white rounded-xl shadow-lg hover:shadow-2xl transition-all duration-300 overflow-hidden flex flex-col w-full h-full"
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ duration: 0.5 }}
+                      whileHover={{ y: -5 }}
+                    >
+                      <div className="relative h-48 w-full overflow-hidden">
+                        <img
+                          src={item.image}
+                          alt={item.name}
+                          className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+                        />
+                        <div className="absolute top-4 right-4 flex items-center bg-white/90 text-orange-600 px-3 py-1 rounded-full shadow-lg backdrop-blur-sm">
+                          <span className="font-bold mr-1">{item.rating}</span>
+                          <svg className="w-4 h-4 fill-current" viewBox="0 0 20 20">
+                            <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                          </svg>
                         </div>
                       </div>
-                    </div>
-                  </motion.div>
-                </Link>
-              ))}
+                      <div className="p-4 flex flex-col flex-grow h-64">
+                        <p className="text-xs font-semibold text-orange-500 uppercase tracking-wide">{item.streams}</p>
+                        <h3 className="text-lg font-bold text-gray-900 mt-1 line-clamp-2 min-h-[4rem]">{item.name}</h3>
+                        <p className="text-sm text-gray-500 flex items-center mt-2">
+                          <IoLocationSharp className="mr-1 text-orange-400" />
+                          <span className="line-clamp-1">{item.location}</span>
+                        </p>
+                        <div className="mt-3">
+                          <p className="text-base font-bold text-gray-700">{item.fees}</p>
+                        </div>
+                        <div className="mt-auto pt-4">
+                          <div className="flex justify-between items-center space-x-2">
+                            <motion.button
+                              className="bg-orange-600 hover:bg-orange-700 text-white text-sm font-medium py-2 px-3 rounded-lg w-full transition duration-300"
+                              whileHover={{ scale: 1.02 }}
+                              whileTap={{ scale: 0.98 }}
+                              onClick={(e) => e.preventDefault()}
+                            >
+                              Enquire Now
+                            </motion.button>
+                            <motion.button
+                              className="bg-transparent border border-orange-600 text-orange-600 hover:bg-orange-50 font-medium rounded-lg w-10 h-10 flex items-center justify-center transition duration-300"
+                              whileHover={{ scale: 1.02 }}
+                              whileTap={{ scale: 0.98 }}
+                              onClick={(e) => e.preventDefault()}
+                            >
+                              <i className="fas fa-phone-alt"></i>
+                            </motion.button>
+                          </div>
+                        </div>
+                      </div>
+                    </motion.div>
+                  </Link>
+                ))}
+              </div>
             </div>
-          </div>
-        )}
-
-        {/* No Results */}
-        {!loading && !error && filteredColleges.length === 0 && (
-          <div className="text-center text-gray-600 font-medium p-8">
-            No PU Colleges found. Please adjust the filters or try again later.
-          </div>
+          ))
         )}
       </main>
 
@@ -342,7 +385,7 @@ function AllPuColleges() {
               initial={{ y: 50, opacity: 0 }}
               animate={{ y: 0, opacity: 1 }}
               exit={{ y: 50, opacity: 0 }}
-              transition={{ type: "spring", damping: 25 }}
+              transition={{ type: 'spring', damping: 25 }}
             >
               <div className="p-6">
                 <div className="flex justify-between items-center border-b pb-4 mb-4">
@@ -353,6 +396,18 @@ function AllPuColleges() {
                   >
                     <FaTimes className="text-xl" />
                   </button>
+                </div>
+
+                {/* Location Filter */}
+                <div className="mb-6">
+                  <h3 className="text-lg font-semibold mb-3 text-gray-700">Location</h3>
+                  <input
+                    type="text"
+                    placeholder="Enter city (e.g., Bengaluru)"
+                    value={filters.location}
+                    onChange={(e) => handleFilterChange('location', e.target.value)}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
+                  />
                 </div>
 
                 {/* Fees Range Filter */}

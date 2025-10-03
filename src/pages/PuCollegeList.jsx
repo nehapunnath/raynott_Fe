@@ -33,6 +33,7 @@ function PuCollegeList() {
   const [puColleges, setPUColleges] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [searchQuery, setSearchQuery] = useState(''); // Add search query state
 
   const streamsOptions = ['Science', 'Commerce', 'Arts'];
   const collegeTypeOptions = ['Government', 'Private', 'Composite'];
@@ -105,8 +106,32 @@ function PuCollegeList() {
     }
   };
 
-  // Group colleges by typeOfCollege
-  const groupedColleges = puColleges.reduce((acc, college) => {
+  // Handle search input change
+  const handleSearchChange = (e) => {
+    setSearchQuery(e.target.value);
+  };
+
+  // Clear search query
+  const clearSearch = () => {
+    setSearchQuery('');
+  };
+
+  // Filter colleges based on search query
+  const getFilteredColleges = () => {
+    if (!searchQuery.trim()) {
+      return puColleges;
+    }
+
+    return puColleges.filter((college) =>
+      college.name?.toLowerCase().includes(searchQuery.toLowerCase())
+    );
+  };
+
+  // Get the final filtered colleges
+  const filteredColleges = getFilteredColleges();
+
+  // Group colleges by typeOfCollege for display
+  const groupedColleges = filteredColleges.reduce((acc, college) => {
     const type = college.typeOfCollege || 'PU College';
     if (!acc[type]) {
       acc[type] = [];
@@ -114,20 +139,6 @@ function PuCollegeList() {
     acc[type].push(college);
     return acc;
   }, {});
-
-  // Apply filters to the PU Colleges list
-  const filteredColleges = puColleges.filter(college => {
-    const feeRange = college.fees
-      .split(' - ')
-      .map(fee => parseInt(fee.replace(/₹|,/g, '')));
-    const collegeStreams = college.streams.split(', ').map(s => s.trim());
-    const isFeeInRange = feeRange[0] >= filters.feesRange[0] && feeRange[1] <= filters.feesRange[1];
-    const isStreamMatch = filters.streams.length === 0 || 
-                         filters.streams.some(stream => collegeStreams.includes(stream));
-    const isTypeMatch = filters.collegeType.length === 0 || 
-                       filters.collegeType.includes(college.typeOfCollege);
-    return isFeeInRange && isStreamMatch && isTypeMatch;
-  });
 
   const handleFilterChange = (filterType, value) => {
     setFilters(prev => {
@@ -192,13 +203,24 @@ function PuCollegeList() {
             </div>
           </div>
 
+          {/* Search Bar - Updated with search functionality */}
           <div className="relative w-full max-w-2xl md:max-w-xl flex-grow md:ml-8">
             <FaSearch className="absolute left-4 top-1/2 transform -translate-y-1/2 text-orange-400" />
             <input
               type="text"
-              placeholder={`Search PU Colleges, Locations in ${filters.location}...`}
-              className="pl-12 pr-4 py-3 rounded-full bg-white border border-transparent text-gray-800 focus:outline-none w-full focus:ring-2 focus:ring-orange-200 focus:border-transparent shadow-sm"
+              placeholder={`Search PU Colleges in ${filters.location}...`}
+              value={searchQuery}
+              onChange={handleSearchChange}
+              className="pl-12 pr-10 py-3 rounded-full bg-white border border-transparent text-gray-800 focus:outline-none w-full focus:ring-2 focus:ring-orange-200 focus:border-transparent shadow-sm"
             />
+            {searchQuery && (
+              <button
+                onClick={clearSearch}
+                className="absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700"
+              >
+                <FaTimes />
+              </button>
+            )}
           </div>
 
           <div className="hidden md:flex space-x-4 ml-8">
@@ -260,6 +282,28 @@ function PuCollegeList() {
           </div>
         )}
 
+        {/* No Results for Search */}
+        {!loading && !error && searchQuery && filteredColleges.length === 0 && (
+          <div className="text-center py-8">
+            <p className="text-lg text-gray-600">
+              No PU colleges found in {filters.location} matching "{searchQuery}".
+            </p>
+            <button
+              onClick={clearSearch}
+              className="mt-4 bg-orange-600 text-white px-4 py-2 rounded-lg hover:bg-orange-700"
+            >
+              Clear Search
+            </button>
+          </div>
+        )}
+
+        {/* No Results (no search) */}
+        {!loading && !error && !searchQuery && filteredColleges.length === 0 && (
+          <div className="text-center text-gray-600 font-medium p-8">
+            No PU Colleges found in {filters.location}. Please select a different city from the menu or check back later.
+          </div>
+        )}
+
         {/* PU Colleges List */}
         {!loading && !error && Object.keys(groupedColleges).length > 0 && (
           Object.keys(groupedColleges).map((type, index) => (
@@ -290,9 +334,6 @@ function PuCollegeList() {
                           alt={college.name}
                           className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
                         />
-                        {/* <div className="absolute top-4 left-4 bg-yellow-500 text-dark text-xs font-bold px-3 py-1 rounded-full shadow-lg">
-                          Admissions Open
-                        </div> */}
                         <div className="absolute top-4 right-4 flex items-center bg-white/90 text-orange-600 px-3 py-1 rounded-full shadow-lg backdrop-blur-sm">
                           <span className="font-bold mr-1">{college.rating}</span>
                           <svg className="w-4 h-4 fill-current" viewBox="0 0 20 20">
@@ -340,16 +381,11 @@ function PuCollegeList() {
             </div>
           ))
         )}
-
-        {/* No Results */}
-        {!loading && !error && Object.keys(groupedColleges).length === 0 && (
-          <div className="text-center text-gray-600 font-medium p-8">
-            No PU Colleges found in {filters.location}. Please select a different city from the menu or check back later.
-          </div>
-        )}
       </main>
 
-      {/* Filter Modal */}
+      {/* Rest of your component remains the same */}
+      {/* Filter Modal and other code... */}
+       {/* Filter Modal */}
       <AnimatePresence>
         {isFilterOpen && (
           <motion.div
@@ -464,7 +500,8 @@ function PuCollegeList() {
         )}
       </AnimatePresence>
 
-      <Footer />
+      
+      {/* <Footer /> */}
       <StickyButton />
     </div>
   );

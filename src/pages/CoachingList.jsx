@@ -32,8 +32,10 @@ function CoachingList() {
     location: 'Bengaluru' // Default city
   });
   const [coachingCenters, setCoachingCenters] = useState([]);
+  const [allCoachingCenters, setAllCoachingCenters] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [searchQuery, setSearchQuery] = useState('');
 
   const coursesOptions = ['JEE', 'NEET', 'CAT', 'GMAT', 'KVPY', 'CBSE', 'ICSE', 'State Board'];
   const centerTypeOptions = ['Coaching Center', 'Tuition Center', 'Online Classes', 'Home Tutors'];
@@ -92,23 +94,69 @@ function CoachingList() {
           rating: center.rating || (Math.random() * (5 - 4) + 4).toFixed(1),
           image: center.centerImage || 
                  'https://images.unsplash.com/photo-1588072432836-e10032774350?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80',
-          typeOfCoaching: center.typeOfCoaching || 'Coaching Center'
+          typeOfCoaching: center.typeOfCoaching || 'Coaching Center',
+          originalData: center // Store original data for reference
         }));
 
       console.log(`Filtered coaching centers for ${normalizedCity}:`, filteredCenters);
 
       setCoachingCenters(filteredCenters);
+      setAllCoachingCenters(filteredCenters); // Store all centers for search
     } catch (err) {
       console.error('Error fetching Coaching Centers:', err);
       setError(`Failed to load Coaching Centers for ${normalizeCity(city)}. Please try again later.`);
       setCoachingCenters([]);
+      setAllCoachingCenters([]);
     } finally {
       setLoading(false);
     }
   };
 
+  // Handle search input change
+  const handleSearchChange = (e) => {
+    setSearchQuery(e.target.value);
+  };
+
+  // Clear search query
+  const clearSearch = () => {
+    setSearchQuery('');
+  };
+
+  // Filter centers based on search query
+  const getSearchedCenters = () => {
+    if (!searchQuery.trim()) {
+      return coachingCenters;
+    }
+
+    return coachingCenters.filter((center) =>
+      center.name?.toLowerCase().includes(searchQuery.toLowerCase())
+    );
+  };
+
+  // Get searched centers
+  const searchedCenters = getSearchedCenters();
+
+  // Apply additional filters (fees range, courses, center type, class range)
+  const getFinalFilteredCenters = () => {
+    return searchedCenters.filter(center => {
+      const feeRange = center.fees
+        .split(' - ')
+        .map(fee => parseInt(fee.replace(/₹|,/g, '')));
+      const centerCourses = center.courses.split(', ').map(s => s.trim());
+      const isFeeInRange = feeRange[0] >= filters.feesRange[0] && feeRange[1] <= filters.feesRange[1];
+      const isCourseMatch = filters.courses.length === 0 || 
+                         filters.courses.some(course => centerCourses.includes(course));
+      const isTypeMatch = filters.centerType.length === 0 || 
+                       filters.centerType.includes(center.typeOfCoaching);
+      return isFeeInRange && isCourseMatch && isTypeMatch;
+    });
+  };
+
+  // Get the final filtered centers
+  const finalFilteredCenters = getFinalFilteredCenters();
+
   // Group centers by typeOfCoaching
-  const groupedCenters = coachingCenters.reduce((acc, center) => {
+  const groupedCenters = finalFilteredCenters.reduce((acc, center) => {
     const type = center.typeOfCoaching || 'Coaching Center';
     if (!acc[type]) {
       acc[type] = [];
@@ -116,20 +164,6 @@ function CoachingList() {
     acc[type].push(center);
     return acc;
   }, {});
-
-  // Apply filters to the Coaching Centers list
-  const filteredCenters = coachingCenters.filter(center => {
-    const feeRange = center.fees
-      .split(' - ')
-      .map(fee => parseInt(fee.replace(/₹|,/g, '')));
-    const centerCourses = center.courses.split(', ').map(s => s.trim());
-    const isFeeInRange = feeRange[0] >= filters.feesRange[0] && feeRange[1] <= filters.feesRange[1];
-    const isCourseMatch = filters.courses.length === 0 || 
-                         filters.courses.some(course => centerCourses.includes(course));
-    const isTypeMatch = filters.centerType.length === 0 || 
-                       filters.centerType.includes(center.typeOfCoaching);
-    return isFeeInRange && isCourseMatch && isTypeMatch;
-  });
 
   const handleFilterChange = (filterType, value) => {
     setFilters(prev => {
@@ -158,6 +192,7 @@ function CoachingList() {
       classRange: [],
       location: filters.location // Preserve the current city
     });
+    setSearchQuery(''); // Clear search when resetting filters
   };
 
   const applyFilters = () => {
@@ -199,13 +234,24 @@ function CoachingList() {
             </div>
           </div>
 
+          {/* Search Bar - Updated with search functionality */}
           <div className="relative w-full max-w-2xl md:max-w-xl flex-grow md:ml-8">
             <FaSearch className="absolute left-4 top-1/2 transform -translate-y-1/2 text-orange-400" />
             <input
               type="text"
               placeholder={`Search Coaching Centers, Tuitions in ${filters.location}...`}
-              className="pl-12 pr-4 py-3 rounded-full bg-white border border-transparent text-gray-800 focus:outline-none w-full focus:ring-2 focus:ring-orange-200 focus:border-transparent shadow-sm"
+              value={searchQuery}
+              onChange={handleSearchChange}
+              className="pl-12 pr-10 py-3 rounded-full bg-white border border-transparent text-gray-800 focus:outline-none w-full focus:ring-2 focus:ring-orange-200 focus:border-transparent shadow-sm"
             />
+            {searchQuery && (
+              <button
+                onClick={clearSearch}
+                className="absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700"
+              >
+                <FaTimes />
+              </button>
+            )}
           </div>
 
           <div className="hidden md:flex space-x-4 ml-8">
@@ -239,7 +285,7 @@ function CoachingList() {
             </h1>
             <p className="text-lg text-gray-600 flex items-center mt-1">
               <BsFillCalendar2CheckFill className="mr-2 text-orange-500" />
-              {filteredCenters.length} Centers | List Updated on Aug 1, 2025
+              {finalFilteredCenters.length} Centers {searchQuery && `matching "${searchQuery}"`} | List Updated on Aug 1, 2025
             </p>
           </div>
           <motion.button
@@ -264,6 +310,28 @@ function CoachingList() {
         {error && !loading && (
           <div className="text-center text-red-600 font-medium p-4">
             {error}
+          </div>
+        )}
+
+        {/* No Results for Search */}
+        {!loading && !error && searchQuery && finalFilteredCenters.length === 0 && (
+          <div className="text-center py-8">
+            <p className="text-lg text-gray-600">
+              No coaching centers found in {filters.location} matching "{searchQuery}".
+            </p>
+            <button
+              onClick={clearSearch}
+              className="mt-4 bg-orange-600 text-white px-4 py-2 rounded-lg hover:bg-orange-700"
+            >
+              Clear Search
+            </button>
+          </div>
+        )}
+
+        {/* No Results (no search) */}
+        {!loading && !error && !searchQuery && finalFilteredCenters.length === 0 && (
+          <div className="text-center text-gray-600 font-medium p-8">
+            No Coaching Centers found in {filters.location}. Please select a different city from the menu or check back later.
           </div>
         )}
 
@@ -297,9 +365,9 @@ function CoachingList() {
                           alt={center.name}
                           className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
                         />
-                        <div className="absolute top-4 left-4 bg-yellow-500 text-dark text-xs font-bold px-3 py-1 rounded-full shadow-lg">
+                        {/* <div className="absolute top-4 left-4 bg-yellow-500 text-dark text-xs font-bold px-3 py-1 rounded-full shadow-lg">
                           Admissions Open
-                        </div>
+                        </div> */}
                         <div className="absolute top-4 right-4 flex items-center bg-white/90 text-orange-600 px-3 py-1 rounded-full shadow-lg backdrop-blur-sm">
                           <span className="font-bold mr-1">{center.rating}</span>
                           <svg className="w-4 h-4 fill-current" viewBox="0 0 20 20">
@@ -346,13 +414,6 @@ function CoachingList() {
               </div>
             </div>
           ))
-        )}
-
-        {/* No Results */}
-        {!loading && !error && Object.keys(groupedCenters).length === 0 && (
-          <div className="text-center text-gray-600 font-medium p-8">
-            No Coaching Centers found in {filters.location}. Please select a different city from the menu or check back later.
-          </div>
         )}
       </main>
 
