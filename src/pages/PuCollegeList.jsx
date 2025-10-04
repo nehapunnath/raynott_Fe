@@ -8,7 +8,6 @@ import { puCollegeApi } from '../services/pucollegeApi';
 import Footer from '../components/Footer';
 import StickyButton from '../components/StickyButton';
 
-// City name normalization map
 const cityNormalizationMap = {
   'bangalore': 'Bengaluru',
   'bengaluru': 'Bengaluru',
@@ -28,24 +27,22 @@ function PuCollegeList() {
     feesRange: [0, 100000],
     streams: [],
     collegeType: [],
-    location: 'Bengaluru' // Default city
+    location: 'Bengaluru' 
   });
   const [puColleges, setPUColleges] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [searchQuery, setSearchQuery] = useState(''); // Add search query state
+  const [searchQuery, setSearchQuery] = useState(''); 
 
   const streamsOptions = ['Science', 'Commerce', 'Arts'];
   const collegeTypeOptions = ['Government', 'Private', 'Composite'];
 
-  // Normalize city name
   const normalizeCity = (city) => {
     if (!city) return 'Bengaluru';
     const cleanCity = city.trim().toLowerCase();
     return cityNormalizationMap[cleanCity] || city;
   };
 
-  // Extract city from URL query parameters and fetch data
   useEffect(() => {
     const queryParams = new URLSearchParams(location.search);
     const city = normalizeCity(queryParams.get('city'));
@@ -53,7 +50,6 @@ function PuCollegeList() {
     fetchPUColleges(city);
   }, [location.search]);
 
-  // Fetch PU Colleges from API
   const fetchPUColleges = async (city) => {
     try {
       setLoading(true);
@@ -70,7 +66,6 @@ function PuCollegeList() {
 
       console.log('Raw colleges array:', collegesArray);
 
-      // Filter colleges by normalized city
       const normalizedCity = normalizeCity(city);
       const filteredColleges = collegesArray
         .filter(college => {
@@ -106,17 +101,14 @@ function PuCollegeList() {
     }
   };
 
-  // Handle search input change
   const handleSearchChange = (e) => {
     setSearchQuery(e.target.value);
   };
 
-  // Clear search query
   const clearSearch = () => {
     setSearchQuery('');
   };
 
-  // Filter colleges based on search query
   const getFilteredColleges = () => {
     if (!searchQuery.trim()) {
       return puColleges;
@@ -127,10 +119,8 @@ function PuCollegeList() {
     );
   };
 
-  // Get the final filtered colleges
   const filteredColleges = getFilteredColleges();
 
-  // Group colleges by typeOfCollege for display
   const groupedColleges = filteredColleges.reduce((acc, college) => {
     const type = college.typeOfCollege || 'PU College';
     if (!acc[type]) {
@@ -164,7 +154,7 @@ function PuCollegeList() {
       feesRange: [0, 100000],
       streams: [],
       collegeType: [],
-      location: filters.location // Preserve the current city
+      location: filters.location 
     });
   };
 
@@ -203,7 +193,6 @@ function PuCollegeList() {
             </div>
           </div>
 
-          {/* Search Bar - Updated with search functionality */}
           <div className="relative w-full max-w-2xl md:max-w-xl flex-grow md:ml-8">
             <FaSearch className="absolute left-4 top-1/2 transform -translate-y-1/2 text-orange-400" />
             <input
@@ -250,11 +239,11 @@ function PuCollegeList() {
               <span className="text-orange-600">{filters.location}</span>
             </div>
             <h1 className="text-3xl md:text-4xl font-extrabold text-gray-800 mt-2">
-              PU Colleges In {filters.location} 2025 - 26
+              PU Colleges In {filters.location} 
             </h1>
             <p className="text-lg text-gray-600 flex items-center mt-1">
               <BsFillCalendar2CheckFill className="mr-2 text-orange-500" />
-              {filteredColleges.length} PU Colleges | List Updated on Aug 1, 2025
+              {filteredColleges.length} PU Colleges 
             </p>
           </div>
           <motion.button

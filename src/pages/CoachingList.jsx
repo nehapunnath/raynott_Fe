@@ -281,11 +281,11 @@ function CoachingList() {
               <span className="text-orange-600">{filters.location}</span>
             </div>
             <h1 className="text-3xl md:text-4xl font-extrabold text-gray-800 mt-2">
-              Coaching & Tuition Centers In {filters.location} 2025 - 26
+              Coaching & Tuition Centers In {filters.location} 
             </h1>
             <p className="text-lg text-gray-600 flex items-center mt-1">
               <BsFillCalendar2CheckFill className="mr-2 text-orange-500" />
-              {finalFilteredCenters.length} Centers  | List Updated on Aug 1, 2025
+              {finalFilteredCenters.length} Centers  
             </p>
           </div>
           <motion.button

@@ -257,11 +257,11 @@ function AllColleges() {
               <span className="text-orange-600">Colleges</span>
             </div>
             <h1 className="text-3xl md:text-4xl font-extrabold text-gray-800 mt-2">
-              Top Colleges in India - 2025-26 Academic Year
+              Top Colleges in India 
             </h1>
             <p className="text-lg text-gray-600 flex items-center mt-1">
               <BsFillCalendar2CheckFill className="mr-2 text-orange-500" />
-              {filteredColleges.length} Colleges | List Updated on {new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+              {filteredColleges.length} Colleges 
             </p>
           </div>
           <motion.button

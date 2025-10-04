@@ -226,11 +226,11 @@ function AllSchools() {
               <span className="text-orange-600">{filters.category}</span>
             </div>
             <h1 className="text-3xl md:text-4xl font-extrabold text-gray-800 mt-2">
-              Top Schools in India - 2025-26 Academic Year
+              Top Schools in India 
             </h1>
             <p className="text-lg text-gray-600 flex items-center mt-1">
               <BsFillCalendar2CheckFill className="mr-2 text-orange-500" />
-              {totalSchools} Schools | List Updated on Aug 1, 2025
+              {totalSchools} Schools 
             </p>
           </div>
           <motion.button

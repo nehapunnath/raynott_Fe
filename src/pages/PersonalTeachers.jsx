@@ -10,6 +10,7 @@ const personalTypes = ['Personal Mentor'];
 
 function PersonalTeachers() {
     const [mentors, setMentors] = useState([]);
+    const [allMentors, setAllMentors] = useState([]);
     const [isFilterOpen, setIsFilterOpen] = useState(false);
     const [filters, setFilters] = useState({
         subjects: [],
@@ -17,7 +18,7 @@ function PersonalTeachers() {
         qualification: [],
         teachingMode: [],
         minRating: 0,
-       location: ['Bangalore', 'Hyderabad', 'Mumbai', 'Kolkata', 'Delhi', 'Chennai'], 
+        location: ['Bangalore', 'Hyderabad', 'Mumbai', 'Kolkata', 'Delhi', 'Chennai'], 
         institutionType: personalTypes
     });
     const [loading, setLoading] = useState(true);
@@ -36,51 +37,112 @@ function PersonalTeachers() {
         window.scrollTo(0, 0);
     }, []);
 
-    // In PersonalTeachers.js
-const fetchMentors = async () => {
-  try {
-    setLoading(true);
-    setError(null);
-    
-    console.log('Fetching personal mentors with filters:', filters);
-    
-    const response = await teacherApi.getPersonalMentors({
-      city: filters.location,
-      subjects: filters.subjects.join(','), // Convert array to comma-separated string
-      institutionType: filters.institutionType.join(','), // Ensure Personal Mentor
-      teachingMode: filters.teachingMode.join(','), // Convert array to comma-separated string
-      minHourlyRate: filters.minRating, // Adjust if specific rate filters are needed
-      // Add experience filter if backend supports it
-    });
-    
-    console.log('API response:', response);
+    // Fetch personal mentors
+    const fetchMentors = async () => {
+        try {
+            setLoading(true);
+            setError(null);
+            
+            console.log('Fetching personal mentors with filters:', filters);
+            
+            const response = await teacherApi.getPersonalMentors({
+                city: filters.location,
+                subjects: filters.subjects.join(','),
+                institutionType: filters.institutionType.join(','),
+                teachingMode: filters.teachingMode.join(','),
+                minHourlyRate: filters.minRating,
+            });
+            
+            console.log('API response:', response);
 
-    if (response.success) {
-      let mentorsData = [];
-      
-      if (Array.isArray(response.data)) {
-        mentorsData = response.data;
-      } else if (response.data && typeof response.data === 'object') {
-        mentorsData = Object.keys(response.data).map(key => ({
-          id: key,
-          ...response.data[key]
-        }));
-      }
-      
-      console.log('Personal mentors data:', mentorsData);
-      setMentors(mentorsData);
-    } else {
-      console.log('No personal mentors found');
-      setMentors([]);
-    }
-  } catch (err) {
-    console.error('Error fetching personal mentors:', err);
-    setError(err.message || 'Failed to load personal mentors');
-    setMentors([]);
-  } finally {
-    setLoading(false);
-  }
-};
+            if (response.success) {
+                let mentorsData = [];
+                
+                if (Array.isArray(response.data)) {
+                    mentorsData = response.data;
+                } else if (response.data && typeof response.data === 'object') {
+                    mentorsData = Object.keys(response.data).map(key => ({
+                        id: key,
+                        ...response.data[key]
+                    }));
+                }
+                
+                console.log('Personal mentors data:', mentorsData);
+                setMentors(mentorsData);
+                setAllMentors(mentorsData); // Store all mentors for search functionality
+            } else {
+                console.log('No personal mentors found');
+                setMentors([]);
+                setAllMentors([]);
+            }
+        } catch (err) {
+            console.error('Error fetching personal mentors:', err);
+            setError(err.message || 'Failed to load personal mentors');
+            setMentors([]);
+            setAllMentors([]);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    // Handle search input change
+    const handleSearchChange = (e) => {
+        setSearchQuery(e.target.value);
+    };
+
+    // Clear search query
+    const clearSearch = () => {
+        setSearchQuery('');
+    };
+
+    // Filter mentors based on search query
+    const getSearchedMentors = () => {
+        if (!searchQuery.trim()) {
+            return mentors;
+        }
+
+        return mentors.filter((mentor) =>
+            mentor.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+            mentor.subjects?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+            mentor.specialization?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+            mentor.qualification?.toLowerCase().includes(searchQuery.toLowerCase())
+        );
+    };
+
+    // Get searched mentors
+    const searchedMentors = getSearchedMentors();
+
+    // Apply additional filters
+    const getFinalFilteredMentors = () => {
+        return searchedMentors.filter(mentor => {
+            const mentorExperience = parseInt(mentor.experience) || 0;
+            const mentorRating = parseFloat(mentor.rating) || 0;
+            const mentorSubjects = mentor.subjects?.toLowerCase() || '';
+            const mentorQualification = mentor.qualification?.toLowerCase() || '';
+            const mentorTeachingMode = mentor.teachingMode?.toLowerCase() || '';
+            
+            const isExperienceInRange = mentorExperience >= filters.experience[0] && mentorExperience <= filters.experience[1];
+            const isRatingMatch = mentorRating >= filters.minRating;
+            const isSubjectMatch = filters.subjects.length === 0 || 
+                                 filters.subjects.some(subject => 
+                                     mentorSubjects.includes(subject.toLowerCase())
+                                 );
+            const isQualificationMatch = filters.qualification.length === 0 || 
+                                       filters.qualification.some(qual => 
+                                           mentorQualification.includes(qual.toLowerCase())
+                                       );
+            const isTeachingModeMatch = filters.teachingMode.length === 0 || 
+                                      filters.teachingMode.some(mode => 
+                                          mentorTeachingMode.includes(mode.toLowerCase())
+                                      );
+            
+            return isExperienceInRange && isRatingMatch && isSubjectMatch && isQualificationMatch && isTeachingModeMatch;
+        });
+    };
+
+    // Get the final filtered mentors
+    const finalFilteredMentors = getFinalFilteredMentors();
+
     const handleFilterChange = (filterType, value) => {
         setFilters(prev => {
             if (filterType === 'experience' || filterType === 'minRating') {
@@ -111,18 +173,13 @@ const fetchMentors = async () => {
             qualification: [],
             teachingMode: [],
             minRating: 0,
-            location:[ 'Bengaluru', 'Hyderabad', 'Mumbai', 'Kolkata', 'Delhi', 'Chennai'],
+            location: ['Bengaluru', 'Hyderabad', 'Mumbai', 'Kolkata', 'Delhi', 'Chennai'],
             institutionType: personalTypes
         };
         setFilters(resetFilters);
+        setSearchQuery(''); // Clear search when resetting filters
         fetchMentors();
     };
-
-    const filteredMentors = mentors.filter(mentor => {
-        if (!searchQuery) return true;
-        return mentor.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-            mentor.subjects?.toLowerCase().includes(searchQuery.toLowerCase());
-    });
 
     return (
         <div className="bg-orange-50 min-h-screen font-sans">
@@ -137,15 +194,24 @@ const fetchMentors = async () => {
                         </Link>
                     </div>
 
+                    {/* Search Bar - Updated with search functionality */}
                     <div className="relative w-full max-w-2xl md:max-w-xl flex-grow md:ml-8">
                         <FaSearch className="absolute left-4 top-1/2 transform -translate-y-1/2 text-orange-400" />
                         <input
                             type="text"
                             placeholder="Search personal mentors, specialties..."
-                            className="pl-12 pr-4 py-3 rounded-full bg-white border border-transparent text-gray-800 focus:outline-none w-full focus:ring-2 focus:ring-orange-200 focus:border-transparent shadow-sm"
                             value={searchQuery}
-                            onChange={(e) => setSearchQuery(e.target.value)}
+                            onChange={handleSearchChange}
+                            className="pl-12 pr-10 py-3 rounded-full bg-white border border-transparent text-gray-800 focus:outline-none w-full focus:ring-2 focus:ring-orange-200 focus:border-transparent shadow-sm"
                         />
+                        {searchQuery && (
+                            <button
+                                onClick={clearSearch}
+                                className="absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700"
+                            >
+                                <FaTimes />
+                            </button>
+                        )}
                     </div>
 
                     <div className="hidden md:flex space-x-4 ml-8">
@@ -182,7 +248,7 @@ const fetchMentors = async () => {
                         </h1>
                         <p className="text-lg text-gray-600 flex items-center mt-1">
                             <BsFillCalendar2CheckFill className="mr-2 text-orange-500" />
-                            {filteredMentors.length} Personal Mentors Available
+                            {finalFilteredMentors.length} Personal Mentors 
                         </p>
                     </div>
                     <motion.button
@@ -192,7 +258,7 @@ const fetchMentors = async () => {
                         onClick={() => setIsFilterOpen(true)}
                     >
                         <FaFilter className="mr-2" />
-                        Filters
+                        Filters ({filters.subjects.length + filters.qualification.length + filters.teachingMode.length + (filters.experience[0] !== 0 || filters.experience[1] !== 20 ? 1 : 0) + (filters.minRating !== 0 ? 1 : 0)})
                     </motion.button>
                 </div>
 
@@ -216,122 +282,127 @@ const fetchMentors = async () => {
                     </div>
                 )}
 
+                {/* No Results for Search */}
+                {!loading && !error && searchQuery && finalFilteredMentors.length === 0 && (
+                    <div className="text-center py-8">
+                        <p className="text-lg text-gray-600">
+                            No personal mentors found matching "{searchQuery}".
+                        </p>
+                        <button
+                            onClick={clearSearch}
+                            className="mt-4 bg-orange-600 text-white px-4 py-2 rounded-lg hover:bg-orange-700"
+                        >
+                            Clear Search
+                        </button>
+                    </div>
+                )}
+
+                {/* No Results (no search) */}
+                {!loading && !error && !searchQuery && finalFilteredMentors.length === 0 && (
+                    <div className="text-center py-12 bg-white rounded-lg shadow-sm">
+                        <FaUserTie className="text-6xl text-gray-300 mx-auto mb-4" />
+                        <h3 className="text-xl font-semibold text-gray-700 mb-2">No Personal Mentors Found</h3>
+                        <p className="text-gray-600 mb-4">We couldn't find any personal mentors matching your criteria.</p>
+                        <button
+                            onClick={resetFilters}
+                            className="bg-orange-600 hover:bg-orange-700 text-white font-medium py-2 px-6 rounded-lg transition duration-300"
+                        >
+                            Reset Filters
+                        </button>
+                    </div>
+                )}
+
                 {/* Mentors List */}
-                {!loading && !error && (
-                    <>
-                        <div className="mb-6">
-                            {/* <h2 className="text-2xl font-bold text-gray-800 mb-4">
-                                Personal Mentors in {filters.location}
-                            </h2> */}
-
-                            {filteredMentors.length === 0 ? (
-                                <div className="text-center py-12 bg-white rounded-lg shadow-sm">
-                                    <FaUserTie className="text-6xl text-gray-300 mx-auto mb-4" />
-                                    <h3 className="text-xl font-semibold text-gray-700 mb-2">No Personal Mentors Found</h3>
-                                    <p className="text-gray-600 mb-4">We couldn't find any personal mentors matching your criteria.</p>
-                                    <button
-                                        onClick={resetFilters}
-                                        className="bg-orange-600 hover:bg-orange-700 text-white font-medium py-2 px-6 rounded-lg transition duration-300"
+                {!loading && !error && finalFilteredMentors.length > 0 && (
+                    <div className="mb-6">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                            {finalFilteredMentors.map((mentor) => (
+                                <Link to={`/personal-teachers-details/${mentor.id}`} key={mentor.id} className="group">
+                                    <motion.div
+                                        className="bg-white rounded-xl shadow-lg hover:shadow-2xl transition-all duration-300 overflow-hidden flex flex-col h-full"
+                                        initial={{ opacity: 0, y: 20 }}
+                                        animate={{ opacity: 1, y: 0 }}
+                                        transition={{ duration: 0.5 }}
+                                        whileHover={{ y: -5 }}
                                     >
-                                        Reset Filters
-                                    </button>
-                                </div>
-                            ) : (
-                                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                                    {filteredMentors.map((mentor) => (
-                                        <Link to={`/personal-teachers-details/${mentor.id}`} key={mentor.id} className="group">
-                                            <motion.div
-                                                className="bg-white rounded-xl shadow-lg hover:shadow-2xl transition-all duration-300 overflow-hidden flex flex-col h-full"
-                                                initial={{ opacity: 0, y: 20 }}
-                                                animate={{ opacity: 1, y: 0 }}
-                                                transition={{ duration: 0.5 }}
-                                                whileHover={{ y: -5 }}
-                                            >
-                                                <div className="relative h-48 w-full overflow-hidden">
-                                                    <img
-                                                        src={mentor.profileImage || 'https://via.placeholder.com/300x200?text=Mentor+Image'}
-                                                        alt={mentor.name}
-                                                        className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
-                                                        onError={(e) => {
-                                                            e.target.src = 'https://via.placeholder.com/300x200?text=Mentor+Image';
-                                                        }}
-                                                    />
-                                                    {/* {mentor.demoFee?.toLowerCase() === 'free' && (
-                                                        <div className="absolute top-4 left-4 bg-yellow-500 text-dark text-xs font-bold px-3 py-1 rounded-full shadow-lg">
-                                                            Free Demo
-                                                        </div>
-                                                    )} */}
-                                                    {/* <div className="absolute top-4 right-4 flex items-center bg-white/90 text-orange-600 px-3 py-1 rounded-full shadow-lg backdrop-blur-sm">
-                                                        <span className="font-bold mr-1">{mentor.rating || '4.5'}</span>
-                                                        <FaStar className="w-4 h-4 fill-current" />
-                                                    </div> */}
+                                        <div className="relative h-48 w-full overflow-hidden">
+                                            <img
+                                                src={mentor.profileImage || 'https://via.placeholder.com/300x200?text=Mentor+Image'}
+                                                alt={mentor.name}
+                                                className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+                                                onError={(e) => {
+                                                    e.target.src = 'https://via.placeholder.com/300x200?text=Mentor+Image';
+                                                }}
+                                            />
+                                            <div className="absolute top-4 right-4 flex items-center bg-white/90 text-orange-600 px-3 py-1 rounded-full shadow-lg backdrop-blur-sm">
+                                                <span className="font-bold mr-1">{mentor.rating || '4.5'}</span>
+                                                <FaStar className="w-4 h-4 fill-current" />
+                                            </div>
+                                        </div>
+
+                                        <div className="p-4 flex flex-col flex-grow">
+                                            <p className="text-xs font-semibold text-orange-500 uppercase tracking-wide">
+                                                {mentor.institutionType || 'Personal Mentor'}
+                                                {mentor.specialization && ` • ${mentor.specialization}`}
+                                            </p>
+                                            <h3 className="text-lg font-bold text-gray-900 mt-1 line-clamp-2">{mentor.name || 'Mentor Name'}</h3>
+
+                                            <p className="text-sm text-gray-500 flex items-center mt-2">
+                                                <FaMapMarkerAlt className="mr-1 text-orange-400" />
+                                                <span className="line-clamp-1">{mentor.city || 'Location not specified'}</span>
+                                            </p>
+
+                                            <div className="mt-3 flex flex-wrap gap-2">
+                                                {(mentor.subjects?.split(',') || ['Mentoring']).map((subject, index) => (
+                                                    <span key={index} className="bg-orange-100 text-orange-800 text-xs px-2 py-1 rounded">
+                                                        {subject.trim()}
+                                                    </span>
+                                                ))}
+                                            </div>
+
+                                            <div className="mt-3 space-y-2">
+                                                <div className="flex items-center text-sm text-gray-600">
+                                                    <FaGraduationCap className="mr-2 text-orange-500" />
+                                                    <span>{mentor.qualification || 'Expertise not specified'}</span>
                                                 </div>
-
-                                                <div className="p-4 flex flex-col flex-grow">
-                                                    <p className="text-xs font-semibold text-orange-500 uppercase tracking-wide">
-                                                        {mentor.institutionType || 'Personal Mentor'}
-                                                        {mentor.specialization && ` • ${mentor.specialization}`}
-                                                    </p>
-                                                    <h3 className="text-lg font-bold text-gray-900 mt-1 line-clamp-2">{mentor.name || 'Mentor Name'}</h3>
-
-                                                    <p className="text-sm text-gray-500 flex items-center mt-2">
-                                                        <FaMapMarkerAlt className="mr-1 text-orange-400" />
-                                                        <span className="line-clamp-1">{mentor.city || 'Location not specified'}</span>
-                                                    </p>
-
-                                                    <div className="mt-3 flex flex-wrap gap-2">
-                                                        {(mentor.subjects?.split(',') || ['Mentoring']).map((subject, index) => (
-                                                            <span key={index} className="bg-orange-100 text-orange-800 text-xs px-2 py-1 rounded">
-                                                                {subject.trim()}
-                                                            </span>
-                                                        ))}
-                                                    </div>
-
-                                                    <div className="mt-3 space-y-2">
-                                                        <div className="flex items-center text-sm text-gray-600">
-                                                            <FaGraduationCap className="mr-2 text-orange-500" />
-                                                            <span>{mentor.qualification || 'Expertise not specified'}</span>
-                                                        </div>
-                                                        <div className="flex items-center text-sm text-gray-600">
-                                                            <BsFillCalendar2CheckFill className="mr-2 text-orange-500" />
-                                                            <span>{mentor.experience || 'Experience not specified'}</span>
-                                                        </div>
-                                                        <div className="flex items-center text-sm text-gray-600">
-                                                            <BsCashStack className="mr-2 text-orange-500" />
-                                                            <span>{mentor.hourlyRate || 'Rate not specified'}</span>
-                                                        </div>
-                                                        <div className="flex items-center text-sm text-gray-600">
-                                                            <FaChalkboardTeacher className="mr-2 text-orange-500" />
-                                                            <span>{mentor.teachingMode || 'Mentoring mode not specified'}</span>
-                                                        </div>
-                                                    </div>
-
-                                                    <div className="mt-auto pt-4">
-                                                        <div className="flex justify-between items-center space-x-2">
-                                                            <motion.button
-                                                                className="bg-orange-600 hover:bg-orange-700 text-white text-sm font-medium py-2 px-3 rounded-lg w-full transition duration-300"
-                                                                whileHover={{ scale: 1.02 }}
-                                                                whileTap={{ scale: 0.98 }}
-                                                            >
-                                                                View Profile
-                                                            </motion.button>
-                                                            <motion.button
-                                                                className="bg-transparent border border-orange-600 text-orange-600 hover:bg-orange-50 font-medium rounded-lg w-10 h-10 flex items-center justify-center transition duration-300"
-                                                                whileHover={{ scale: 1.02 }}
-                                                                whileTap={{ scale: 0.98 }}
-                                                            >
-                                                                <FaPhone />
-                                                            </motion.button>
-                                                        </div>
-                                                    </div>
+                                                <div className="flex items-center text-sm text-gray-600">
+                                                    <BsFillCalendar2CheckFill className="mr-2 text-orange-500" />
+                                                    <span>{mentor.experience || 'Experience not specified'}</span>
                                                 </div>
-                                            </motion.div>
-                                        </Link>
-                                    ))}
-                                </div>
-                            )}
+                                                <div className="flex items-center text-sm text-gray-600">
+                                                    <BsCashStack className="mr-2 text-orange-500" />
+                                                    <span>{mentor.hourlyRate || 'Rate not specified'}</span>
+                                                </div>
+                                                <div className="flex items-center text-sm text-gray-600">
+                                                    <FaChalkboardTeacher className="mr-2 text-orange-500" />
+                                                    <span>{mentor.teachingMode || 'Mentoring mode not specified'}</span>
+                                                </div>
+                                            </div>
+
+                                            <div className="mt-auto pt-4">
+                                                <div className="flex justify-between items-center space-x-2">
+                                                    <motion.button
+                                                        className="bg-orange-600 hover:bg-orange-700 text-white text-sm font-medium py-2 px-3 rounded-lg w-full transition duration-300"
+                                                        whileHover={{ scale: 1.02 }}
+                                                        whileTap={{ scale: 0.98 }}
+                                                    >
+                                                        View Profile
+                                                    </motion.button>
+                                                    <motion.button
+                                                        className="bg-transparent border border-orange-600 text-orange-600 hover:bg-orange-50 font-medium rounded-lg w-10 h-10 flex items-center justify-center transition duration-300"
+                                                        whileHover={{ scale: 1.02 }}
+                                                        whileTap={{ scale: 0.98 }}
+                                                    >
+                                                        <FaPhone />
+                                                    </motion.button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </motion.div>
+                                </Link>
+                            ))}
                         </div>
-                    </>
+                    </div>
                 )}
             </main>
 

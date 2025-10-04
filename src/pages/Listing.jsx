@@ -210,11 +210,11 @@ function Listing() {
               <span className="text-orange-600">{filters.location}</span>
             </div>
             <h1 className="text-3xl md:text-4xl font-bold text-gray-800 mt-2">
-              Schools In {filters.location} 2025 - 26
+              Schools In {filters.location} 
             </h1>
             <p className="text-lg text-gray-600 flex items-center mt-1">
               <BsFillCalendar2CheckFill className="mr-2 text-orange-500" />
-              {selectedCitySchools.length} Schools | List Updated on Aug 1, 2025
+              {selectedCitySchools.length} Schools 
             </p>
           </div>
           <motion.button
