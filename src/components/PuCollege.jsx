@@ -1,51 +1,9 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import Slider from "react-slick";
 import { useNavigate } from "react-router-dom";
 import { ArrowLeft, ArrowRight } from "lucide-react";
 import { motion } from "framer-motion";
-
-const puColleges = [
-  {
-    name: "New Horizon PU College",
-    image: "https://images.unsplash.com/photo-1523050854058-8df90110c9f1?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=800&q=80",
-    id: "excel-pu",
-    rating: 4.7,
-    location: "Bangalore",
-    streams: ["Science", "Commerce", "Arts"],
-  },
-  {
-    name: "National PU College",
-    image: "https://images.unsplash.com/photo-1523240795612-9a054b0db644?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=800&q=80",
-    id: "national-pu",
-    rating: 4.5,
-    location: "Bangalore",
-    streams: ["Science", "Commerce"],
-  },
-  {
-    name: "Brilliant PU College",
-    image: "https://images.unsplash.com/photo-1522202176988-66273c2fd55f?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=800&q=80",
-    id: "brilliant-pu",
-    rating: 4.6,
-    location: "Bangalore",
-    streams: ["Science", "Commerce", "Arts"],
-  },
-  {
-    name: "Global PU College",
-    image: "https://images.unsplash.com/photo-1549861833-c5932fd19229?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=800&q=80",
-    id: "global-pu",
-    rating: 4.8,
-    location: "Bangalore",
-    streams: ["Science", "Commerce"],
-  },
-  {
-    name: "Vidyarthi PU College",
-    image: "https://images.unsplash.com/photo-1581093450021-4a7360e9a6a3?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=800&q=80",
-    id: "vidyarthi-pu",
-    rating: 4.4,
-    location: "Bangalore",
-    streams: ["Science", "Commerce", "Arts"],
-  }
-];
+import { puCollegeApi } from "../services/pucollegeApi";
 
 const NextArrow = ({ onClick }) => (
   <motion.div
@@ -75,108 +33,179 @@ const PrevArrow = ({ onClick }) => (
   </motion.div>
 );
 
-export default function PuCollege() {
+export default function PuCollege({ selectedCity }) {
   const navigate = useNavigate();
+  const [puColleges, setPuColleges] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    const fetchPUColleges = async () => {
+      try {
+        setLoading(true);
+        const response = await puCollegeApi.searchPUColleges({ city: selectedCity });
+        const puCollegesData = response.data ? Object.values(response.data).filter(
+          (puCollege, index, self) =>
+            index === self.findIndex((c) => c.id === puCollege.id)
+        ) : [];
+        console.log('Fetched PU colleges:', puCollegesData); // Debug log
+        setPuColleges(puCollegesData);
+        setLoading(false);
+      } catch (err) {
+        setError(err.message);
+        setLoading(false);
+      }
+    };
+
+    fetchPUColleges();
+  }, [selectedCity]);
 
   const settings = {
-    dots: false,
-    infinite: true,
+    dots: puColleges.length > 1,
+    infinite: puColleges.length > 1,
     speed: 500,
-    slidesToShow: 4,
+    slidesToShow: Math.min(puColleges.length, 4) || 1,
     slidesToScroll: 1,
-    nextArrow: <NextArrow />,
-    prevArrow: <PrevArrow />,
+    nextArrow: puColleges.length > 1 ? <NextArrow /> : null,
+    prevArrow: puColleges.length > 1 ? <PrevArrow /> : null,
     responsive: [
-      { 
-        breakpoint: 1280, 
-        settings: { 
-          slidesToShow: 3,
-          nextArrow: <NextArrow />,
-          prevArrow: <PrevArrow />
-        } 
+      {
+        breakpoint: 1280,
+        settings: {
+          slidesToShow: Math.min(puColleges.length, 3) || 1,
+          nextArrow: puColleges.length > 1 ? <NextArrow /> : null,
+          prevArrow: puColleges.length > 1 ? <PrevArrow /> : null,
+        },
       },
-      { 
-        breakpoint: 1024, 
-        settings: { 
-          slidesToShow: 2,
-          nextArrow: <NextArrow />,
-          prevArrow: <PrevArrow />
-        } 
+      {
+        breakpoint: 1024,
+        settings: {
+          slidesToShow: Math.min(puColleges.length, 2) || 1,
+          nextArrow: puColleges.length > 1 ? <NextArrow /> : null,
+          prevArrow: puColleges.length > 1 ? <PrevArrow /> : null,
+        },
       },
-      { 
-        breakpoint: 640, 
-        settings: { 
+      {
+        breakpoint: 640,
+        settings: {
           slidesToShow: 1,
           arrows: false,
-          dots: true
-        } 
+          dots: puColleges.length > 1,
+        },
       },
     ],
   };
 
   return (
     <div className="relative max-w-screen-2xl mx-auto px-6 py-12 bg-gradient-to-b from-purple-50 to-white">
-      <motion.div 
+      <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5 }}
         className="text-center mb-12"
       >
-        <h2 className="text-4xl font-bold text-gray-800 mb-3">Top PU/Inter Colleges</h2>
+        <h2 className="text-4xl font-bold text-gray-800 mb-3">Top PU Colleges in {selectedCity}</h2>
         <p className="text-lg text-gray-600 max-w-2xl mx-auto">
           Premier institutions for +1 and +2 education with excellent results
         </p>
       </motion.div>
 
-      <div className="relative px-10">
-        <Slider {...settings}>
-          {puColleges.map((college, idx) => (
-            <motion.div 
-              key={idx} 
-              className="px-3"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ delay: idx * 0.1 }}
-            >
+      {loading && (
+        <div className="text-center text-gray-600">Loading PU colleges...</div>
+      )}
+
+      {error && (
+        <div className="text-center text-red-600">Error: {error}</div>
+      )}
+
+      {!loading && !error && puColleges.length === 0 && (
+        <div className="text-center text-gray-600">No PU colleges found in {selectedCity}</div>
+      )}
+
+      {!loading && !error && puColleges.length > 0 && (
+        <div className="relative px-10">
+          {puColleges.length === 1 ? (
+            <div className="flex justify-center">
               <motion.div
-                onClick={() => navigate(`/pucollege-details`)}
-                className="bg-white rounded-xl overflow-hidden shadow-md hover:shadow-xl transition-all duration-300 cursor-pointer group"
-                whileHover={{ y: -10 }}
+                className="px-3 w-full max-w-sm"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ delay: 0.1 }}
               >
-                <div className="relative h-48 overflow-hidden">
-                  <img
-                    src={college.image}
-                    alt={college.name}
-                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                  />
-                  <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent p-4">
-                    <div className="flex items-center justify-between">
-                      <div className="bg-yellow-400 text-yellow-900 font-bold px-2 py-1 rounded-md text-sm flex items-center">
-                        ⭐ {college.rating}
+                <motion.div
+                  onClick={() => navigate(`/pucollege-details/${puColleges[0].id}`)}
+                  className="bg-white rounded-xl overflow-hidden shadow-md hover:shadow-xl transition-all duration-300 cursor-pointer group"
+                  whileHover={{ y: -10 }}
+                >
+                  <div className="relative h-48 overflow-hidden">
+                    <img
+                      src={puColleges[0].collegeImage || "https://via.placeholder.com/800x400"}
+                      alt={puColleges[0].name}
+                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                    />
+                    <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent p-4">
+                      <div className="flex items-center justify-between">
+                        <div className="bg-yellow-400 text-yellow-900 font-bold px-2 py-1 rounded-md text-sm flex items-center">
+                          ⭐ {puColleges[0].rating || 'N/A'}
+                        </div>
+                        <span className="text-white text-sm">{puColleges[0].city}</span>
                       </div>
-                      <span className="text-white text-sm">{college.location}</span>
                     </div>
                   </div>
-                </div>
-                <div className="p-5">
-                  <h3 className="text-xl font-bold text-gray-800 mb-1">{college.name}</h3>
-                  <div className="flex flex-wrap gap-1 mt-2">
-                    {college.streams.map((stream, i) => (
-                      <span key={i} className="text-xs bg-purple-100 text-purple-800 px-2 py-1 rounded">
-                        {stream}
-                      </span>
-                    ))}
+                  <div className="p-5">
+                    <h3 className="text-xl font-bold text-gray-800 mb-1">{puColleges[0].name}</h3>
+                    <div className="flex flex-wrap gap-1 mt-2 mb-4">
+                      {(puColleges[0].streams || []).slice(0, 3).map((stream, i) => (
+                        <span key={i} className="text-xs bg-purple-100 text-purple-800 px-2 py-1 rounded">
+                          {stream}
+                        </span>
+                      ))}
+                    </div>
                   </div>
-                  
-            
-                </div>
+                </motion.div>
               </motion.div>
-            </motion.div>
-          ))}
-        </Slider>
-      </div>
-
-      
+            </div>
+          ) : (
+            <Slider {...settings}>
+              {puColleges.map((puCollege, idx) => (
+                <div key={puCollege.id || idx} className="px-3">
+                  <motion.div
+                    onClick={() => navigate(`/pucollege-details/${puCollege.id}`)}
+                    className="bg-white rounded-xl overflow-hidden shadow-md hover:shadow-xl transition-all duration-300 cursor-pointer group"
+                    whileHover={{ y: -10 }}
+                  >
+                    <div className="relative h-48 overflow-hidden">
+                      <img
+                        src={puCollege.collegeImage || "https://via.placeholder.com/800x400"}
+                        alt={puCollege.name}
+                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                      />
+                      <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent p-4">
+                        <div className="flex items-center justify-between">
+                          <div className="bg-yellow-400 text-yellow-900 font-bold px-2 py-1 rounded-md text-sm flex items-center">
+                            ⭐ {puCollege.rating || 'N/A'}
+                          </div>
+                          <span className="text-white text-sm">{puCollege.city}</span>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="p-5">
+                      <h3 className="text-xl font-bold text-gray-800 mb-1">{puCollege.name}</h3>
+                      <div className="flex flex-wrap gap-1 mt-2 mb-4">
+                        {(puCollege.streams || []).slice(0, 3).map((stream, i) => (
+                          <span key={i} className="text-xs bg-purple-100 text-purple-800 px-2 py-1 rounded">
+                            {stream}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  </motion.div>
+                </div>
+              ))}
+            </Slider>
+          )}
+        </div>
+      )}
     </div>
   );
 }

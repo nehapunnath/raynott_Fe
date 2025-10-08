@@ -1,56 +1,9 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import Slider from "react-slick";
 import { useNavigate } from "react-router-dom";
 import { ArrowLeft, ArrowRight } from "lucide-react";
 import { motion } from "framer-motion";
-
-const schools = [
-  {
-    name: "New Horizon International",
-    image: "https://images.unsplash.com/photo-1588072432836-e10032774350?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=800&q=80",
-    id: "sunrise-public",
-    rating: 4.8,
-    location: "Bangalore",
-    boards: ["CBSE", "ICSE", "State Board"],
-    results: "98% pass rate"
-  },
-  {
-    name: "Green Valley High",
-    image: "https://images.unsplash.com/photo-1523050854058-8df90110c9f1?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=800&q=80",
-    id: "green-valley",
-    rating: 4.5,
-    location: "Bangalore",
-    boards: ["CBSE", "IB"],
-    results: "92% distinction rate"
-  },
-  {
-    name: "St. Xavier's International",
-    image: "https://images.unsplash.com/photo-1549861833-c5932fd19229?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=800&q=80",
-    id: "st-xaviers",
-    rating: 4.9,
-    location: "Bangalore",
-    boards: ["ICSE", "IB"],
-    results: "100% university acceptance"
-  },
-  {
-    name: "Global Wisdom Academy",
-    image: "https://images.unsplash.com/photo-1522202176988-66273c2fd55f?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=800&q=80",
-    id: "global-wisdom",
-    rating: 4.7,
-    location: "Bangalore",
-    boards: ["CBSE", "State Board"],
-    results: "95% first division"
-  },
-  {
-    name: "Bright Future School",
-    image: "https://images.unsplash.com/photo-1523240795612-9a054b0db644?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=800&q=80",
-    id: "Bangalore",
-    rating: 4.6,
-    location: "Pune",
-    boards: ["CBSE", "ICSE", "IGCSE"],
-    results: "90% above 90% marks"
-  },
-];
+import { schoolApi } from "../services/schoolApi";
 
 const NextArrow = ({ onClick }) => (
   <motion.div
@@ -80,104 +33,182 @@ const PrevArrow = ({ onClick }) => (
   </motion.div>
 );
 
-export default function Schools() {
+export default function Schools({ selectedCity }) {
   const navigate = useNavigate();
+  const [schools, setSchools] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    const fetchSchools = async () => {
+      try {
+        setLoading(true);
+        const response = await schoolApi.getSchoolsWithFilters({ city: selectedCity });
+        // Ensure unique schools by checking for duplicates
+        const schoolsData = response.data ? Object.values(response.data).filter(
+          (school, index, self) =>
+            index === self.findIndex((s) => s.id === school.id)
+        ) : [];
+        console.log('Fetched schools:', schoolsData); // Debug log
+        setSchools(schoolsData);
+        setLoading(false);
+      } catch (err) {
+        setError(err.message);
+        setLoading(false);
+      }
+    };
+
+    fetchSchools();
+  }, [selectedCity]);
 
   const settings = {
-    dots: false,
-    infinite: true,
+    dots: schools.length > 1, // Show dots only if multiple schools
+    infinite: schools.length > 1, // Disable infinite scroll for single school
     speed: 500,
-    slidesToShow: 4,
+    slidesToShow: Math.min(schools.length, 4) || 1, // Adjust slidesToShow dynamically
     slidesToScroll: 1,
-    nextArrow: <NextArrow />,
-    prevArrow: <PrevArrow />,
+    nextArrow: schools.length > 1 ? <NextArrow /> : null, // Hide arrows for single school
+    prevArrow: schools.length > 1 ? <PrevArrow /> : null,
     responsive: [
-      { 
-        breakpoint: 1280, 
-        settings: { 
-          slidesToShow: 3,
-          nextArrow: <NextArrow />,
-          prevArrow: <PrevArrow />
-        } 
+      {
+        breakpoint: 1280,
+        settings: {
+          slidesToShow: Math.min(schools.length, 3) || 1,
+          nextArrow: schools.length > 1 ? <NextArrow /> : null,
+          prevArrow: schools.length > 1 ? <PrevArrow /> : null,
+        },
       },
-      { 
-        breakpoint: 1024, 
-        settings: { 
-          slidesToShow: 2,
-          nextArrow: <NextArrow />,
-          prevArrow: <PrevArrow />
-        } 
+      {
+        breakpoint: 1024,
+        settings: {
+          slidesToShow: Math.min(schools.length, 2) || 1,
+          nextArrow: schools.length > 1 ? <NextArrow /> : null,
+          prevArrow: schools.length > 1 ? <PrevArrow /> : null,
+        },
       },
-      { 
-        breakpoint: 640, 
-        settings: { 
+      {
+        breakpoint: 640,
+        settings: {
           slidesToShow: 1,
           arrows: false,
-          dots: true
-        } 
+          dots: schools.length > 1,
+        },
       },
     ],
   };
 
   return (
     <div className="relative max-w-screen-2xl mx-auto px-6 py-12 bg-gradient-to-b from-blue-50 to-white">
-      <motion.div 
+      <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5 }}
         className="text-center mb-12"
       >
-        <h2 className="text-4xl font-bold text-gray-800 mb-3">Premium Schools</h2>
+        <h2 className="text-4xl font-bold text-gray-800 mb-3">Premium Schools in {selectedCity}</h2>
         <p className="text-lg text-gray-600 max-w-2xl mx-auto">
           Top-rated educational institutions for comprehensive learning
         </p>
       </motion.div>
 
-      <div className="relative px-10">
-        <Slider {...settings}>
-          {schools.map((school, idx) => (
-            <motion.div 
-              key={idx} 
-              className="px-3"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ delay: idx * 0.1 }}
-            >
+      {loading && (
+        <div className="text-center text-gray-600">Loading schools...</div>
+      )}
+
+      {error && (
+        <div className="text-center text-red-600">Error: {error}</div>
+      )}
+
+      {!loading && !error && schools.length === 0 && (
+        <div className="text-center text-gray-600">No schools found in {selectedCity}</div>
+      )}
+
+      {!loading && !error && schools.length > 0 && (
+        <div className="relative px-10">
+          {schools.length === 1 ? (
+            // Render single school without Slider
+            <div className="flex justify-center">
               <motion.div
-                onClick={() => navigate(`/school-details`)}
-                className="bg-white rounded-xl overflow-hidden shadow-md hover:shadow-xl transition-all duration-300 cursor-pointer group"
-                whileHover={{ y: -10 }}
+                className="px-3 w-full max-w-sm"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ delay: 0.1 }}
               >
-                <div className="relative h-48 overflow-hidden">
-                  <img
-                    src={school.image}
-                    alt={school.name}
-                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                  />
-                  <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent p-4">
-                    <div className="flex items-center justify-between">
-                      <div className="bg-yellow-400 text-yellow-900 font-bold px-2 py-1 rounded-md text-sm flex items-center">
-                        ⭐ {school.rating}
+                <motion.div
+                  onClick={() => navigate(`/school-details/${schools[0].id}`)}
+                  className="bg-white rounded-xl overflow-hidden shadow-md hover:shadow-xl transition-all duration-300 cursor-pointer group"
+                  whileHover={{ y: -10 }}
+                >
+                  <div className="relative h-48 overflow-hidden">
+                    <img
+                      src={schools[0].schoolImage || "https://via.placeholder.com/800x400"}
+                      alt={schools[0].name}
+                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                    />
+                    <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent p-4">
+                      <div className="flex items-center justify-between">
+                        <div className="bg-yellow-400 text-yellow-900 font-bold px-2 py-1 rounded-md text-sm flex items-center">
+                          ⭐ {schools[0].rating || 'N/A'}
+                        </div>
+                        <span className="text-white text-sm">{schools[0].city}</span>
                       </div>
-                      <span className="text-white text-sm">{school.location}</span>
                     </div>
                   </div>
-                </div>
-                <div className="p-5">
-                  <h3 className="text-xl font-bold text-gray-800 mb-1">{school.name}</h3>
-                  <div className="flex flex-wrap gap-1 mt-2">
-                    {school.boards.map((board, i) => (
-                      <span key={i} className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded">
-                        {board}
-                      </span>
-                    ))}
+                  <div className="p-5">
+                    <h3 className="text-xl font-bold text-gray-800 mb-1">{schools[0].name}</h3>
+                    <div className="flex flex-wrap gap-1 mt-2">
+                      {(schools[0].boards || ['CBSE']).map((board, i) => (
+                        <span key={i} className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded">
+                          {board}
+                        </span>
+                      ))}
+                    </div>
                   </div>
-                </div>
+                </motion.div>
               </motion.div>
-            </motion.div>
-          ))}
-        </Slider>
-      </div>
+            </div>
+          ) : (
+            // Render multiple schools with Slider
+            <Slider {...settings}>
+              {schools.map((school, idx) => (
+                <div key={school.id || idx} className="px-3">
+                  <motion.div
+                    onClick={() => navigate(`/school-details/${school.id}`)}
+                    className="bg-white rounded-xl overflow-hidden shadow-md hover:shadow-xl transition-all duration-300 cursor-pointer group"
+                    whileHover={{ y: -10 }}
+                  >
+                    <div className="relative h-48 overflow-hidden">
+                      <img
+                        src={school.schoolImage || "https://via.placeholder.com/800x400"}
+                        alt={school.name}
+                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                      />
+                      <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent p-4">
+                        <div className="flex items-center justify-between">
+                          <div className="bg-yellow-400 text-yellow-900 font-bold px-2 py-1 rounded-md text-sm flex items-center">
+                            ⭐ {school.rating || 'N/A'}
+                          </div>
+                          <span className="text-white text-sm">{school.city}</span>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="p-5">
+                      <h3 className="text-xl font-bold text-gray-800 mb-1">{school.name}</h3>
+                      <div className="flex flex-wrap gap-1 mt-2">
+                        {(school.boards || ['CBSE']).map((board, i) => (
+                          <span key={i} className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded">
+                            {board}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  </motion.div>
+                </div>
+              ))}
+            </Slider>
+          )}
+        </div>
+      )}
     </div>
   );
 }

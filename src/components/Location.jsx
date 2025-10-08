@@ -3,24 +3,23 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Link } from 'react-router-dom';
 
 const locations = [
-  { name: 'Bengaluru', icon: '🏙️', color: 'from-indigo-500 to-purple-600' },
+  { name: 'Bangalore', icon: '🏙️', color: 'from-indigo-500 to-purple-600' },
   { name: 'Hyderabad', icon: '🏰', color: 'from-amber-500 to-orange-600' },
-  // { name: 'Pune', icon: '🏛️', color: 'from-emerald-500 to-teal-600' },
   { name: 'Mumbai', icon: '🌆', color: 'from-rose-500 to-pink-600' },
   { name: 'Kolkata', icon: '🕌', color: 'from-blue-500 to-cyan-600' },
   { name: 'Delhi', icon: '🏯', color: 'from-violet-500 to-fuchsia-600' },
   { name: 'Chennai', icon: '🛕', color: 'from-green-500 to-lime-600' },
-  // { name: 'Vizag', icon: '⛩️', color: 'from-red-500 to-amber-600' },
-  // { name: 'Noida', icon: '🏗️', color: 'from-purple-500 to-indigo-600' },
-  // { name: 'Gurugram', icon: '🏢', color: 'from-cyan-500 to-sky-600' },
-  // { name: 'Faridabad', icon: '🏚️', color: 'from-yellow-500 to-amber-600' },
-  // { name: 'Online Schools', icon: '💻', color: 'from-gray-500 to-slate-600' },
-  // { name: 'Boarding Schools', icon: '🏫', color: 'from-amber-500 to-rose-600' },
 ];
 
-function Location() {
+function Location({ onCitySelect }) {
   const [showLocations, setShowLocations] = useState(false);
-  const [selectedCity, setSelectedCity] = useState('Bengaluru');
+  const [selectedCity, setSelectedCity] = useState('Bangalore');
+
+  const handleCitySelect = (city) => {
+    setSelectedCity(city);
+    onCitySelect(city); // Notify parent component
+    setShowLocations(false);
+  };
 
   return (
     <div className="flex flex-col items-center justify-center py-12 bg-gradient-to-b from-white to-blue-50">
@@ -100,10 +99,7 @@ function Location() {
                     <motion.div
                       whileHover={{ y: -5, scale: 1.03 }}
                       whileTap={{ scale: 0.95 }}
-                      onClick={() => {
-                        setSelectedCity(loc.name);
-                        setTimeout(() => setShowLocations(false), 300);
-                      }}
+                      onClick={() => handleCitySelect(loc.name)}
                       className={`bg-gradient-to-br ${loc.color} text-white p-4 rounded-xl cursor-pointer shadow-md hover:shadow-lg transition-all duration-300 flex flex-col items-center relative overflow-hidden group`}
                     >
                       <div className="absolute inset-0 bg-white/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
