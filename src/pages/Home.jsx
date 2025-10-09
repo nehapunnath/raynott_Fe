@@ -105,17 +105,17 @@ function Home() {
           setSearchResults(response.data ? Object.values(response.data) : []);
           break;
         case 'PU College':
-          response = await puCollegeApi.getPuColleges({ city: searchQuery, name: searchQuery });
+          response = await puCollegeApi.getPUColleges({ city: searchQuery, name: searchQuery });
           setSearchResults(response.data ? Object.values(response.data) : []);
           break;
         case 'Coaching/Tuition Center':
-          response = await TuitionCoachingApi.getTuitionCoaching({ city: searchQuery, name: searchQuery });
+          response = await TuitionCoachingApi.getTuitionCoachings({ city: searchQuery, name: searchQuery });
           setSearchResults(response.data ? Object.values(response.data) : []);
           break;
         case 'Teachers':
           const [profResponse, mentorResponse] = await Promise.all([
-            teacherApi.searchProfessionalTeachersByName(searchQuery, { city: searchQuery }),
-            teacherApi.searchPersonalMentorsByName(searchQuery, { city: searchQuery }),
+            teacherApi.getProfessionalTeachers(searchQuery, { city: searchQuery }),
+            teacherApi.getPersonalMentors(searchQuery, { city: searchQuery }),
           ]);
           const profTeachers = profResponse.data ? Object.values(profResponse.data) : [];
           const mentors = mentorResponse.data ? Object.values(mentorResponse.data) : [];

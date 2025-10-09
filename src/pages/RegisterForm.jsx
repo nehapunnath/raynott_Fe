@@ -7,7 +7,7 @@ import {
   FaRunning, FaTheaterMasks, FaVideo, FaFirstAid, FaWifi, FaLink, 
   FaClipboardList, FaStar, FaCalendarAlt, FaUsers, FaBus, FaUtensils,
   FaSwimmingPool, FaLaptop, FaMicroscope, FaMusic, FaPaintBrush,
-  FaUser, FaCertificate, FaAward
+  FaUser, FaCertificate, FaAward, FaGlobe, FaFacebook, FaTwitter, FaInstagram, FaLinkedin
 } from 'react-icons/fa';
 import { GiMoneyStack, GiTeacher } from 'react-icons/gi';
 import { IoMdTime } from 'react-icons/io';
@@ -19,9 +19,11 @@ const RegisterForm = () => {
   const [formData, setFormData] = useState({
     // Basic Information
     institutionType: '',
-    institutionName: '',
+    
+    // Common Fields
+    name: '',
     tagline: '',
-    establishedYear: '',
+    establishmentYear: '',
     about: '',
     address: '',
     city: '',
@@ -30,67 +32,118 @@ const RegisterForm = () => {
     email: '',
     phone: '',
     website: '',
-    googleMapLink: '',
+    googleMapsEmbedUrl: '',
+    facilities: [],
     
-    // Institution Specific
-    boardAffiliation: '',
-    universityAffiliation: '',
-    gradesOffered: [],
-    mediumOfInstruction: '',
-    coursesOffered: [],
-    accreditation: '',
-    subjectsOffered: [],
-    targetExams: [],
-    batchSizes: '',
-    
-    // Teacher Specific
-    teacherName: '',
-    qualifications: [],
-    experience: '',
-    specialization: '',
-    teachingLevels: [],
-    teachingApproach: '',
-    achievements: '',
-    hourlyRate: '',
-    
-    // Academic Details
+    // School Specific
+    typeOfSchool: '',
+    affiliation: '',
+    grade: '',
+    ageForAdmission: '',
+    language: '',
     studentStrength: '',
     teacherStrength: '',
     studentTeacherRatio: '',
-    facilities: [],
-    teachingMethodology: '',
-    specialPrograms: '',
+    
+    // College Specific
+    typeOfCollege: '',
+    universityAffiliation: '',
+    coursesOffered: '',
+    duration: '',
+    accreditation: '',
+    placementStatistics: '',
+    departments: '',
+    
+    // PU College Specific
+    board: '',
+    streams: '',
+    subjects: '',
+    programDuration: '',
+    competitiveExamPrep: '',
+    
+    // Coaching Specific
+    typeOfCoaching: '',
+    classes: '',
+    batchSize: '',
+    classDuration: '',
+    faculty: '',
+    studyMaterial: '',
+    tests: '',
+    doubtSessions: '',
+    infrastructure: '',
+    demoClass: '',
+    flexibleTimings: '',
+    
+    // Teacher Specific
+    teacherName: '',
+    qualifications: '',
+    experience: '',
+    teachingMode: '',
+    languages: '',
+    specialization: '',
+    certifications: '',
+    availability: '',
+    hourlyRate: '',
+    monthlyPackage: '',
+    examPreparation: '',
+    demoFee: '',
+    teachingApproach: '',
+    studyMaterials: '',
+    sessionDuration: '',
+    studentLevel: '',
+    classSize: '',
+    onlinePlatform: '',
+    progressReports: '',
+    performanceTracking: '',
+    teachingProcess: '',
+    
+    // Fee Structure (Common for institutions)
+    totalAnnualFee: '',
+    admissionFee: '',
+    tuitionFee: '',
+    transportFee: '',
+    booksUniformsFee: '',
     
     // Contact Information
     principalName: '',
     contactPerson: '',
     alternatePhone: '',
     officeHours: '',
-    operatingHours: '',
     
-    // Fee Structure
-    annualFee: '',
-    admissionFee: '',
-    tuitionFee: '',
-    transportFee: '',
-    otherFees: '',
-    feePaymentOptions: '',
-    scholarshipInfo: '',
+    // Social Media
+    socialMedia: {
+      facebook: '',
+      twitter: '',
+      instagram: '',
+      linkedin: ''
+    },
+    
+    // Infrastructure
+    campusSize: '',
+    classrooms: '',
+    laboratories: '',
+    library: '',
+    playground: '',
+    auditorium: '',
+    smartBoards: '',
+    cctv: '',
+    medicalRoom: '',
+    wifi: '',
+    hostel: '',
+    sports: '',
+    
+    // Admission Details
+    admissionLink: '',
+    admissionProcess: '',
     
     // Documents
     registrationCertificate: null,
     affiliationCertificate: null,
     qualificationCertificates: [],
     idProof: null,
+    profileImage: null,
     photos: [],
-    otherDocuments: [],
-    
-    // Social Media
-    facebook: '',
-    twitter: '',
-    instagram: '',
-    youtube: '',
-    linkedin: ''
+    otherDocuments: []
   });
 
   const institutionTypes = [
@@ -101,72 +154,92 @@ const RegisterForm = () => {
     { value: 'teacher', label: 'Teacher', icon: <GiTeacher /> }
   ];
 
-  const boards = [
-    'CBSE', 'ICSE', 'State Board', 'IB', 'IGCSE', 
-    'CIE', 'NIOS', 'Other'
-  ];
-
-  const universities = [
-    'State University', 'Central University', 'Deemed University',
-    'Private University', 'Autonomous College', 'Other'
-  ];
-
-  const schoolGrades = ['Nursery', 'LKG', 'UKG', '1st', '2nd', '3rd', '4th', '5th', '6th', '7th', '8th', '9th', '10th', '11th', '12th'];
-  const collegeCourses = ['Arts', 'Science', 'Commerce', 'Engineering', 'Medical', 'Law', 'Management', 'Other'];
-  const puCourses = ['PCMB', 'PCMC', 'PCME', 'CEBA', 'SEBA', 'PEBA', 'Other'];
-  const subjects = ['Mathematics', 'Physics', 'Chemistry', 'Biology', 'English', 'Social Studies', 'Languages', 'Other'];
-  const targetExams = ['JEE', 'NEET', 'KCET', 'UPSC', 'GATE', 'CAT', 'Board Exams', 'Other'];
-  const feePaymentOptions = ['Annual', 'Semi-Annual', 'Quarterly', 'Monthly', 'One-Time'];
-  const teacherQualifications = ['B.Ed', 'M.Ed', 'M.Sc', 'M.A', 'B.Sc', 'B.A', 'Ph.D', 'M.Phil', 'NET', 'SET', 'Other'];
-  const teachingLevels = ['Primary', 'Middle School', 'High School', 'PU College', 'Undergraduate', 'Postgraduate', 'Competitive Exams'];
+  const cities = ['Bangalore', 'Hyderabad', 'Mumbai', 'Kolkata', 'Delhi', 'Chennai'];
+  
+  const schoolTypes = ['Day School', 'Boarding', 'Pre School', 'International School'];
+  const collegeTypes = ['Engineering', 'Medical', 'Arts & Science', 'Management', 'Law', 'Other'];
+  const coachingTypes = ['Academic', 'Competitive Exams', 'Skill Development', 'Language', 'Other'];
+  const affiliations = ['CBSE', 'ICSE', 'State Board', 'International'];
+  const boards = ['State Board', 'CBSE', 'ICSE', 'International Baccalaureate'];
 
   const facilities = [
-    { name: 'Smart Classes', icon: <FaLaptop /> },
-    { name: 'Library', icon: <FaBook /> },
-    { name: 'Science Lab', icon: <FaFlask /> },
-    { name: 'Computer Lab', icon: <FaLaptop /> },
-    { name: 'Playground', icon: <FaRunning /> },
-    { name: 'Swimming Pool', icon: <FaSwimmingPool /> },
-    { name: 'Auditorium', icon: <FaTheaterMasks /> },
-    { name: 'Cafeteria', icon: <FaUtensils /> },
-    { name: 'Transportation', icon: <FaBus /> },
-    { name: 'Medical Facility', icon: <FaFirstAid /> },
-    { name: 'Sports Complex', icon: <FaRunning /> },
-    { name: 'Hostel', icon: <FaHome /> },
-    { name: 'Music Room', icon: <FaMusic /> },
-    { name: 'Art Room', icon: <FaPaintBrush /> },
-    { name: 'Dance Studio', icon: <FaTheaterMasks /> },
-    { name: 'STEM Lab', icon: <FaMicroscope /> },
-    { name: 'Wi-Fi Campus', icon: <FaWifi /> }
+    'Smart Classes', 'Library', 'Science Lab', 'Computer Lab', 'Playground', 
+    'Swimming Pool', 'Auditorium', 'Cafeteria', 'Transportation', 'Medical Facility',
+    'Sports Complex', 'Hostel', 'Music Room', 'Art Room', 'Dance Studio', 
+    'STEM Lab', 'Wi-Fi Campus', 'Individual Attention', 'Mock Tests', 'Online Classes',
+    'Study Material', 'Counseling', 'Personalized Lessons', 'Progress Tracking'
   ];
 
   const [dynamicFields, setDynamicFields] = useState({});
 
   useEffect(() => {
     // Set dynamic fields based on institution type
-    if (formData.institutionType === 'school' || formData.institutionType === 'pu_college') {
+    if (formData.institutionType === 'school') {
       setDynamicFields({
-        boardAffiliation: '',
-        gradesOffered: [],
-        mediumOfInstruction: ''
+        typeOfSchool: '',
+        affiliation: '',
+        grade: '',
+        ageForAdmission: '',
+        language: '',
+        studentStrength: '',
+        teacherStrength: '',
+        studentTeacherRatio: ''
       });
     } else if (formData.institutionType === 'college') {
       setDynamicFields({
+        typeOfCollege: '',
         universityAffiliation: '',
-        coursesOffered: [],
-        accreditation: ''
+        coursesOffered: '',
+        duration: '',
+        accreditation: '',
+        placementStatistics: '',
+        departments: ''
+      });
+    } else if (formData.institutionType === 'pu_college') {
+      setDynamicFields({
+        board: '',
+        streams: '',
+        subjects: '',
+        programDuration: '',
+        competitiveExamPrep: ''
       });
     } else if (formData.institutionType === 'coaching') {
       setDynamicFields({
-        subjectsOffered: [],
-        targetExams: [],
-        batchSizes: ''
+        typeOfCoaching: '',
+        classes: '',
+        batchSize: '',
+        classDuration: '',
+        faculty: '',
+        studyMaterial: '',
+        tests: '',
+        doubtSessions: '',
+        infrastructure: '',
+        demoClass: '',
+        flexibleTimings: ''
       });
     } else if (formData.institutionType === 'teacher') {
       setDynamicFields({
-        qualifications: [],
-        teachingLevels: [],
-        specialization: ''
+        teacherName: '',
+        qualifications: '',
+        experience: '',
+        teachingMode: '',
+        languages: '',
+        specialization: '',
+        certifications: '',
+        availability: '',
+        hourlyRate: '',
+        monthlyPackage: '',
+        examPreparation: '',
+        demoFee: '',
+        teachingApproach: '',
+        studyMaterials: '',
+        sessionDuration: '',
+        studentLevel: '',
+        classSize: '',
+        onlinePlatform: '',
+        progressReports: '',
+        performanceTracking: '',
+        teachingProcess: ''
       });
     }
   }, [formData.institutionType]);
@@ -175,10 +248,7 @@ const RegisterForm = () => {
     const { name, value, type, checked } = e.target;
     
     if (type === 'checkbox') {
-      if (name === 'gradesOffered' || name === 'facilities' || 
-          name === 'coursesOffered' || name === 'subjectsOffered' || 
-          name === 'targetExams' || name === 'qualifications' ||
-          name === 'teachingLevels') {
+      if (name === 'facilities') {
         setFormData(prev => ({
           ...prev,
           [name]: checked 
@@ -186,6 +256,12 @@ const RegisterForm = () => {
             : prev[name].filter(item => item !== value)
         }));
       }
+    } else if (name.includes('socialMedia.')) {
+      const socialMediaField = name.split('.')[1];
+      setFormData(prev => ({
+        ...prev,
+        socialMedia: { ...prev.socialMedia, [socialMediaField]: value }
+      }));
     } else {
       setFormData(prev => ({
         ...prev,
@@ -195,21 +271,11 @@ const RegisterForm = () => {
   };
 
   const handleDynamicChange = (e) => {
-    const { name, value, type, checked } = e.target;
-    
-    if (type === 'checkbox') {
-      setDynamicFields(prev => ({
-        ...prev,
-        [name]: checked 
-          ? [...prev[name], value]
-          : prev[name].filter(item => item !== value)
-      }));
-    } else {
-      setDynamicFields(prev => ({
-        ...prev,
-        [name]: value
-      }));
-    }
+    const { name, value } = e.target;
+    setDynamicFields(prev => ({
+      ...prev,
+      [name]: value
+    }));
   };
 
   const handleFileChange = (e) => {
@@ -268,65 +334,75 @@ const RegisterForm = () => {
   const renderInstitutionTypeFields = () => {
     switch(formData.institutionType) {
       case 'school':
-      case 'pu_college':
         return (
           <>
             <div>
-              <label className="block text-gray-700 mb-2">Board Affiliation*</label>
+              <label className="block text-gray-700 mb-2">School Type*</label>
               <select
-                name="boardAffiliation"
-                value={dynamicFields.boardAffiliation || ''}
+                name="typeOfSchool"
+                value={dynamicFields.typeOfSchool || ''}
                 onChange={handleDynamicChange}
                 className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
                 required
               >
-                <option value="">Select Board</option>
-                {boards.map(board => (
-                  <option key={board} value={board}>{board}</option>
+                <option value="">Select School Type</option>
+                {schoolTypes.map(type => (
+                  <option key={type} value={type}>{type}</option>
                 ))}
               </select>
-            </div>
-            
-            <div className="md:col-span-2">
-              <label className="block text-gray-700 mb-2">
-                {formData.institutionType === 'school' ? 'Grades Offered*' : 'Courses Offered*'}
-              </label>
-              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
-                {(formData.institutionType === 'school' ? schoolGrades : puCourses).map(item => (
-                  <label key={item} className="flex items-center">
-                    <input
-                      type="checkbox"
-                      name={formData.institutionType === 'school' ? 'gradesOffered' : 'coursesOffered'}
-                      value={item}
-                      checked={
-                        formData.institutionType === 'school' 
-                          ? dynamicFields.gradesOffered?.includes(item)
-                          : dynamicFields.coursesOffered?.includes(item)
-                      }
-                      onChange={handleDynamicChange}
-                      className="mr-2 h-5 w-5 text-orange-600 rounded focus:ring-orange-500"
-                    />
-                    {item}
-                  </label>
-                ))}
-              </div>
             </div>
             
             <div>
-              <label className="block text-gray-700 mb-2">Medium of Instruction*</label>
+              <label className="block text-gray-700 mb-2">Affiliation*</label>
               <select
-                name="mediumOfInstruction"
-                value={dynamicFields.mediumOfInstruction || ''}
+                name="affiliation"
+                value={dynamicFields.affiliation || ''}
                 onChange={handleDynamicChange}
                 className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
                 required
               >
-                <option value="">Select Medium</option>
-                <option value="English">English</option>
-                <option value="Hindi">Hindi</option>
-                <option value="Regional">Regional Language</option>
-                <option value="Bilingual">Bilingual</option>
+                <option value="">Select Affiliation</option>
+                {affiliations.map(affiliation => (
+                  <option key={affiliation} value={affiliation}>{affiliation}</option>
+                ))}
               </select>
+            </div>
+            
+            <div>
+              <label className="block text-gray-700 mb-2">Grades Offered*</label>
+              <input
+                type="text"
+                name="grade"
+                value={dynamicFields.grade || ''}
+                onChange={handleDynamicChange}
+                className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
+                placeholder="e.g., Nursery to 12th"
+                required
+              />
+            </div>
+            
+            <div>
+              <label className="block text-gray-700 mb-2">Age for Admission</label>
+              <input
+                type="text"
+                name="ageForAdmission"
+                value={dynamicFields.ageForAdmission || ''}
+                onChange={handleDynamicChange}
+                className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
+                placeholder="e.g., 3 Years"
+              />
+            </div>
+            
+            <div>
+              <label className="block text-gray-700 mb-2">Language of Instruction</label>
+              <input
+                type="text"
+                name="language"
+                value={dynamicFields.language || ''}
+                onChange={handleDynamicChange}
+                className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
+                placeholder="e.g., English"
+              />
             </div>
           </>
         );
@@ -335,38 +411,54 @@ const RegisterForm = () => {
         return (
           <>
             <div>
+              <label className="block text-gray-700 mb-2">College Type*</label>
+              <input
+                type="text"
+                name="typeOfCollege"
+                value={dynamicFields.typeOfCollege || ''}
+                onChange={handleDynamicChange}
+                className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
+                placeholder="e.g., Engineering College"
+                required
+              />
+            </div>
+            
+            <div>
               <label className="block text-gray-700 mb-2">University Affiliation*</label>
-              <select
+              <input
+                type="text"
                 name="universityAffiliation"
                 value={dynamicFields.universityAffiliation || ''}
                 onChange={handleDynamicChange}
                 className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
+                placeholder="e.g., VTU"
                 required
-              >
-                <option value="">Select University</option>
-                {universities.map(univ => (
-                  <option key={univ} value={univ}>{univ}</option>
-                ))}
-              </select>
+              />
             </div>
             
-            <div className="md:col-span-2">
+            <div>
               <label className="block text-gray-700 mb-2">Courses Offered*</label>
-              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
-                {collegeCourses.map(course => (
-                  <label key={course} className="flex items-center">
-                    <input
-                      type="checkbox"
-                      name="coursesOffered"
-                      value={course}
-                      checked={dynamicFields.coursesOffered?.includes(course)}
-                      onChange={handleDynamicChange}
-                      className="mr-2 h-5 w-5 text-orange-600 rounded focus:ring-orange-500"
-                    />
-                    {course}
-                  </label>
-                ))}
-              </div>
+              <input
+                type="text"
+                name="coursesOffered"
+                value={dynamicFields.coursesOffered || ''}
+                onChange={handleDynamicChange}
+                className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
+                placeholder="e.g., B.Tech, MBA, B.Sc"
+                required
+              />
+            </div>
+            
+            <div>
+              <label className="block text-gray-700 mb-2">Duration</label>
+              <input
+                type="text"
+                name="duration"
+                value={dynamicFields.duration || ''}
+                onChange={handleDynamicChange}
+                className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
+                placeholder="e.g., 4 Years for B.Tech"
+              />
             </div>
             
             <div>
@@ -380,59 +472,157 @@ const RegisterForm = () => {
                 placeholder="e.g., NAAC A+"
               />
             </div>
+            
+            <div>
+              <label className="block text-gray-700 mb-2">Placement Statistics</label>
+              <input
+                type="text"
+                name="placementStatistics"
+                value={dynamicFields.placementStatistics || ''}
+                onChange={handleDynamicChange}
+                className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
+                placeholder="e.g., 90%"
+              />
+            </div>
+          </>
+        );
+      
+      case 'pu_college':
+        return (
+          <>
+            <div>
+              <label className="block text-gray-700 mb-2">Board*</label>
+              <select
+                name="board"
+                value={dynamicFields.board || ''}
+                onChange={handleDynamicChange}
+                className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
+                required
+              >
+                <option value="">Select Board</option>
+                {boards.map(board => (
+                  <option key={board} value={board}>{board}</option>
+                ))}
+              </select>
+            </div>
+            
+            <div>
+              <label className="block text-gray-700 mb-2">Streams Offered*</label>
+              <input
+                type="text"
+                name="streams"
+                value={dynamicFields.streams || ''}
+                onChange={handleDynamicChange}
+                className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
+                placeholder="e.g., Science, Commerce, Arts"
+                required
+              />
+            </div>
+            
+            <div>
+              <label className="block text-gray-700 mb-2">Subjects Offered*</label>
+              <input
+                type="text"
+                name="subjects"
+                value={dynamicFields.subjects || ''}
+                onChange={handleDynamicChange}
+                className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
+                placeholder="e.g., Physics, Chemistry, Mathematics"
+                required
+              />
+            </div>
+            
+            <div>
+              <label className="block text-gray-700 mb-2">Program Duration</label>
+              <input
+                type="text"
+                name="programDuration"
+                value={dynamicFields.programDuration || ''}
+                onChange={handleDynamicChange}
+                className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
+                placeholder="e.g., 2 Years"
+              />
+            </div>
+            
+            <div>
+              <label className="block text-gray-700 mb-2">Competitive Exam Prep</label>
+              <input
+                type="text"
+                name="competitiveExamPrep"
+                value={dynamicFields.competitiveExamPrep || ''}
+                onChange={handleDynamicChange}
+                className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
+                placeholder="e.g., JEE, NEET"
+              />
+            </div>
           </>
         );
       
       case 'coaching':
         return (
           <>
-            <div className="md:col-span-2">
-              <label className="block text-gray-700 mb-2">Subjects Offered*</label>
-              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
-                {subjects.map(subject => (
-                  <label key={subject} className="flex items-center">
-                    <input
-                      type="checkbox"
-                      name="subjectsOffered"
-                      value={subject}
-                      checked={dynamicFields.subjectsOffered?.includes(subject)}
-                      onChange={handleDynamicChange}
-                      className="mr-2 h-5 w-5 text-orange-600 rounded focus:ring-orange-500"
-                    />
-                    {subject}
-                  </label>
+            <div>
+              <label className="block text-gray-700 mb-2">Coaching Type*</label>
+              <select
+                name="typeOfCoaching"
+                value={dynamicFields.typeOfCoaching || ''}
+                onChange={handleDynamicChange}
+                className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
+                required
+              >
+                <option value="">Select Coaching Type</option>
+                {coachingTypes.map(type => (
+                  <option key={type} value={type}>{type}</option>
                 ))}
-              </div>
-            </div>
-            
-            <div className="md:col-span-2">
-              <label className="block text-gray-700 mb-2">Target Exams</label>
-              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
-                {targetExams.map(exam => (
-                  <label key={exam} className="flex items-center">
-                    <input
-                      type="checkbox"
-                      name="targetExams"
-                      value={exam}
-                      checked={dynamicFields.targetExams?.includes(exam)}
-                      onChange={handleDynamicChange}
-                      className="mr-2 h-5 w-5 text-orange-600 rounded focus:ring-orange-500"
-                    />
-                    {exam}
-                    </label>
-                ))}
-              </div>
+              </select>
             </div>
             
             <div>
-              <label className="block text-gray-700 mb-2">Average Batch Size</label>
+              <label className="block text-gray-700 mb-2">Classes Covered*</label>
               <input
                 type="text"
-                name="batchSizes"
-                value={dynamicFields.batchSizes || ''}
+                name="classes"
+                value={dynamicFields.classes || ''}
                 onChange={handleDynamicChange}
                 className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
-                placeholder="e.g., 20-30 students"
+                placeholder="e.g., 1st to 12th"
+                required
+              />
+            </div>
+            
+            <div>
+              <label className="block text-gray-700 mb-2">Batch Size</label>
+              <input
+                type="text"
+                name="batchSize"
+                value={dynamicFields.batchSize || ''}
+                onChange={handleDynamicChange}
+                className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
+                placeholder="e.g., 5-8 students per batch"
+              />
+            </div>
+            
+            <div>
+              <label className="block text-gray-700 mb-2">Class Duration</label>
+              <input
+                type="text"
+                name="classDuration"
+                value={dynamicFields.classDuration || ''}
+                onChange={handleDynamicChange}
+                className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
+                placeholder="e.g., 1-2 hours per session"
+              />
+            </div>
+            
+            <div>
+              <label className="block text-gray-700 mb-2">Faculty</label>
+              <input
+                type="text"
+                name="faculty"
+                value={dynamicFields.faculty || ''}
+                onChange={handleDynamicChange}
+                className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
+                placeholder="e.g., Experienced Teachers"
               />
             </div>
           </>
@@ -441,42 +631,67 @@ const RegisterForm = () => {
       case 'teacher':
         return (
           <>
-            <div className="md:col-span-2">
-              <label className="block text-gray-700 mb-2">Qualifications*</label>
-              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
-                {teacherQualifications.map(qualification => (
-                  <label key={qualification} className="flex items-center">
-                    <input
-                      type="checkbox"
-                      name="qualifications"
-                      value={qualification}
-                      checked={dynamicFields.qualifications?.includes(qualification)}
-                      onChange={handleDynamicChange}
-                      className="mr-2 h-5 w-5 text-orange-600 rounded focus:ring-orange-500"
-                    />
-                    {qualification}
-                  </label>
-                ))}
-              </div>
+            <div>
+              <label className="block text-gray-700 mb-2">Full Name*</label>
+              <input
+                type="text"
+                name="teacherName"
+                value={dynamicFields.teacherName || ''}
+                onChange={handleDynamicChange}
+                className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
+                placeholder="e.g., Dr. Priya Sharma"
+                required
+              />
             </div>
 
-            <div className="md:col-span-2">
-              <label className="block text-gray-700 mb-2">Teaching Levels*</label>
-              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
-                {teachingLevels.map(level => (
-                  <label key={level} className="flex items-center">
-                    <input
-                      type="checkbox"
-                      name="teachingLevels"
-                      value={level}
-                      checked={dynamicFields.teachingLevels?.includes(level)}
-                      onChange={handleDynamicChange}
-                      className="mr-2 h-5 w-5 text-orange-600 rounded focus:ring-orange-500"
-                    />
-                    {level}
-                  </label>
-                ))}
-              </div>
+            <div>
+              <label className="block text-gray-700 mb-2">Qualifications*</label>
+              <input
+                type="text"
+                name="qualifications"
+                value={dynamicFields.qualifications || ''}
+                onChange={handleDynamicChange}
+                className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
+                placeholder="e.g., PhD in Mathematics, M.Ed"
+                required
+              />
+            </div>
+
+            <div>
+              <label className="block text-gray-700 mb-2">Experience*</label>
+              <input
+                type="text"
+                name="experience"
+                value={dynamicFields.experience || ''}
+                onChange={handleDynamicChange}
+                className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
+                placeholder="e.g., 12 years"
+                required
+              />
+            </div>
+
+            <div>
+              <label className="block text-gray-700 mb-2">Teaching Mode</label>
+              <input
+                type="text"
+                name="teachingMode"
+                value={dynamicFields.teachingMode || ''}
+                onChange={handleDynamicChange}
+                className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
+                placeholder="e.g., Online, Offline"
+              />
+            </div>
+
+            <div>
+              <label className="block text-gray-700 mb-2">Languages</label>
+              <input
+                type="text"
+                name="languages"
+                value={dynamicFields.languages || ''}
+                onChange={handleDynamicChange}
+                className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
+                placeholder="e.g., English, Hindi, Kannada"
+              />
             </div>
 
             <div>
@@ -487,38 +702,13 @@ const RegisterForm = () => {
                 value={dynamicFields.specialization || ''}
                 onChange={handleDynamicChange}
                 className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
-                placeholder="e.g., Mathematics, Physics, etc."
+                placeholder="e.g., Board Exam Preparation, IIT-JEE"
                 required
               />
             </div>
 
             <div>
-              <label className="block text-gray-700 mb-2">Years of Experience*</label>
-              <input
-                type="text"
-                name="experience"
-                value={formData.experience}
-                onChange={handleChange}
-                className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
-                placeholder="e.g., 5 years"
-                required
-              />
-            </div>
-
-            <div className="md:col-span-2">
-              <label className="block text-gray-700 mb-2">Teaching Approach</label>
-              <textarea
-                name="teachingApproach"
-                value={formData.teachingApproach || ''}
-                onChange={handleChange}
-                className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
-                rows="3"
-                placeholder="Describe your teaching methodology and approach"
-              ></textarea>
-            </div>
-
-            <div>
-              <label className="block text-gray-700 mb-2">Hourly Rate (₹)</label>
+              <label className="block text-gray-700 mb-2">Hourly Rate</label>
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                   <FaRupeeSign className="text-gray-500" />
@@ -526,10 +716,10 @@ const RegisterForm = () => {
                 <input
                   type="text"
                   name="hourlyRate"
-                  value={formData.hourlyRate}
-                  onChange={handleChange}
+                  value={dynamicFields.hourlyRate || ''}
+                  onChange={handleDynamicChange}
                   className="w-full pl-8 p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
-                  placeholder="e.g., 500"
+                  placeholder="e.g., ₹800 - ₹1200/hr"
                 />
               </div>
             </div>
@@ -613,42 +803,34 @@ const RegisterForm = () => {
                 </div>
                 
                 {formData.institutionType === 'teacher' ? (
-                  <>
-                    <div>
-                      <label className="block text-gray-700 mb-2">Full Name*</label>
-                      <input
-                        type="text"
-                        name="teacherName"
-                        value={formData.teacherName}
-                        onChange={handleChange}
-                        className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
-                        placeholder="e.g., Dr. Priya Sharma"
-                        required
-                      />
-                    </div>
-                    
-                    <div>
-                      <label className="block text-gray-700 mb-2">Email*</label>
-                      <input
-                        type="email"
-                        name="email"
-                        value={formData.email}
-                        onChange={handleChange}
-                        className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
-                        required
-                      />
-                    </div>
-                  </>
-                ) : (
                   <div className="md:col-span-2">
-                    <label className="block text-gray-700 mb-2">Institution Name*</label>
+                    <label className="block text-gray-700 mb-2">Full Name*</label>
                     <input
                       type="text"
-                      name="institutionName"
-                      value={formData.institutionName}
+                      name="teacherName"
+                      value={dynamicFields.teacherName || ''}
+                      onChange={handleDynamicChange}
+                      className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
+                      placeholder="e.g., Dr. Priya Sharma"
+                      required
+                    />
+                  </div>
+                ) : (
+                  <div className="md:col-span-2">
+                    <label className="block text-gray-700 mb-2">
+                      {formData.institutionType === 'school' ? 'School Name*' : 
+                       formData.institutionType === 'college' ? 'College Name*' :
+                       formData.institutionType === 'pu_college' ? 'PU College Name*' : 'Center Name*'}
+                    </label>
+                    <input
+                      type="text"
+                      name="name"
+                      value={formData.name}
                       onChange={handleChange}
                       className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
-                      placeholder="e.g., New Horizon International School"
+                      placeholder={`e.g., ${formData.institutionType === 'school' ? 'New Horizon International School' : 
+                        formData.institutionType === 'college' ? 'ABC Engineering College' :
+                        formData.institutionType === 'pu_college' ? 'XYZ PU College' : 'Bright Future Coaching Center'}`}
                       required
                     />
                   </div>
@@ -674,8 +856,8 @@ const RegisterForm = () => {
                       </label>
                       <input
                         type="number"
-                        name="establishedYear"
-                        value={formData.establishedYear}
+                        name="establishmentYear"
+                        value={formData.establishmentYear}
                         onChange={handleChange}
                         className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
                         placeholder={formData.institutionType === 'teacher' ? "e.g., 2015" : "e.g., 2005"}
@@ -720,14 +902,18 @@ const RegisterForm = () => {
                     
                     <div>
                       <label className="block text-gray-700 mb-2">City*</label>
-                      <input
-                        type="text"
+                      <select
                         name="city"
                         value={formData.city}
                         onChange={handleChange}
                         className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
                         required
-                      />
+                      >
+                        <option value="">Select City</option>
+                        {cities.map(city => (
+                          <option key={city} value={city}>{city}</option>
+                        ))}
+                      </select>
                     </div>
                     
                     <div>
@@ -755,14 +941,14 @@ const RegisterForm = () => {
                     </div>
 
                     <div>
-                      <label className="block text-gray-700 mb-2">Google Maps Link</label>
+                      <label className="block text-gray-700 mb-2">Google Maps Embed URL</label>
                       <input
                         type="url"
-                        name="googleMapLink"
-                        value={formData.googleMapLink}
+                        name="googleMapsEmbedUrl"
+                        value={formData.googleMapsEmbedUrl}
                         onChange={handleChange}
                         className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
-                        placeholder="Paste Google Maps URL"
+                        placeholder="Paste Google Maps Embed URL"
                       />
                     </div>
                   </>
@@ -771,7 +957,7 @@ const RegisterForm = () => {
             </motion.div>
           )}
 
-          {/* Step 2: Academic Details */}
+          {/* Step 2: Academic & Additional Details */}
           {currentStep === 2 && (
             <motion.div
               initial={{ opacity: 0, x: -20 }}
@@ -784,136 +970,203 @@ const RegisterForm = () => {
                 ) : (
                   <FaBookOpen className="mr-2 text-orange-600" />
                 )}
-                {formData.institutionType === 'teacher' ? 'Teaching Details' : 'Academic Details'}
+                {formData.institutionType === 'teacher' ? 'Teaching Details' : 'Additional Details'}
               </h2>
               
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {formData.institutionType === 'teacher' ? (
                   <>
+                    <div>
+                      <label className="block text-gray-700 mb-2">Monthly Package</label>
+                      <div className="relative">
+                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                          <FaRupeeSign className="text-gray-500" />
+                        </div>
+                        <input
+                          type="text"
+                          name="monthlyPackage"
+                          value={dynamicFields.monthlyPackage || ''}
+                          onChange={handleDynamicChange}
+                          className="w-full pl-8 p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
+                          placeholder="e.g., ₹15,000 - ₹20,000"
+                        />
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="block text-gray-700 mb-2">Exam Preparation Fee</label>
+                      <div className="relative">
+                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                          <FaRupeeSign className="text-gray-500" />
+                        </div>
+                        <input
+                          type="text"
+                          name="examPreparation"
+                          value={dynamicFields.examPreparation || ''}
+                          onChange={handleDynamicChange}
+                          className="w-full pl-8 p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
+                          placeholder="e.g., ₹25,000 for 3 months"
+                        />
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="block text-gray-700 mb-2">Demo Class Fee</label>
+                      <input
+                        type="text"
+                        name="demoFee"
+                        value={dynamicFields.demoFee || ''}
+                        onChange={handleDynamicChange}
+                        className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
+                        placeholder="e.g., Free"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-gray-700 mb-2">Teaching Approach</label>
+                      <input
+                        type="text"
+                        name="teachingApproach"
+                        value={dynamicFields.teachingApproach || ''}
+                        onChange={handleDynamicChange}
+                        className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
+                        placeholder="e.g., Conceptual & Practical"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-gray-700 mb-2">Study Materials</label>
+                      <input
+                        type="text"
+                        name="studyMaterials"
+                        value={dynamicFields.studyMaterials || ''}
+                        onChange={handleDynamicChange}
+                        className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
+                        placeholder="e.g., Digital & Print"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-gray-700 mb-2">Session Duration</label>
+                      <input
+                        type="text"
+                        name="sessionDuration"
+                        value={dynamicFields.sessionDuration || ''}
+                        onChange={handleDynamicChange}
+                        className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
+                        placeholder="e.g., 60-90 minutes"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-gray-700 mb-2">Student Level</label>
+                      <input
+                        type="text"
+                        name="studentLevel"
+                        value={dynamicFields.studentLevel || ''}
+                        onChange={handleDynamicChange}
+                        className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
+                        placeholder="e.g., Grade 6 to 12"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-gray-700 mb-2">Class Size</label>
+                      <input
+                        type="text"
+                        name="classSize"
+                        value={dynamicFields.classSize || ''}
+                        onChange={handleDynamicChange}
+                        className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
+                        placeholder="e.g., 1:1 or Small Groups"
+                      />
+                    </div>
+
                     <div className="md:col-span-2">
-                      <label className="block text-gray-700 mb-2">Notable Achievements</label>
+                      <label className="block text-gray-700 mb-2">Teaching Process</label>
                       <textarea
-                        name="achievements"
-                        value={formData.achievements || ''}
-                        onChange={handleChange}
+                        name="teachingProcess"
+                        value={dynamicFields.teachingProcess || ''}
+                        onChange={handleDynamicChange}
                         className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
                         rows="3"
-                        placeholder="Any awards, student success stories, or notable achievements"
+                        placeholder="Describe your teaching process and methodology"
                       ></textarea>
                     </div>
                   </>
                 ) : (
                   <>
-                    <div>
-                      <label className="block text-gray-700 mb-2">Approx. Student Strength</label>
-                      <input
-                        type="number"
-                        name="studentStrength"
-                        value={formData.studentStrength}
-                        onChange={handleChange}
-                        className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
-                        placeholder="e.g., 1200"
-                      />
-                    </div>
-                    
-                    <div>
-                      <label className="block text-gray-700 mb-2">Approx. Teacher/Faculty Strength</label>
-                      <input
-                        type="number"
-                        name="teacherStrength"
-                        value={formData.teacherStrength}
-                        onChange={handleChange}
-                        className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
-                        placeholder="e.g., 60"
-                      />
-                    </div>
+                    {formData.institutionType === 'school' && (
+                      <>
+                        <div>
+                          <label className="block text-gray-700 mb-2">Approx. Student Strength</label>
+                          <input
+                            type="number"
+                            name="studentStrength"
+                            value={dynamicFields.studentStrength || ''}
+                            onChange={handleDynamicChange}
+                            className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
+                            placeholder="e.g., 1200"
+                          />
+                        </div>
+                        
+                        <div>
+                          <label className="block text-gray-700 mb-2">Approx. Teacher Strength</label>
+                          <input
+                            type="number"
+                            name="teacherStrength"
+                            value={dynamicFields.teacherStrength || ''}
+                            onChange={handleDynamicChange}
+                            className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
+                            placeholder="e.g., 60"
+                          />
+                        </div>
 
-                    <div>
-                      <label className="block text-gray-700 mb-2">Student-Teacher Ratio</label>
-                      <input
-                        type="text"
-                        name="studentTeacherRatio"
-                        value={formData.studentTeacherRatio}
-                        onChange={handleChange}
-                        className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
-                        placeholder="e.g., 20:1"
-                      />
-                    </div>
-                    
+                        <div>
+                          <label className="block text-gray-700 mb-2">Student-Teacher Ratio</label>
+                          <input
+                            type="text"
+                            name="studentTeacherRatio"
+                            value={dynamicFields.studentTeacherRatio || ''}
+                            onChange={handleDynamicChange}
+                            className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
+                            placeholder="e.g., 20:1"
+                          />
+                        </div>
+                      </>
+                    )}
+
                     {formData.institutionType === 'college' && (
                       <div>
                         <label className="block text-gray-700 mb-2">Number of Departments</label>
                         <input
                           type="number"
                           name="departments"
-                          value={formData.departments || ''}
-                          onChange={handleChange}
+                          value={dynamicFields.departments || ''}
+                          onChange={handleDynamicChange}
                           className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
                           placeholder="e.g., 8"
                         />
                       </div>
                     )}
                     
-                    {formData.institutionType !== 'teacher' && (
-                      <div className="md:col-span-2">
-                        <label className="block text-gray-700 mb-2">Facilities Available</label>
-                        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
-                          {facilities.map(facility => (
-                            <label key={facility.name} className="flex items-center">
-                              <input
-                                type="checkbox"
-                                name="facilities"
-                                value={facility.name}
-                                checked={formData.facilities.includes(facility.name)}
-                                onChange={handleChange}
-                                className="mr-2 h-5 w-5 text-orange-600 rounded focus:ring-orange-500"
-                              />
-                              <span className="flex items-center">
-                                <span className="mr-1 text-orange-500">{facility.icon}</span>
-                                {facility.name}
-                              </span>
-                            </label>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-                    
-                    {formData.institutionType === 'coaching' ? (
-                      <div className="md:col-span-2">
-                        <label className="block text-gray-700 mb-2">Teaching Methodology</label>
-                        <textarea
-                          name="teachingMethodology"
-                          value={formData.teachingMethodology || ''}
-                          onChange={handleChange}
-                          className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
-                          rows="3"
-                          placeholder="Describe your teaching approach, class structure, etc."
-                        ></textarea>
-                      </div>
-                    ) : (
-                      <div className="md:col-span-2">
-                        <label className="block text-gray-700 mb-2">Special Programs</label>
-                        <textarea
-                          name="specialPrograms"
-                          value={formData.specialPrograms || ''}
-                          onChange={handleChange}
-                          className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
-                          rows="3"
-                          placeholder="Any special programs, extracurricular activities, etc."
-                        ></textarea>
-                      </div>
-                    )}
-
                     <div className="md:col-span-2">
-                      <label className="block text-gray-700 mb-2">Notable Achievements</label>
-                      <textarea
-                        name="achievements"
-                        value={formData.achievements || ''}
-                        onChange={handleChange}
-                        className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
-                        rows="3"
-                        placeholder="Any awards, rankings, or notable achievements"
-                      ></textarea>
+                      <label className="block text-gray-700 mb-2">Facilities Available</label>
+                      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+                        {facilities.map(facility => (
+                          <label key={facility} className="flex items-center">
+                            <input
+                              type="checkbox"
+                              name="facilities"
+                              value={facility}
+                              checked={formData.facilities.includes(facility)}
+                              onChange={handleChange}
+                              className="mr-2 h-5 w-5 text-orange-600 rounded focus:ring-orange-500"
+                            />
+                            {facility}
+                          </label>
+                        ))}
+                      </div>
                     </div>
                   </>
                 )}
@@ -942,11 +1195,11 @@ const RegisterForm = () => {
                     </div>
                     <input
                       type="text"
-                      name="annualFee"
-                      value={formData.annualFee}
+                      name="totalAnnualFee"
+                      value={formData.totalAnnualFee}
                       onChange={handleChange}
                       className="w-full pl-8 p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
-                      placeholder="e.g., 1,54,000"
+                      placeholder="e.g., ₹1,54,000/year"
                     />
                   </div>
                 </div>
@@ -963,7 +1216,7 @@ const RegisterForm = () => {
                       value={formData.admissionFee}
                       onChange={handleChange}
                       className="w-full pl-8 p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
-                      placeholder="e.g., 25,000"
+                      placeholder="e.g., ₹25,000"
                     />
                   </div>
                 </div>
@@ -980,13 +1233,13 @@ const RegisterForm = () => {
                       value={formData.tuitionFee}
                       onChange={handleChange}
                       className="w-full pl-8 p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
-                      placeholder="e.g., 1,00,000"
+                      placeholder="e.g., ₹1,00,000"
                     />
                   </div>
                 </div>
 
                 <div>
-                  <label className="block text-gray-700 mb-2">Transport Fee (if applicable)</label>
+                  <label className="block text-gray-700 mb-2">Transport Fee</label>
                   <div className="relative">
                     <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                       <FaRupeeSign className="text-gray-500" />
@@ -997,57 +1250,26 @@ const RegisterForm = () => {
                       value={formData.transportFee}
                       onChange={handleChange}
                       className="w-full pl-8 p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
-                      placeholder="e.g., 15,000"
+                      placeholder="e.g., ₹15,000"
                     />
                   </div>
                 </div>
 
                 <div className="md:col-span-2">
-                  <label className="block text-gray-700 mb-2">Other Fees (Books, Uniforms, etc.)</label>
+                  <label className="block text-gray-700 mb-2">Books & Uniforms/Materials Fee</label>
                   <div className="relative">
                     <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                       <FaRupeeSign className="text-gray-500" />
                     </div>
                     <input
                       type="text"
-                      name="otherFees"
-                      value={formData.otherFees}
+                      name="booksUniformsFee"
+                      value={formData.booksUniformsFee}
                       onChange={handleChange}
                       className="w-full pl-8 p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
-                      placeholder="e.g., 14,000"
+                      placeholder="e.g., ₹14,000"
                     />
                   </div>
-                </div>
-
-                <div className="md:col-span-2">
-                  <label className="block text-gray-700 mb-2">Fee Payment Options</label>
-                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3">
-                    {feePaymentOptions.map(option => (
-                      <label key={option} className="flex items-center">
-                        <input
-                          type="checkbox"
-                          name="feePaymentOptions"
-                          value={option}
-                          checked={formData.feePaymentOptions?.includes(option)}
-                          onChange={handleChange}
-                          className="mr-2 h-5 w-5 text-orange-600 rounded focus:ring-orange-500"
-                        />
-                        {option}
-                      </label>
-                    ))}
-                  </div>
-                </div>
-
-                <div className="md:col-span-2">
-                  <label className="block text-gray-700 mb-2">Scholarship Information</label>
-                  <textarea
-                    name="scholarshipInfo"
-                    value={formData.scholarshipInfo || ''}
-                    onChange={handleChange}
-                    className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
-                    rows="3"
-                    placeholder="Details about scholarships, discounts, or financial aid"
-                  ></textarea>
                 </div>
               </div>
             </motion.div>
@@ -1159,7 +1381,7 @@ const RegisterForm = () => {
                     value={formData.website}
                     onChange={handleChange}
                     className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
-                    placeholder="https://www.yourschool.edu"
+                    placeholder="https://www.example.com"
                   />
                 </div>
                 
@@ -1181,14 +1403,12 @@ const RegisterForm = () => {
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div className="flex items-center">
                       <div className="bg-blue-100 p-2 rounded-full mr-3">
-                        <svg className="w-5 h-5 text-blue-600" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-                          <path fillRule="evenodd" d="M22 12c0-5.523-4.477-10-10-10S2 6.477 2 12c0 4.991 3.657 9.128 8.438 9.878v-6.987h-2.54V12h2.54V9.797c0-2.506 1.492-3.89 3.777-3.89 1.094 0 2.238.195 2.238.195v2.46h-1.26c-1.243 0-1.63.771-1.63 1.562V12h2.773l-.443 2.89h-2.33v6.988C18.343 21.128 22 16.991 22 12z" clipRule="evenodd" />
-                        </svg>
+                        <FaFacebook className="w-5 h-5 text-blue-600" />
                       </div>
                       <input
                         type="url"
-                        name="facebook"
-                        value={formData.facebook}
+                        name="socialMedia.facebook"
+                        value={formData.socialMedia.facebook}
                         onChange={handleChange}
                         className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
                         placeholder="Facebook URL"
@@ -1196,14 +1416,12 @@ const RegisterForm = () => {
                     </div>
                     <div className="flex items-center">
                       <div className="bg-sky-100 p-2 rounded-full mr-3">
-                        <svg className="w-5 h-5 text-sky-600" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-                          <path d="M8.29 20.251c7.547 0 11.675-6.253 11.675-11.675 0-.178 0-.355-.012-.53A8.348 8.348 0 0022 5.92a8.19 8.19 0 01-2.357.646 4.118 4.118 0 001.804-2.27 8.224 8.224 0 01-2.605.996 4.107 4.107 0 00-6.993 3.743 11.65 11.65 0 01-8.457-4.287 4.106 4.106 0 001.27 5.477A4.072 4.072 0 012.8 9.713v.052a4.105 4.105 0 003.292 4.022 4.095 4.095 0 01-1.853.07 4.108 4.108 0 003.834 2.85A8.233 8.233 0 012 18.407a11.616 11.616 0 006.29 1.84" />
-                        </svg>
+                        <FaTwitter className="w-5 h-5 text-sky-600" />
                       </div>
                       <input
                         type="url"
-                        name="twitter"
-                        value={formData.twitter}
+                        name="socialMedia.twitter"
+                        value={formData.socialMedia.twitter}
                         onChange={handleChange}
                         className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
                         placeholder="Twitter URL"
@@ -1211,32 +1429,28 @@ const RegisterForm = () => {
                     </div>
                     <div className="flex items-center">
                       <div className="bg-pink-100 p-2 rounded-full mr-3">
-                        <svg className="w-5 h-5 text-pink-600" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-                          <path fillRule="evenodd" d="M12.315 2c2.43 0 2.784.013 3.808.06 1.064.049 1.791.218 2.427.465a4.902 4.902 0 011.772 1.153 4.902 4.902 0 011.153 1.772c.247.636.416 1.363.465 2.427.048 1.067.06 1.407.06 4.123v.08c0 2.643-.012 2.987-.06 4.043-.049 1.064-.218 1.791-.465 2.427a4.902 4.902 0 01-1.153 1.772 4.902 4.902 0 01-1.772 1.153c-.636.247-1.363.416-2.427.465-1.067.048-1.407.06-4.123.06h-.08c-2.597 0 2.917-.01 3.96-.058.976-.045 1.505-.207 1.858-.344.466-.182.8-.398 1.15-.748.35-.35.566-.683.748-1.15.137-.353.3-.882.344-1.857.048-1.055.058-1.37.058-4.041v-.08c0-2.597-.01-2.917-.058-3.96-.045-.976-.207-1.505-.344-1.858a3.097 3.097 0 00-.748-1.15 3.098 3.098 0 00-1.15-.748c-.353-.137-.882-.3-1.857-.344-1.023-.047-1.351-.058-3.807-.058zM12 6.865a5.135 5.135 0 110 10.27 5.135 5.135 0 010-10.27zm0 1.802a3.333 3.333 0 100 6.666 3.333 3.333 0 000-6.666zm5.338-3.205a1.2 1.2 0 110 2.4 1.2 1.2 0 010-2.4z" clipRule="evenodd" />
-                        </svg>
+                        <FaInstagram className="w-5 h-5 text-pink-600" />
                       </div>
                       <input
                         type="url"
-                        name="instagram"
-                        value={formData.instagram}
+                        name="socialMedia.instagram"
+                        value={formData.socialMedia.instagram}
                         onChange={handleChange}
                         className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
                         placeholder="Instagram URL"
                       />
                     </div>
                     <div className="flex items-center">
-                      <div className="bg-red-100 p-2 rounded-full mr-3">
-                        <svg className="w-5 h-5 text-red-600" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-                          <path d="M19.615 3.184c-3.604-.246-11.631-.245-15.23 0-3.897.266-4.356 2.62-4.385 8.816.029 6.185.484 8.549 4.385 8.816 3.6.245 11.626.246 15.23 0 3.897-.266 4.356-2.62 4.385-8.816-.029-6.185-.484-8.549-4.385-8.816zm-10.615 12.816v-8l8 3.993-8 4.007z" />
-                        </svg>
+                      <div className="bg-blue-600 p-2 rounded-full mr-3">
+                        <FaLinkedin className="w-5 h-5 text-white" />
                       </div>
                       <input
                         type="url"
-                        name="youtube"
-                        value={formData.youtube}
+                        name="socialMedia.linkedin"
+                        value={formData.socialMedia.linkedin}
                         onChange={handleChange}
                         className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
-                        placeholder="YouTube URL"
+                        placeholder="LinkedIn URL"
                       />
                     </div>
                   </div>
@@ -1247,8 +1461,8 @@ const RegisterForm = () => {
                     <label className="block text-gray-700 mb-2">Operating Hours</label>
                     <input
                       type="text"
-                      name="operatingHours"
-                      value={formData.operatingHours || ''}
+                      name="officeHours"
+                      value={formData.officeHours || ''}
                       onChange={handleChange}
                       className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
                       placeholder="e.g., 8 AM - 8 PM, Monday-Saturday"
@@ -1271,9 +1485,9 @@ const RegisterForm = () => {
                     <label className="block text-gray-700 mb-2">Availability</label>
                     <input
                       type="text"
-                      name="operatingHours"
-                      value={formData.operatingHours || ''}
-                      onChange={handleChange}
+                      name="availability"
+                      value={dynamicFields.availability || ''}
+                      onChange={handleDynamicChange}
                       className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
                       placeholder="e.g., Weekdays 4 PM - 8 PM, Weekends 10 AM - 6 PM"
                     />
@@ -1319,7 +1533,7 @@ const RegisterForm = () => {
                           </span>
                         )}
                       </div>
-                      <p className="text-sm text-gray-500 mt-1">Upload scanned copies of your degrees/certificates (B.Ed, M.Sc, etc.)</p>
+                      <p className="text-sm text-gray-500 mt-1">Upload scanned copies of your degrees/certificates</p>
                     </div>
                     
                     <div>
@@ -1343,6 +1557,29 @@ const RegisterForm = () => {
                         )}
                       </div>
                       <p className="text-sm text-gray-500 mt-1">Upload Aadhar Card, PAN Card, or other government-issued ID</p>
+                    </div>
+
+                    <div>
+                      <label className="block text-gray-700 mb-2">Profile Photo*</label>
+                      <div className="flex items-center">
+                        <label className="cursor-pointer bg-orange-100 text-orange-700 px-4 py-2 rounded-lg hover:bg-orange-200 transition">
+                          <input
+                            type="file"
+                            name="profileImage"
+                            onChange={handleFileChange}
+                            className="hidden"
+                            accept=".jpg,.jpeg,.png"
+                            required
+                          />
+                          Choose Photo
+                        </label>
+                        {formData.profileImage && (
+                          <span className="ml-3 text-gray-700">
+                            {formData.profileImage.name}
+                          </span>
+                        )}
+                      </div>
+                      <p className="text-sm text-gray-500 mt-1">Upload a professional photo (JPEG/PNG)</p>
                     </div>
                   </>
                 ) : (
@@ -1406,7 +1643,7 @@ const RegisterForm = () => {
                 
                 <div>
                   <label className="block text-gray-700 mb-2">
-                    {formData.institutionType === 'teacher' ? 'Your Photo*' : 'Institution Photos (Min 3)*'}
+                    {formData.institutionType === 'teacher' ? 'Additional Photos' : 'Institution Photos (Min 3)*'}
                   </label>
                   <div className="flex items-center">
                     <label className="cursor-pointer bg-orange-100 text-orange-700 px-4 py-2 rounded-lg hover:bg-orange-200 transition">
@@ -1417,9 +1654,9 @@ const RegisterForm = () => {
                         className="hidden"
                         accept=".jpg,.jpeg,.png"
                         multiple
-                        required
+                        required={formData.institutionType !== 'teacher'}
                       />
-                      Choose {formData.institutionType === 'teacher' ? 'Photo' : 'Files'}
+                      Choose {formData.institutionType === 'teacher' ? 'Photos' : 'Files'}
                     </label>
                     {formData.photos.length > 0 && (
                       <span className="ml-3 text-gray-700">
@@ -1429,7 +1666,7 @@ const RegisterForm = () => {
                   </div>
                   <p className="text-sm text-gray-500 mt-1">
                     {formData.institutionType === 'teacher' ? 
-                      'Upload a professional photo (JPEG/PNG)' : 
+                      'Upload additional photos of your teaching setup, certificates, etc.' : 
                       formData.institutionType === 'college' ? 'Upload photos of campus, labs, library' : 
                       formData.institutionType === 'coaching' ? 
                       'Upload photos of center, classrooms, facilities' : 'Upload photos of campus, classrooms, facilities'}
