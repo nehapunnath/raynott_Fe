@@ -3,6 +3,8 @@ import { motion } from 'framer-motion';
 import { FaBookOpen, FaSearch, FaMapMarkerAlt, FaGraduationCap, FaRupeeSign, FaChalkboardTeacher, FaBook, FaClock, FaUserTie, FaVideo, FaCertificate, FaChartLine, FaSchool, FaPhone, FaEnvelope, FaGlobe, FaFacebook, FaTwitter, FaInstagram, FaLinkedin, FaLanguage, FaAward } from 'react-icons/fa';
 import { useParams, useNavigate } from 'react-router-dom';
 import { teacherApi } from '../../services/TeacherApi';
+import "tailwindcss";
+
 
 const EditTeachers = () => {
   const { id } = useParams();

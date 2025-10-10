@@ -4,6 +4,8 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { FaBookOpen, FaMapMarkerAlt, FaGraduationCap, FaRupeeSign, FaSchool, FaFlask, FaBook, FaChalkboardTeacher, FaVideo, FaFirstAid, FaWifi, FaLink, FaClipboardList, FaPhone } from 'react-icons/fa';
 import { IoMdTime } from 'react-icons/io';
 import { TuitionCoachingApi, coachingTypeApi } from '../../services/TuitionCoachingApi';
+import "tailwindcss";
+
 
 const EditCoaching = () => {
     const { id } = useParams();

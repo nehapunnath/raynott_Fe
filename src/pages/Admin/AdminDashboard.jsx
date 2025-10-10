@@ -14,6 +14,9 @@ import CollegeList from './CollegeList';
 import PucollegeList from './PucollegeList';
 import CoachingList from './CoachingList';
 import TeacherList from './TeacherList';
+import "tailwindcss";
+import AdminReg from './AdminReg';
+
 
 
 const AdminDashboard = () => {
@@ -115,8 +118,8 @@ const AdminDashboard = () => {
       case 'add-teachers':
         return <AddTeachers />;
 
-      // case ('create-superadmin'):
-      //   return <SuperAdmin />
+      case ('Registered'):
+        return <AdminReg />
 
 
     }

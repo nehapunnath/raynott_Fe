@@ -1,5 +1,7 @@
 import { motion } from 'framer-motion';
 import { FaHome, FaUsers, FaSchool, FaChalkboardTeacher, FaCog, FaUserCircle, FaGraduationCap } from 'react-icons/fa';
+import "tailwindcss";
+
 
 const NavItem = ({ icon, text, active, onClick, sidebarOpen }) => {
   return (
@@ -78,13 +80,13 @@ const Sidebar = ({ sidebarOpen, setSidebarOpen, activeTab, setActiveTab }) => {
           onClick={() => setActiveTab('teachers')}
           sidebarOpen={sidebarOpen}
         />
-        {/* <NavItem 
+        <NavItem 
           icon={<FaCog />} 
-          text="Create Super Admin" 
-          active={activeTab === 'create-superadmin'} 
-          onClick={() => setActiveTab('create-superadmin')}
+          text="Registered" 
+          active={activeTab === 'Registered'} 
+          onClick={() => setActiveTab('Registered')}
           sidebarOpen={sidebarOpen}
-        /> */}
+        />
       </nav>
 
       <div className="p-4 border-t border-orange-500">

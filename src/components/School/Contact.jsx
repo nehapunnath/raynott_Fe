@@ -7,6 +7,8 @@ import {
 } from 'react-icons/fa';
 import { schoolApi } from '../../services/schoolApi';
 import { useParams } from 'react-router-dom';
+import "tailwindcss";
+
 
 const Contact = () => {
   const { id } = useParams();

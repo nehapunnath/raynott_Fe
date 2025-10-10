@@ -6,6 +6,8 @@ import { FaSearch, FaFilter, FaTimes, FaHome, FaStar, FaPhone, FaMapMarkerAlt, F
 import { BsCashStack, BsFillCalendar2CheckFill } from "react-icons/bs";
 import StickyButton from '../components/StickyButton';
 import { teacherApi } from '../services/TeacherApi';
+import "tailwindcss";
+
 
 // Fallback static data for debugging
 const fallbackTeachers = {

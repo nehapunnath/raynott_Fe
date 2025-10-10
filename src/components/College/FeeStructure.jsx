@@ -8,6 +8,8 @@ import {
 import { GiMoneyStack } from 'react-icons/gi';
 import { useParams } from 'react-router-dom';
 import { collegeApi } from '../../services/collegeApi';
+import "tailwindcss";
+
 
 const FeeStructure = () => {
   const { id } = useParams();

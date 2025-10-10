@@ -47,6 +47,7 @@ import Professional from './pages/Professional'
 import PersonalTeachers from './pages/PersonalTeachers'
 import PersonalDetails from './pages/PersonalDetails'
 import SearchResults from './components/SearchResults'
+import RegistrationDetails from './pages/Admin/RegistrationDetails'
 
 function App() {
   const location = useLocation()
@@ -115,6 +116,9 @@ function App() {
 
         <Route path='/admin/edit-teachers/:id' element={<EditTeachers/>}/>
         <Route path='/admin/teachers-details/:id' element={<ViewTeacher/>}/>
+
+        <Route path='/admin/registrations/:id' element={<RegistrationDetails/>}/>
+
 
         <Route path="/search-results" element={<SearchResults />} />
 

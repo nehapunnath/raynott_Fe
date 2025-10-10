@@ -11,6 +11,8 @@ import Contact from '../components/Coaching/Contact';
 import Review from '../components/Coaching/Review';
 import Footer from '../components/Footer';
 import StickyButton from '../components/StickyButton';
+import "tailwindcss";
+
 
 const CoachingDetail = () => {
     const [selectedImage, setSelectedImage] = useState(null);

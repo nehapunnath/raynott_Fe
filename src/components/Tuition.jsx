@@ -3,6 +3,8 @@ import Slider from "react-slick";
 import { useNavigate } from "react-router-dom";
 import { ArrowLeft, ArrowRight } from "lucide-react";
 import { motion } from "framer-motion";
+import "tailwindcss";
+
 
 const tuitionCenters = [
   {

@@ -4,6 +4,8 @@ import { FaBookOpen, FaSearch, FaMapMarkerAlt, FaGraduationCap, FaRupeeSign, FaS
 import { IoMdTime } from 'react-icons/io';
 import { Link } from 'react-router-dom';
 import { schoolApi } from '../../services/schoolApi';
+import "tailwindcss";
+
 
 const AddSchools = () => {
     // List of cities for the dropdown

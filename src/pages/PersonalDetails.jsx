@@ -29,6 +29,7 @@ import BasicInfo from '../components/PersonalTeachers/BasicInfo';
 import Contact from '../components/PersonalTeachers/Contact';
 import FeeStructure from '../components/PersonalTeachers/FeeStructure';
 import Review from '../components/PersonalTeachers/Review';
+import "tailwindcss";
 
 const PersonalDetails = () => {
   const [selectedImage, setSelectedImage] = useState(null);

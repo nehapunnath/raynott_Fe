@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Link } from 'react-router-dom';
+// import "tailwindcss";
+
 
 const locations = [
   { name: 'Bangalore', icon: '🏙️', color: 'from-indigo-500 to-purple-600' },

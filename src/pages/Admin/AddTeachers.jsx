@@ -2,6 +2,8 @@ import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { FaBookOpen, FaSearch, FaMapMarkerAlt, FaGraduationCap, FaRupeeSign, FaChalkboardTeacher, FaBook, FaClock, FaUserTie, FaVideo, FaCertificate, FaChartLine, FaSchool, FaPhone, FaEnvelope, FaGlobe, FaFacebook, FaTwitter, FaInstagram, FaLinkedin, FaLanguage, FaAward } from 'react-icons/fa';
 import { teacherApi } from '../../services/TeacherApi';
+import "tailwindcss";
+
 
 const AddTeachers = () => {
   // List of cities for the dropdown

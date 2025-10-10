@@ -6,6 +6,8 @@ import { collegeApi } from '../services/collegeApi';
 import { puCollegeApi } from '../services/pucollegeApi';
 import{ TuitionCoachingApi} from '../services/TuitionCoachingApi';
 import { teacherApi } from '../services/TeacherApi';
+import "tailwindcss";
+
 
 function SearchResults() {
   const navigate = useNavigate();

@@ -20,6 +20,8 @@ import Review from '../components/School/Review';
 import StickyButton from '../components/StickyButton';
 import Footer from '../components/Footer';
 import { schoolApi } from '../services/schoolApi';
+import "tailwindcss";
+
 
 const SchoolDetails = () => {
   const [selectedImage, setSelectedImage] = useState(null);

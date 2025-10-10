@@ -16,6 +16,8 @@ import { useNavigate } from 'react-router-dom';
 import Header from '../components/Header';
 import Footer from '../components/Footer';
 import StickyButton from '../components/StickyButton';
+import "tailwindcss";
+
 
 const ContactUs = () => {
   const navigate = useNavigate();

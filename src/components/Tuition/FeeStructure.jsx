@@ -6,6 +6,8 @@ import {
   FaVideo, FaFirstAid, FaWifi, FaLink, FaClipboardList
 } from 'react-icons/fa';
 import { GiMoneyStack } from 'react-icons/gi';
+import "tailwindcss";
+
 
 const FeeStructure = () => {
   const feeDetails = [

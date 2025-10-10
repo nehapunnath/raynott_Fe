@@ -10,6 +10,8 @@ import BasicInfo from '../components/PuColleges/BasicInfo';
 import FeeStructure from '../components/PuColleges/FeeStructure';
 import Contact from '../components/PuColleges/Contact';
 import Review from '../components/PuColleges/Review';
+import "tailwindcss";
+
 
 
 // City name normalization map for display purposes

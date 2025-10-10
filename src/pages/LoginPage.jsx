@@ -3,6 +3,8 @@ import { motion } from 'framer-motion';
 import { FiMail, FiLock, FiArrowRight, FiAlertCircle } from 'react-icons/fi';
 import { useNavigate } from 'react-router-dom';
 import { authApis } from '../services/allApis';
+import "tailwindcss";
+
 
 const LoginPage = () => {
   const [email, setEmail] = useState('');

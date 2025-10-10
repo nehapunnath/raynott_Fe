@@ -3,6 +3,8 @@ import { motion } from 'framer-motion';
 import { FaChevronDown, FaChevronUp, FaSpinner } from 'react-icons/fa';
 import { schoolApi } from '../../services/schoolApi'; 
 import { useParams } from 'react-router-dom';
+import "tailwindcss";
+
 
 // Separate component for FAQ items
 const FAQItem = ({ question, answer }) => {

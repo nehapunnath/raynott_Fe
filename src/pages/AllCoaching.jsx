@@ -7,6 +7,8 @@ import { BsFillCalendar2CheckFill } from "react-icons/bs";
 import { TuitionCoachingApi } from '../services/TuitionCoachingApi';
 import { useDebounce } from 'use-debounce';
 import StickyButton from '../components/StickyButton';
+import "tailwindcss";
+
 
 // Memoized CoachingCard component to prevent unnecessary re-renders
 const CoachingCard = React.memo(({ center }) => (

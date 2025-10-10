@@ -4,6 +4,8 @@ import { motion } from 'framer-motion';
 import { FaChevronDown, FaChevronUp } from 'react-icons/fa';
 import { useParams } from 'react-router-dom';
 import { puCollegeApi } from '../../services/pucollegeApi';
+import "tailwindcss";
+
 
 const BasicInfo = ({ puCollege: puCollegeProp }) => {
   const { id } = useParams(); // Get college ID from URL

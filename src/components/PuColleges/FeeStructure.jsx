@@ -9,6 +9,8 @@ import {
 import { GiMoneyStack } from 'react-icons/gi';
 import { useParams } from 'react-router-dom';
 import { puCollegeApi } from '../../services/pucollegeApi';
+import "tailwindcss";
+
 
 const FeeStructure = ({ puCollege: puCollegeProp }) => {
   const { id } = useParams(); // Get college ID from URL

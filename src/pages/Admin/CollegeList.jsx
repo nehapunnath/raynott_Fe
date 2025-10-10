@@ -2,6 +2,8 @@ import { useState, useEffect } from 'react';
 import { FaEdit, FaTrash, FaEye, FaPlus } from 'react-icons/fa';
 import { useNavigate } from 'react-router-dom';
 import { collegeApi, collegeTypeApi } from '../../services/collegeApi';
+import "tailwindcss";
+
 
 const CollegesList = () => {
     const [colleges, setColleges] = useState([]);
@@ -20,7 +22,7 @@ const CollegesList = () => {
             const response = await collegeTypeApi.getCollegeTypes();
             if (response.success) {
                 const typesMap = {};
-                response.data.forEach(type => {
+                response.data?.forEach(type => {
                     typesMap[type.id] = type.name;
                 });
                 setCollegeTypes(typesMap);

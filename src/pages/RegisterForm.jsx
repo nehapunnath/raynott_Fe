@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import "tailwindcss";
 import { motion } from 'framer-motion';
 import { 
   FaSchool, FaChalkboardTeacher, FaMapMarkerAlt, FaPhone, FaEnvelope, 
@@ -12,15 +13,15 @@ import {
 import { GiMoneyStack, GiTeacher } from 'react-icons/gi';
 import { IoMdTime } from 'react-icons/io';
 import { useNavigate } from 'react-router-dom';
+import { registerApi } from '../services/RegisterApi';
 
 const RegisterForm = () => {
   const navigate = useNavigate();
   const [currentStep, setCurrentStep] = useState(1);
+  const [showModal, setShowModal] = useState(false);
   const [formData, setFormData] = useState({
-    // Basic Information
     institutionType: '',
-    
-    // Common Fields
+    teacherType: '',
     name: '',
     tagline: '',
     establishmentYear: '',
@@ -34,8 +35,6 @@ const RegisterForm = () => {
     website: '',
     googleMapsEmbedUrl: '',
     facilities: [],
-    
-    // School Specific
     typeOfSchool: '',
     affiliation: '',
     grade: '',
@@ -44,8 +43,6 @@ const RegisterForm = () => {
     studentStrength: '',
     teacherStrength: '',
     studentTeacherRatio: '',
-    
-    // College Specific
     typeOfCollege: '',
     universityAffiliation: '',
     coursesOffered: '',
@@ -53,15 +50,11 @@ const RegisterForm = () => {
     accreditation: '',
     placementStatistics: '',
     departments: '',
-    
-    // PU College Specific
     board: '',
     streams: '',
     subjects: '',
     programDuration: '',
     competitiveExamPrep: '',
-    
-    // Coaching Specific
     typeOfCoaching: '',
     classes: '',
     batchSize: '',
@@ -73,8 +66,6 @@ const RegisterForm = () => {
     infrastructure: '',
     demoClass: '',
     flexibleTimings: '',
-    
-    // Teacher Specific
     teacherName: '',
     qualifications: '',
     experience: '',
@@ -96,29 +87,24 @@ const RegisterForm = () => {
     progressReports: '',
     performanceTracking: '',
     teachingProcess: '',
-    
-    // Fee Structure (Common for institutions)
+    institutionName: '',
+    institutionPosition: '',
+    institutionExperience: '',
     totalAnnualFee: '',
     admissionFee: '',
     tuitionFee: '',
     transportFee: '',
     booksUniformsFee: '',
-    
-    // Contact Information
     principalName: '',
     contactPerson: '',
     alternatePhone: '',
     officeHours: '',
-    
-    // Social Media
     socialMedia: {
       facebook: '',
       twitter: '',
       instagram: '',
       linkedin: ''
     },
-    
-    // Infrastructure
     campusSize: '',
     classrooms: '',
     laboratories: '',
@@ -131,14 +117,10 @@ const RegisterForm = () => {
     wifi: '',
     hostel: '',
     sports: '',
-    
-    // Admission Details
     admissionLink: '',
     admissionProcess: '',
-    
-    // Documents
     registrationCertificate: null,
-    affiliationCertificate: null,
+    affiliationNumber: '',
     qualificationCertificates: [],
     idProof: null,
     profileImage: null,
@@ -154,8 +136,12 @@ const RegisterForm = () => {
     { value: 'teacher', label: 'Teacher', icon: <GiTeacher /> }
   ];
 
+  const teacherTypes = [
+    { value: 'institutional', label: 'Professional in School/College/Coaching', description: 'I work with an educational institution' },
+    { value: 'personal', label: 'Personal Mentor/Tutor', description: 'I teach independently' }
+  ];
+
   const cities = ['Bangalore', 'Hyderabad', 'Mumbai', 'Kolkata', 'Delhi', 'Chennai'];
-  
   const schoolTypes = ['Day School', 'Boarding', 'Pre School', 'International School'];
   const collegeTypes = ['Engineering', 'Medical', 'Arts & Science', 'Management', 'Law', 'Other'];
   const coachingTypes = ['Academic', 'Competitive Exams', 'Skill Development', 'Language', 'Other'];
@@ -171,9 +157,10 @@ const RegisterForm = () => {
   ];
 
   const [dynamicFields, setDynamicFields] = useState({});
+  const [error, setError] = useState(null);
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    // Set dynamic fields based on institution type
     if (formData.institutionType === 'school') {
       setDynamicFields({
         typeOfSchool: '',
@@ -239,7 +226,10 @@ const RegisterForm = () => {
         onlinePlatform: '',
         progressReports: '',
         performanceTracking: '',
-        teachingProcess: ''
+        teachingProcess: '',
+        institutionName: '',
+        institutionPosition: '',
+        institutionExperience: ''
       });
     }
   }, [formData.institutionType]);
@@ -294,6 +284,152 @@ const RegisterForm = () => {
     }));
   };
 
+  const handleCloseModal = () => {
+    setShowModal(false);
+    setFormData({
+      institutionType: '',
+      teacherType: '',
+      name: '',
+      tagline: '',
+      establishmentYear: '',
+      about: '',
+      address: '',
+      city: '',
+      state: '',
+      pincode: '',
+      email: '',
+      phone: '',
+      website: '',
+      googleMapsEmbedUrl: '',
+      facilities: [],
+      typeOfSchool: '',
+      affiliation: '',
+      grade: '',
+      ageForAdmission: '',
+      language: '',
+      studentStrength: '',
+      teacherStrength: '',
+      studentTeacherRatio: '',
+      typeOfCollege: '',
+      universityAffiliation: '',
+      coursesOffered: '',
+      duration: '',
+      accreditation: '',
+      placementStatistics: '',
+      departments: '',
+      board: '',
+      streams: '',
+      subjects: '',
+      programDuration: '',
+      competitiveExamPrep: '',
+      typeOfCoaching: '',
+      classes: '',
+      batchSize: '',
+      classDuration: '',
+      faculty: '',
+      studyMaterial: '',
+      tests: '',
+      doubtSessions: '',
+      infrastructure: '',
+      demoClass: '',
+      flexibleTimings: '',
+      teacherName: '',
+      qualifications: '',
+      experience: '',
+      teachingMode: '',
+      languages: '',
+      specialization: '',
+      certifications: '',
+      availability: '',
+      hourlyRate: '',
+      monthlyPackage: '',
+      examPreparation: '',
+      demoFee: '',
+      teachingApproach: '',
+      studyMaterials: '',
+      sessionDuration: '',
+      studentLevel: '',
+      classSize: '',
+      onlinePlatform: '',
+      progressReports: '',
+      performanceTracking: '',
+      teachingProcess: '',
+      institutionName: '',
+      institutionPosition: '',
+      institutionExperience: '',
+      totalAnnualFee: '',
+      admissionFee: '',
+      tuitionFee: '',
+      transportFee: '',
+      booksUniformsFee: '',
+      principalName: '',
+      contactPerson: '',
+      alternatePhone: '',
+      officeHours: '',
+      socialMedia: {
+        facebook: '',
+        twitter: '',
+        instagram: '',
+        linkedin: ''
+      },
+      campusSize: '',
+      classrooms: '',
+      laboratories: '',
+      library: '',
+      playground: '',
+      auditorium: '',
+      smartBoards: '',
+      cctv: '',
+      medicalRoom: '',
+      wifi: '',
+      hostel: '',
+      sports: '',
+      admissionLink: '',
+      admissionProcess: '',
+      registrationCertificate: null,
+      affiliationNumber: '',
+      qualificationCertificates: [],
+      idProof: null,
+      profileImage: null,
+      photos: [],
+      otherDocuments: []
+    });
+    setDynamicFields({});
+    setCurrentStep(1);
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+    setError(null);
+
+    const completeFormData = { ...formData, ...dynamicFields };
+    const formDataToSend = new FormData();
+
+    Object.keys(completeFormData).forEach(key => {
+      if (key === 'facilities' || key === 'socialMedia' || key === 'languages' || key === 'streams' || key === 'subjects' || key === 'coursesOffered') {
+        formDataToSend.append(key, JSON.stringify(completeFormData[key]));
+      } else if (completeFormData[key] instanceof File) {
+        formDataToSend.append(key, completeFormData[key]);
+      } else if (Array.isArray(completeFormData[key]) && completeFormData[key][0] instanceof File) {
+        completeFormData[key].forEach(file => {
+          formDataToSend.append(key, file);
+        });
+      } else {
+        formDataToSend.append(key, completeFormData[key]);
+      }
+    });
+
+    try {
+      await registerApi.submitRegistration(formDataToSend);
+      setShowModal(true);
+    } catch (err) {
+      setError(err.message || 'An error occurred during submission');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const nextStep = () => {
     setCurrentStep(prev => prev + 1);
     window.scrollTo(0, 0);
@@ -302,14 +438,6 @@ const RegisterForm = () => {
   const prevStep = () => {
     setCurrentStep(prev => prev - 1);
     window.scrollTo(0, 0);
-  };
-
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    const completeFormData = { ...formData, ...dynamicFields };
-    console.log('Form submitted:', completeFormData);
-    // Here you would typically send the data to your backend
-    navigate('/registration-success');
   };
 
   const StepIndicator = () => (
@@ -330,6 +458,85 @@ const RegisterForm = () => {
       ))}
     </div>
   );
+
+  const renderTeacherTypeFields = () => {
+    if (formData.institutionType !== 'teacher') return null;
+
+    return (
+      <div className="md:col-span-2">
+        <label className="block text-gray-700 mb-2">Teaching Profile Type*</label>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {teacherTypes.map(type => (
+            <label 
+              key={type.value}
+              className={`flex flex-col p-4 border-2 rounded-lg cursor-pointer transition-all
+                ${formData.teacherType === type.value 
+                  ? 'border-orange-600 bg-orange-50' 
+                  : 'border-gray-200 hover:border-orange-300'}`}
+            >
+              <input
+                type="radio"
+                name="teacherType"
+                value={type.value}
+                checked={formData.teacherType === type.value}
+                onChange={handleChange}
+                className="hidden"
+                required
+              />
+              <span className="font-medium text-gray-700 mb-1">{type.label}</span>
+              <span className="text-sm text-gray-500">{type.description}</span>
+            </label>
+          ))}
+        </div>
+      </div>
+    );
+  };
+
+  const renderInstitutionalTeacherFields = () => {
+    if (formData.teacherType !== 'institutional') return null;
+
+    return (
+      <>
+        <div>
+          <label className="block text-gray-700 mb-2">Institution Name*</label>
+          <input
+            type="text"
+            name="institutionName"
+            value={dynamicFields.institutionName || ''}
+            onChange={handleDynamicChange}
+            className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
+            placeholder="e.g., ABC International School"
+            required
+          />
+        </div>
+        
+        <div>
+          <label className="block text-gray-700 mb-2">Position/Role*</label>
+          <input
+            type="text"
+            name="institutionPosition"
+            value={dynamicFields.institutionPosition || ''}
+            onChange={handleDynamicChange}
+            className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
+            placeholder="e.g., Senior Mathematics Teacher"
+            required
+          />
+        </div>
+        
+        <div>
+          <label className="block text-gray-700 mb-2">Experience at Institution</label>
+          <input
+            type="text"
+            name="institutionExperience"
+            value={dynamicFields.institutionExperience || ''}
+            onChange={handleDynamicChange}
+            className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
+            placeholder="e.g., 5 years"
+          />
+        </div>
+      </>
+    );
+  };
 
   const renderInstitutionTypeFields = () => {
     switch(formData.institutionType) {
@@ -412,15 +619,18 @@ const RegisterForm = () => {
           <>
             <div>
               <label className="block text-gray-700 mb-2">College Type*</label>
-              <input
-                type="text"
+              <select
                 name="typeOfCollege"
                 value={dynamicFields.typeOfCollege || ''}
                 onChange={handleDynamicChange}
                 className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
-                placeholder="e.g., Engineering College"
                 required
-              />
+              >
+                <option value="">Select College Type</option>
+                {collegeTypes.map(type => (
+                  <option key={type} value={type}>{type}</option>
+                ))}
+              </select>
             </div>
             
             <div>
@@ -631,6 +841,9 @@ const RegisterForm = () => {
       case 'teacher':
         return (
           <>
+            {renderTeacherTypeFields()}
+            {renderInstitutionalTeacherFields()}
+            
             <div>
               <label className="block text-gray-700 mb-2">Full Name*</label>
               <input
@@ -753,10 +966,50 @@ const RegisterForm = () => {
 
         <div className="px-8 pt-6">
           <StepIndicator />
+          {error && (
+            <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mb-6">
+              {error}
+            </div>
+          )}
+          {loading && (
+            <div className="text-center text-orange-600 mb-6">
+              Submitting your registration...
+            </div>
+          )}
         </div>
 
+        {showModal && (
+          <motion.div
+            className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+          >
+            <motion.div
+              className="bg-white rounded-lg p-6 max-w-md w-full shadow-xl"
+              initial={{ scale: 0.8, y: 20 }}
+              animate={{ scale: 1, y: 0 }}
+              transition={{ duration: 0.3 }}
+            >
+              <h2 className="text-2xl font-bold text-green-600 mb-4 flex items-center">
+                <FaCheck className="mr-2" /> Registration Successful
+              </h2>
+              <p className="text-gray-700 mb-6">
+                Successfully completed the registration. We will contact you soon!
+              </p>
+              <motion.button
+                onClick={handleCloseModal}
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                className="w-full bg-orange-600 text-white font-semibold py-2 px-4 rounded-lg hover:bg-orange-700 transition"
+              >
+                Close
+              </motion.button>
+            </motion.div>
+          </motion.div>
+        )}
+
         <form onSubmit={handleSubmit} className="px-8 pb-8">
-          {/* Step 1: Basic Information */}
           {currentStep === 1 && (
             <motion.div
               initial={{ opacity: 0, x: -20 }}
@@ -895,7 +1148,7 @@ const RegisterForm = () => {
                         value={formData.address}
                         onChange={handleChange}
                         className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
-                        placeholder="Full address including landmark"
+                        placeholder="Full address "
                         required
                       />
                     </div>
@@ -957,7 +1210,6 @@ const RegisterForm = () => {
             </motion.div>
           )}
 
-          {/* Step 2: Academic & Additional Details */}
           {currentStep === 2 && (
             <motion.div
               initial={{ opacity: 0, x: -20 }}
@@ -1168,13 +1420,31 @@ const RegisterForm = () => {
                         ))}
                       </div>
                     </div>
+
+                    <div className="md:col-span-2">
+                      <label className="block text-gray-700 mb-2">Infrastructure Details</label>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        {['campusSize', 'classrooms'].map(field => (
+                          <div key={field}>
+                            <label className="block text-gray-700 mb-2 capitalize">{field.replace(/([A-Z])/g, ' $1').trim()}</label>
+                            <input
+                              type="text"
+                              name={field}
+                              value={formData[field] || ''}
+                              onChange={handleChange}
+                              className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
+                              placeholder={`e.g., ${field === 'campusSize' ? '10 acres' : field === 'classrooms' ? '50' : field === 'laboratories' ? '5' : 'Available'}`}
+                            />
+                          </div>
+                        ))}
+                      </div>
+                    </div>
                   </>
                 )}
               </div>
             </motion.div>
           )}
 
-          {/* Step 3: Fee Structure */}
           {currentStep === 3 && formData.institutionType !== 'teacher' && (
             <motion.div
               initial={{ opacity: 0, x: -20 }}
@@ -1191,7 +1461,7 @@ const RegisterForm = () => {
                   <label className="block text-gray-700 mb-2">Total Annual Fee</label>
                   <div className="relative">
                     <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                      <FaRupeeSign className="text-gray-500" />
+                      {/* <FaRupeeSign className="text-gray-500" /> */}
                     </div>
                     <input
                       type="text"
@@ -1208,7 +1478,7 @@ const RegisterForm = () => {
                   <label className="block text-gray-700 mb-2">Admission Fee</label>
                   <div className="relative">
                     <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                      <FaRupeeSign className="text-gray-500" />
+                      {/* <FaRupeeSign className="text-gray-500" /> */}
                     </div>
                     <input
                       type="text"
@@ -1225,7 +1495,7 @@ const RegisterForm = () => {
                   <label className="block text-gray-700 mb-2">Tuition Fee</label>
                   <div className="relative">
                     <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                      <FaRupeeSign className="text-gray-500" />
+                      {/* <FaRupeeSign className="text-gray-500" /> */}
                     </div>
                     <input
                       type="text"
@@ -1242,7 +1512,7 @@ const RegisterForm = () => {
                   <label className="block text-gray-700 mb-2">Transport Fee</label>
                   <div className="relative">
                     <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                      <FaRupeeSign className="text-gray-500" />
+                      {/* <FaRupeeSign className="text-gray-500" /> */}
                     </div>
                     <input
                       type="text"
@@ -1259,7 +1529,7 @@ const RegisterForm = () => {
                   <label className="block text-gray-700 mb-2">Books & Uniforms/Materials Fee</label>
                   <div className="relative">
                     <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                      <FaRupeeSign className="text-gray-500" />
+                      {/* <FaRupeeSign className="text-gray-500" /> */}
                     </div>
                     <input
                       type="text"
@@ -1275,13 +1545,52 @@ const RegisterForm = () => {
             </motion.div>
           )}
 
-          {/* Step 4: Contact Information */}
           {currentStep === (formData.institutionType === 'teacher' ? 3 : 4) && (
             <motion.div
               initial={{ opacity: 0, x: -20 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ duration: 0.3 }}
             >
+              {formData.institutionType !== 'teacher' && (
+                <div className="mb-8">
+                  <h2 className="text-2xl font-bold mb-6 flex items-center text-gray-800">
+                    <FaLink className="mr-2 text-orange-600" />
+                    Admission Details
+                  </h2>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div className="md:col-span-2">
+                      <label className="block text-gray-700 mb-2">Admission Link</label>
+                      <div className="relative">
+                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                          {/* <FaLink className="text-gray-500" /> */}
+                        </div>
+                        <input
+                          type="url"
+                          name="admissionLink"
+                          value={formData.admissionLink}
+                          onChange={handleChange}
+                          className="w-full pl-10 p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
+                          placeholder="e.g., https://www.example.com/admissions"
+                        />
+                      </div>
+                      <p className="text-sm text-gray-500 mt-1">Provide the URL to your institution's admission page</p>
+                    </div>
+                    <div className="md:col-span-2">
+                      <label className="block text-gray-700 mb-2">Admission Process</label>
+                      <textarea
+                        name="admissionProcess"
+                        value={formData.admissionProcess}
+                        onChange={handleChange}
+                        className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
+                        rows="4"
+                        placeholder="Describe the admission process (e.g., application form, entrance test, interview)"
+                      ></textarea>
+                      <p className="text-sm text-gray-500 mt-1">Provide a detailed description of the steps for admission</p>
+                    </div>
+                  </div>
+                </div>
+              )}
+
               <h2 className="text-2xl font-bold mb-6 flex items-center text-gray-800">
                 <FaPhone className="mr-2 text-orange-600" />
                 Contact Information
@@ -1345,7 +1654,7 @@ const RegisterForm = () => {
                   </>
                 )}
                 
-                {formData.institutionType !== 'teacher' && (
+                {formData.institutionType === 'teacher' ? null : (
                   <div>
                     <label className="block text-gray-700 mb-2">Email*</label>
                     <input
@@ -1497,7 +1806,6 @@ const RegisterForm = () => {
             </motion.div>
           )}
 
-          {/* Step 5: Documents */}
           {currentStep === (formData.institutionType === 'teacher' ? 4 : 5) && (
             <motion.div
               initial={{ opacity: 0, x: -20 }}
@@ -1610,115 +1918,70 @@ const RegisterForm = () => {
                     {(formData.institutionType === 'school' || formData.institutionType === 'pu_college' || 
                       formData.institutionType === 'college') && (
                       <div>
-                        <label className="block text-gray-700 mb-2">
-                          {formData.institutionType === 'college' ? 'University Affiliation Certificate' : 'Board Affiliation Certificate'}*
-                        </label>
-                        <div className="flex items-center">
-                          <label className="cursor-pointer bg-orange-100 text-orange-700 px-4 py-2 rounded-lg hover:bg-orange-200 transition">
-                            <input
-                              type="file"
-                              name="affiliationCertificate"
-                              onChange={handleFileChange}
-                              className="hidden"
-                              accept=".pdf,.jpg,.jpeg,.png"
-                              required
-                            />
-                            Choose File
-                          </label>
-                          {formData.affiliationCertificate && (
-                            <span className="ml-3 text-gray-700">
-                              {formData.affiliationCertificate.name}
-                            </span>
-                          )}
-                        </div>
-                        <p className="text-sm text-gray-500 mt-1">
-                          {formData.institutionType === 'college' ? 
-                            'Upload scanned copy of university affiliation certificate' : 
-                            'Upload scanned copy of board affiliation certificate'}
-                        </p>
+                        <label className="block text-gray-700 mb-2">Affiliation Number</label>
+                        <input
+                          type="text"
+                          name="affiliationNumber"
+                          value={formData.affiliationNumber}
+                          onChange={handleChange}
+                          className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
+                          placeholder="e.g., CBSE/123456"
+                        />
                       </div>
                     )}
+                    
+                    <div>
+                      <label className="block text-gray-700 mb-2">Institution Photos</label>
+                      <div className="flex items-center">
+                        <label className="cursor-pointer bg-orange-100 text-orange-700 px-4 py-2 rounded-lg hover:bg-orange-200 transition">
+                          <input
+                            type="file"
+                            name="photos"
+                            onChange={handleMultiFileChange}
+                            className="hidden"
+                            accept=".jpg,.jpeg,.png"
+                            multiple
+                          />
+                          Choose Photos
+                        </label>
+                        {formData.photos.length > 0 && (
+                          <span className="ml-3 text-gray-700">
+                            {formData.photos.length} photos selected
+                          </span>
+                        )}
+                      </div>
+                      <p className="text-sm text-gray-500 mt-1">Upload photos of your institution (JPEG/PNG)</p>
+                    </div>
+                    
+                    
+                    {/* <div>
+                      <label className="block text-gray-700 mb-2">Other Documents</label>
+                      <div className="flex items-center">
+                        <label className="cursor-pointer bg-orange-100 text-orange-700 px-4 py-2 rounded-lg hover:bg-orange-200 transition">
+                          <input
+                            type="file"
+                            name="otherDocuments"
+                            onChange={handleMultiFileChange}
+                            className="hidden"
+                            accept=".pdf,.jpg,.jpeg,.png"
+                            multiple
+                          />
+                          Choose Files
+                        </label>
+                        {formData.otherDocuments.length > 0 && (
+                          <span className="ml-3 text-gray-700">
+                            {formData.otherDocuments.length} files selected
+                          </span>
+                        )}
+                      </div>
+                      <p className="text-sm text-gray-500 mt-1">Upload any additional relevant documents</p>
+                    </div> */}
                   </>
                 )}
-                
-                <div>
-                  <label className="block text-gray-700 mb-2">
-                    {formData.institutionType === 'teacher' ? 'Additional Photos' : 'Institution Photos (Min 3)*'}
-                  </label>
-                  <div className="flex items-center">
-                    <label className="cursor-pointer bg-orange-100 text-orange-700 px-4 py-2 rounded-lg hover:bg-orange-200 transition">
-                      <input
-                        type="file"
-                        name="photos"
-                        onChange={handleMultiFileChange}
-                        className="hidden"
-                        accept=".jpg,.jpeg,.png"
-                        multiple
-                        required={formData.institutionType !== 'teacher'}
-                      />
-                      Choose {formData.institutionType === 'teacher' ? 'Photos' : 'Files'}
-                    </label>
-                    {formData.photos.length > 0 && (
-                      <span className="ml-3 text-gray-700">
-                        {formData.photos.length} {formData.photos.length === 1 ? 'file' : 'files'} selected
-                      </span>
-                    )}
-                  </div>
-                  <p className="text-sm text-gray-500 mt-1">
-                    {formData.institutionType === 'teacher' ? 
-                      'Upload additional photos of your teaching setup, certificates, etc.' : 
-                      formData.institutionType === 'college' ? 'Upload photos of campus, labs, library' : 
-                      formData.institutionType === 'coaching' ? 
-                      'Upload photos of center, classrooms, facilities' : 'Upload photos of campus, classrooms, facilities'}
-                  </p>
-                </div>
-                
-                <div>
-                  <label className="block text-gray-700 mb-2">Other Documents (Optional)</label>
-                  <div className="flex items-center">
-                    <label className="cursor-pointer bg-orange-100 text-orange-700 px-4 py-2 rounded-lg hover:bg-orange-200 transition">
-                      <input
-                        type="file"
-                        name="otherDocuments"
-                        onChange={handleMultiFileChange}
-                        className="hidden"
-                        accept=".pdf,.jpg,.jpeg,.png"
-                        multiple
-                      />
-                      Choose Files
-                    </label>
-                    {formData.otherDocuments.length > 0 && (
-                      <span className="ml-3 text-gray-700">
-                        {formData.otherDocuments.length} files selected
-                      </span>
-                    )}
-                  </div>
-                  <p className="text-sm text-gray-500 mt-1">
-                    {formData.institutionType === 'teacher' ? 'Teaching awards, certifications, student testimonials, etc.' : 
-                    formData.institutionType === 'college' ? 'NAAC certificate, department approvals, etc.' : 
-                    formData.institutionType === 'coaching' ? 
-                    'Success stories, testimonials, etc.' : 'Achievements, awards, etc.'} (PDF/JPEG/PNG)
-                  </p>
-                </div>
-                
-                <div className="mt-6">
-                  <label className="flex items-start">
-                    <input
-                      type="checkbox"
-                      className="mt-1 mr-2 h-5 w-5 text-orange-600 rounded focus:ring-orange-500"
-                      required
-                    />
-                    <span className="text-gray-700">
-                      I certify that all information provided is accurate and I agree to the 
-                      <a href="/terms" className="text-orange-600 hover:underline ml-1">Terms of Service</a>
-                    </span>
-                  </label>
-                </div>
               </div>
             </motion.div>
           )}
 
-          {/* Navigation Buttons */}
           <div className="mt-8 flex justify-between">
             {currentStep > 1 && (
               <motion.button
@@ -1727,6 +1990,7 @@ const RegisterForm = () => {
                 whileHover={{ scale: 1.03 }}
                 whileTap={{ scale: 0.98 }}
                 className="bg-gray-200 text-gray-700 font-semibold py-3 px-6 rounded-lg hover:bg-gray-300 transition"
+                disabled={loading}
               >
                 Back
               </motion.button>
@@ -1739,6 +2003,7 @@ const RegisterForm = () => {
                 whileHover={{ scale: 1.03 }}
                 whileTap={{ scale: 0.98 }}
                 className="ml-auto bg-orange-600 text-white font-semibold py-3 px-6 rounded-lg hover:bg-orange-700 transition"
+                disabled={loading}
               >
                 Next
               </motion.button>
@@ -1748,8 +2013,9 @@ const RegisterForm = () => {
                 whileHover={{ scale: 1.03 }}
                 whileTap={{ scale: 0.98 }}
                 className="ml-auto bg-green-600 text-white font-semibold py-3 px-6 rounded-lg hover:bg-green-700 transition"
+                disabled={loading}
               >
-                Submit Registration
+                Submit
               </motion.button>
             )}
           </div>

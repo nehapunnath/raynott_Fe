@@ -7,7 +7,9 @@ import {
 } from 'react-icons/fa';
 import { GiMoneyStack } from 'react-icons/gi';
 import { useParams } from 'react-router-dom';
-import { TuitionCoachingApi } from '../../services/TuitionCoachingApi'; // Adjust path as needed
+import { TuitionCoachingApi } from '../../services/TuitionCoachingApi'; 
+import "tailwindcss";
+
 
 const FeeStructure = () => {
   const { id } = useParams();

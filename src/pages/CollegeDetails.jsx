@@ -24,6 +24,8 @@ import { Link, useNavigate, useParams } from 'react-router-dom';
 import Footer from '../components/Footer';
 import StickyButton from '../components/StickyButton';
 import { collegeApi } from '../services/collegeApi';
+import "tailwindcss";
+
 
 const CollegeDetails = () => {
   const [selectedImage, setSelectedImage] = useState(null);

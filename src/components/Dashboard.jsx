@@ -1,6 +1,8 @@
 import { motion } from 'framer-motion';
 import { FaSchool, FaChalkboardTeacher, FaUsers, FaGraduationCap } from 'react-icons/fa';
 import { BsCalendarCheck } from 'react-icons/bs';
+import "tailwindcss";
+
 
 const Dashboard = () => {
   const quickStats = [

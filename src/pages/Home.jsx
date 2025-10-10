@@ -20,6 +20,7 @@ import { schoolApi } from '../services/schoolApi';
 import { collegeApi } from '../services/collegeApi';
 import {puCollegeApi  } from '../services/pucollegeApi';
 import  { TuitionCoachingApi } from '../services/TuitionCoachingApi';
+// import "tailwindcss";
 import { teacherApi } from '../services/TeacherApi';
 
 function Home() {

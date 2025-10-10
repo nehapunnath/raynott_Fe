@@ -2,6 +2,8 @@ import { useState, useEffect } from 'react';
 import { FaEdit, FaTrash, FaEye } from 'react-icons/fa';
 import { useNavigate } from 'react-router-dom';
 import { puCollegeApi, puCollegeTypeApi } from '../../services/pucollegeApi';
+import "tailwindcss";
+
 
 const PucollegeList = () => {
     const [puColleges, setPUColleges] = useState([]);

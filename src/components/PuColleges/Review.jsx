@@ -3,6 +3,8 @@ import React, { useState, useEffect } from 'react';
 import { FaStar, FaRegStar, FaThumbsUp, FaThumbsDown, FaReply } from 'react-icons/fa';
 import { puCollegeApi } from '../../services/pucollegeApi';
 import { useParams } from 'react-router-dom';
+import "tailwindcss";
+
 
 const Review = () => {
   const [userRating, setUserRating] = useState(0);

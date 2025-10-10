@@ -2,6 +2,8 @@ import { useState, useEffect } from 'react';
 import { FaEdit, FaTrash, FaEye } from 'react-icons/fa';
 import { useNavigate } from 'react-router-dom';
 import { teacherApi } from '../../services/TeacherApi';
+import "tailwindcss";
+
 
 const TeachersList = () => {
   const [teachers, setTeachers] = useState([]);

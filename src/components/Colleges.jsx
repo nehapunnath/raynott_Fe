@@ -4,6 +4,8 @@ import { useNavigate } from "react-router-dom";
 import { ArrowLeft, ArrowRight } from "lucide-react";
 import { motion } from "framer-motion";
 import { collegeApi } from "../services/collegeApi";
+import "tailwindcss";
+
 
 const NextArrow = ({ onClick }) => (
   <motion.div

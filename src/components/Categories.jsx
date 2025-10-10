@@ -11,6 +11,8 @@ import {
   FaTrophy,
   FaStar
 } from "react-icons/fa";
+import "tailwindcss";
+
 
 const categories = [
   {

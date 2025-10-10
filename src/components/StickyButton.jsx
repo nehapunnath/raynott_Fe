@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { FiX } from 'react-icons/fi';
+import "tailwindcss";
+
 
 function StickyButton() {
   const [openModal, setOpenModal] = useState(null);

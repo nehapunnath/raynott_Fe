@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { useParams, useNavigate } from 'react-router-dom';
 import { schoolApi } from '../../services/schoolApi';
+import "tailwindcss";
+
 
 const ViewSchool = () => {
     const { id } = useParams();

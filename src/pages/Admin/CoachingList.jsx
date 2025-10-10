@@ -2,6 +2,8 @@ import { useState, useEffect } from 'react';
 import { FaEdit, FaTrash, FaEye } from 'react-icons/fa';
 import { useNavigate } from 'react-router-dom';
 import { TuitionCoachingApi, coachingTypeApi } from '../../services/TuitionCoachingApi';
+import "tailwindcss";
+
 
 const CoachingList = () => {
     const [tuitionCoachings, setTuitionCoachings] = useState([]);

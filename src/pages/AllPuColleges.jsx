@@ -7,6 +7,8 @@ import { BsFillCalendar2CheckFill } from 'react-icons/bs';
 import { puCollegeApi } from '../services/pucollegeApi';
 import Footer from '../components/Footer';
 import StickyButton from '../components/StickyButton';
+import "tailwindcss";
+
 
 // City name normalization map for display purposes
 const cityNormalizationMap = {

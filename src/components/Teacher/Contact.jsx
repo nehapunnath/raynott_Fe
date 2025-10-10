@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { FaPhone, FaEnvelope, FaMapMarkerAlt, FaGlobe, FaFacebook, FaTwitter, FaInstagram, FaLinkedin, FaChalkboardTeacher } from 'react-icons/fa';
 import { useParams } from 'react-router-dom';
 import { teacherApi } from '../../services/TeacherApi';
+import "tailwindcss";
+
 
 const Contact = () => {
   const { id } = useParams(); // Get the teacher ID from the URL

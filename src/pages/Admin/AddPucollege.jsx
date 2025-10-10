@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { puCollegeApi, puCollegeTypeApi } from '../../services/pucollegeApi';
+import "tailwindcss";
+
 
 const AddPucollege = () => {
   // List of cities for the dropdown

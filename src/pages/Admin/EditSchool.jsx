@@ -4,6 +4,8 @@ import { FaBookOpen, FaSearch, FaMapMarkerAlt, FaGraduationCap, FaRupeeSign, FaS
 import { IoMdTime } from 'react-icons/io';
 import { Link, useParams, useNavigate } from 'react-router-dom';
 import { schoolApi } from '../../services/schoolApi';
+import "tailwindcss";
+
 
 const EditSchool = () => {
     const { id } = useParams(); // Get school ID from URL

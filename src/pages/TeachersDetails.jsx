@@ -27,6 +27,8 @@ import Contact from '../components/Teacher/Contact';
 import Review from '../components/Teacher/Review';
 import { teacherApi } from '../services/TeacherApi';
 import FeeStructure from '../components/Teacher/FeeStructure';
+import "tailwindcss";
+
 
 const TeachersDetails = () => {
   const [selectedImage, setSelectedImage] = useState(null);

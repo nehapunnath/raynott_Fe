@@ -3,6 +3,8 @@ import { motion } from 'framer-motion';
 import { Link, useNavigate } from 'react-router-dom';
 import { FaSearch, FaHome, FaUniversity, FaUserTie } from "react-icons/fa";
 import StickyButton from '../components/StickyButton';
+import "tailwindcss";
+
 
 const teacherCategories = [
   {

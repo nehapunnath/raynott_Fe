@@ -9,6 +9,8 @@ import { GiMoneyStack } from 'react-icons/gi';
 import { schoolApi } from '../../services/schoolApi';
 import { useParams } from 'react-router-dom';
 import { FaSpinner } from 'react-icons/fa';
+import "tailwindcss";
+
 
 const FeesStructure = () => {
   const { id } = useParams();

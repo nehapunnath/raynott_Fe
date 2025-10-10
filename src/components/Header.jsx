@@ -5,6 +5,8 @@ import { schoolApi } from '../services/schoolApi';
 import collegeApi from '../services/collegeApi';
 import { puCollegeApi } from '../services/pucollegeApi';
 import TuitionCoachingApi from '../services/TuitionCoachingApi';
+// import "tailwindcss";
+
 
 function Header() {
   const [menuOpen, setMenuOpen] = useState(false);

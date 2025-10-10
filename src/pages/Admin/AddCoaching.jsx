@@ -2,7 +2,9 @@ import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { FaBookOpen, FaMapMarkerAlt, FaGraduationCap, FaRupeeSign, FaSchool, FaFlask, FaBook, FaChalkboardTeacher, FaVideo, FaFirstAid, FaWifi, FaLink, FaClipboardList, FaPhone } from 'react-icons/fa';
 import { IoMdTime } from 'react-icons/io';
-import { TuitionCoachingApi, coachingTypeApi } from '../../services/TuitionCoachingApi'; // Import API functions
+import { TuitionCoachingApi, coachingTypeApi } from '../../services/TuitionCoachingApi'; 
+import "tailwindcss";
+
 
 const AddCoaching = () => {
     const cities = ['Bangalore', 'Hyderabad', 'Mumbai', 'Kolkata', 'Delhi', 'Chennai'];

@@ -5,6 +5,8 @@ import { FaSearch, FaFilter, FaStar, FaTrophy, FaMapMarkerAlt, FaSchool, FaUnive
 import { BsFillCalendar2CheckFill, BsCashStack } from 'react-icons/bs';
 import StickyButton from '../components/StickyButton';
 import { FaBookOpenReader } from 'react-icons/fa6';
+import "tailwindcss";
+
 
 const BestSellers = () => {
   const [isFilterOpen, setIsFilterOpen] = useState(false);

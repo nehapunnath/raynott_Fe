@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { FaStar, FaRegStar, FaThumbsUp, FaThumbsDown, FaReply, FaChalkboardTeacher } from 'react-icons/fa';
 import { teacherApi } from '../../services/TeacherApi';
+import "tailwindcss";
+
 
 const Review = ({ teacherId, type = 'professional', teacherName, teacherSubject }) => {
   const [userRating, setUserRating] = useState(0);

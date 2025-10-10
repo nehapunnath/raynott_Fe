@@ -3,6 +3,8 @@ import { motion } from 'framer-motion';
 import { FaChevronDown, FaChevronUp, FaChalkboardTeacher, FaGraduationCap, FaClock, FaLaptop, FaLanguage, FaUserGraduate, FaAward } from 'react-icons/fa';
 import { useParams } from 'react-router-dom';
 import { teacherApi } from '../../services/TeacherApi';
+import "tailwindcss";
+
 
 const BasicInfo = () => {
   const { id } = useParams(); // Get the teacher ID from the URL

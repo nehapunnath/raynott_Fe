@@ -1,4 +1,6 @@
 import { useState } from 'react';
+import "tailwindcss";
+
 
 const SuperAdmin = () => {
   const [formData, setFormData] = useState({

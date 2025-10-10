@@ -6,6 +6,8 @@ import { IoLocationSharp } from "react-icons/io5";
 import { BsFillCalendar2CheckFill } from "react-icons/bs";
 import Footer from '../components/Footer';
 import StickyButton from '../components/StickyButton';
+import "tailwindcss";
+
 
 const listings = [
   {

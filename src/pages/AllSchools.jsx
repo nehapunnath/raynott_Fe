@@ -7,6 +7,8 @@ import { BsFillCalendar2CheckFill } from 'react-icons/bs';
 import Footer from '../components/Footer';
 import StickyButton from '../components/StickyButton';
 import { schoolApi } from '../services/schoolApi';
+import "tailwindcss";
+
 
 function AllSchools() {
   const [isFilterOpen, setIsFilterOpen] = useState(false);

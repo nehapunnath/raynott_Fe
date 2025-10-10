@@ -3,6 +3,8 @@ import { motion } from 'framer-motion';
 import { FaChevronDown, FaChevronUp } from 'react-icons/fa';
 import { collegeApi } from '../../services/collegeApi';
 import { useParams } from 'react-router-dom';
+import "tailwindcss";
+
 
 const BasicInfo = () => {
   const { id } = useParams();

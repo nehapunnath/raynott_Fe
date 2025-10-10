@@ -2,6 +2,8 @@
 import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import { puCollegeApi } from '../../services/pucollegeApi';
+import "tailwindcss";
+
 
 const Contact = ({ puCollege: puCollegeProp }) => {
   const { id } = useParams(); // Get college ID from URL

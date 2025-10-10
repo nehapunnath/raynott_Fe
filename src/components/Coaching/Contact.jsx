@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import { TuitionCoachingApi } from '../../services/TuitionCoachingApi'; 
+import "tailwindcss";
+
 
 const Contact = () => {
   const [coachingCenter, setCoachingCenter] = useState(null);

@@ -3,6 +3,8 @@ import { useParams } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { FaChevronDown, FaChevronUp } from 'react-icons/fa';
 import { TuitionCoachingApi } from '../../services/TuitionCoachingApi'; 
+import "tailwindcss";
+
 
 const BasicInfo = () => {
   const [coachingCenter, setCoachingCenter] = useState(null);
