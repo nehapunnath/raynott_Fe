@@ -120,7 +120,7 @@ const AdminReg = () => {
 
         {/* Search and Refresh */}
         <div className="flex justify-between mb-6">
-          <div className="relative w-full max-w-md">
+          {/* <div className="relative w-full max-w-md">
             <FaSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
             <input
               type="text"
@@ -129,7 +129,7 @@ const AdminReg = () => {
               onChange={(e) => setSearchTerm(e.target.value)}
               className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
             />
-          </div>
+          </div> */}
           <motion.button
             onClick={fetchRegistrations}
             whileHover={{ scale: 1.05 }}
@@ -201,7 +201,7 @@ const AdminReg = () => {
                           </motion.button>
                           {reg.status !== 'approved' && (
                             <motion.button
-                              onClick={() => handleApprove(reg.id)}
+                            //   onClick={() => handleApprove(reg.id)}
                               whileHover={{ scale: 1.05 }}
                               whileTap={{ scale: 0.95 }}
                               className="text-green-600 hover:text-green-800"
@@ -213,7 +213,7 @@ const AdminReg = () => {
                           )}
                           {reg.status !== 'rejected' && (
                             <motion.button
-                              onClick={() => handleReject(reg.id)}
+                            //   onClick={() => handleReject(reg.id)}
                               whileHover={{ scale: 1.05 }}
                               whileTap={{ scale: 0.95 }}
                               className="text-red-600 hover:text-red-800"
