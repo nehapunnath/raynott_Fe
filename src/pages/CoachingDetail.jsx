@@ -44,23 +44,23 @@ const CoachingDetail = () => {
                     };
                     setCoachingCenter(formattedCoaching);
                     // Fetch similar coaching centers based on city and subjects
-                    const similarResponse = await TuitionCoachingApi.getSimilarTuitionCoachings(
-                        response.data.city,
-                        response.data.subjects?.join(',')
-                    );
-                    if (similarResponse.success) {
-                        // Convert to array and filter out the current coaching center
-                        const similarCenters = Object.keys(similarResponse.data || {})
-                            .map(key => ({
-                                id: key,
-                                ...similarResponse.data[key],
-                                link: `/coaching-details/${key}`
-                            }))
-                            .filter(center => center.id !== id)
-                            .slice(0, 3); // Limit to 3 similar centers
-                        setSimilarCoachingCenters(similarCenters);
-                    }
-                } else {
+                    // const similarResponse = await TuitionCoachingApi.getSimilarTuitionCoachings(
+                    //     response.data.city,
+                    //     response.data.subjects?.join(',')
+                    // );
+                //     if (similarResponse.success) {
+                //         // Convert to array and filter out the current coaching center
+                //         const similarCenters = Object.keys(similarResponse.data || {})
+                //             .map(key => ({
+                //                 id: key,
+                //                 ...similarResponse.data[key],
+                //                 link: `/coaching-details/${key}`
+                //             }))
+                //             .filter(center => center.id !== id)
+                //             .slice(0, 3); // Limit to 3 similar centers
+                //         setSimilarCoachingCenters(similarCenters);
+                //     }
+                 } else {
                     setError('Coaching center not found');
                 }
             } catch (err) {
@@ -183,7 +183,7 @@ const CoachingDetail = () => {
             </header>
 
             {/* Breadcrumb */}
-            <div className="max-w-7xl mx-auto px-4 py-4">
+            {/* <div className="max-w-7xl mx-auto px-4 py-4">
                 <div className="text-sm text-gray-500 flex items-center">
                     <Link to="/" className="flex items-center hover:text-orange-600">
                         <FaHome className="mr-1 text-orange-500" />
@@ -194,7 +194,7 @@ const CoachingDetail = () => {
                     <span className="mx-2">»</span>
                     <span className="text-orange-600">{coachingCenter.name}</span>
                 </div>
-            </div>
+            </div> */}
 
             {/* Hero Banner */}
             <motion.div

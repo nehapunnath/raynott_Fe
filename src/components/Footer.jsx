@@ -16,7 +16,8 @@ function Footer() {
         {/* Second Column: Main Categories */}
         <div>
           <h3 className="font-semibold text-lg mb-4">Quick Links</h3>
-          <ul className="text-sm space-y-3">
+          <ul className="text-sm space-y-1">
+            <li><a href="/" className="hover:text-orange-400 transition-colors block py-1">Home</a></li>
             <li><a href="/all-schools" className="hover:text-orange-400 transition-colors block py-1">Schools</a></li>
             <li><a href="/all-colleges" className="hover:text-orange-400 transition-colors block py-1">Colleges</a></li>
             <li><a href="/all-pucolleges" className="hover:text-orange-400 transition-colors block py-1">PU Colleges</a></li>

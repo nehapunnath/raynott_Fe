@@ -260,7 +260,7 @@ function AllPuColleges() {
               {totalColleges} PU Colleges 
             </p>
           </div>
-          <motion.button
+          {/* <motion.button
             className="bg-orange-600 hover:bg-orange-700 text-white font-semibold py-2 px-6 rounded-full transition duration-300 mt-4 md:mt-0 flex items-center"
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
@@ -268,7 +268,7 @@ function AllPuColleges() {
           >
             <FaFilter className="mr-2" />
             Filters ({filters.streams.length + filters.collegeType.length})
-          </motion.button>
+          </motion.button> */}
         </div>
 
         {/* Loading and Error States */}

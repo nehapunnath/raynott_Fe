@@ -190,7 +190,7 @@ const CollegeDetails = () => {
       </header>
 
       {/* Breadcrumb */}
-      <div className="max-w-7xl mx-auto px-4 py-4">
+      {/* <div className="max-w-7xl mx-auto px-4 py-4">
         <div className="text-sm text-gray-500 flex items-center">
           <Link to="/" className="flex items-center hover:text-orange-600">
             <FaHome className="mr-1 text-orange-500" />
@@ -201,7 +201,7 @@ const CollegeDetails = () => {
           <span className="mx-2">»</span>
           <span className="text-orange-600">{college.name}</span>
         </div>
-      </div>
+      </div> */}
 
       {/* Hero Banner */}
       <motion.div

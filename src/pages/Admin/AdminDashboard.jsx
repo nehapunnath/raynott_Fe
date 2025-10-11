@@ -16,17 +16,18 @@ import CoachingList from './CoachingList';
 import TeacherList from './TeacherList';
 import "tailwindcss";
 import AdminReg from './AdminReg';
+import AdminBookings from './AdminBookings';
 
 
 
 const AdminDashboard = () => {
   const [sidebarOpen, setSidebarOpen] = useState(true);
-  const [activeTab, setActiveTab] = useState('dashboard');
+  const [activeTab, setActiveTab] = useState('schools');
 
   const renderContent = () => {
     switch (activeTab) {
-      case 'dashboard':
-        return <Dashboard />;
+      // case 'dashboard':
+      //   return <Dashboard />;
       case 'schools':
         return (
           <div className="p-6">
@@ -119,7 +120,9 @@ const AdminDashboard = () => {
         return <AddTeachers />;
 
       case ('Registered'):
-        return <AdminReg />
+        return <AdminReg />;
+        case 'Bookings':
+          return <AdminBookings/>
 
 
     }

@@ -253,7 +253,7 @@ function Professional() {
                             {finalFilteredTeachers.length} Professional Teachers
                         </p>
                     </div>
-                    <motion.button
+                    {/* <motion.button
                         className="bg-orange-600 hover:bg-orange-700 text-white font-semibold py-2 px-6 rounded-full transition duration-300 mt-4 md:mt-0 flex items-center"
                         whileHover={{ scale: 1.05 }}
                         whileTap={{ scale: 0.95 }}
@@ -261,7 +261,7 @@ function Professional() {
                     >
                         <FaFilter className="mr-2" />
                         Filters ({filters.subjects.length + filters.qualification.length + filters.teachingMode.length + (filters.experience[0] !== 0 || filters.experience[1] !== 20 ? 1 : 0) + (filters.minRating !== 0 ? 1 : 0)})
-                    </motion.button>
+                    </motion.button> */}
                 </div>
 
                 {/* Loading and Error States */}

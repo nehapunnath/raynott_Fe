@@ -290,7 +290,7 @@ function CoachingList() {
               {finalFilteredCenters.length} Centers  
             </p>
           </div>
-          <motion.button
+          {/* <motion.button
             className="bg-orange-600 hover:bg-orange-700 text-white font-semibold py-2 px-6 rounded-full transition duration-300 mt-4 md:mt-0 flex items-center"
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
@@ -298,7 +298,7 @@ function CoachingList() {
           >
             <FaFilter className="mr-2" />
             Filters ({filters.courses.length + filters.centerType.length + filters.classRange.length + (filters.feesRange[0] !== 0 || filters.feesRange[1] !== 150000 ? 1 : 0)})
-          </motion.button>
+          </motion.button> */}
         </div>
 
         {/* Loading State */}

@@ -1,7 +1,6 @@
 import { motion } from 'framer-motion';
-import { FaHome, FaUsers, FaSchool, FaChalkboardTeacher, FaCog, FaUserCircle, FaGraduationCap } from 'react-icons/fa';
+import { FaHome, FaUsers, FaSchool, FaChalkboardTeacher, FaCog, FaSignOutAlt, FaGraduationCap } from 'react-icons/fa';
 import "tailwindcss";
-
 
 const NavItem = ({ icon, text, active, onClick, sidebarOpen }) => {
   return (
@@ -17,12 +16,17 @@ const NavItem = ({ icon, text, active, onClick, sidebarOpen }) => {
 };
 
 const Sidebar = ({ sidebarOpen, setSidebarOpen, activeTab, setActiveTab }) => {
+  const handleLogout = () => {
+    localStorage.removeItem('adminToken');
+    window.location.href = '/login';
+  };
+
   return (
-   <motion.div 
-  className={`fixed top-0 left-0 h-screen bg-orange-600 text-white ${sidebarOpen ? 'w-64' : 'w-20'} transition-all duration-300 flex flex-col z-50`}
-  initial={{ width: 256 }}
-  animate={{ width: sidebarOpen ? 256 : 80 }}
->
+    <motion.div 
+      className={`fixed top-0 left-0 h-screen bg-orange-600 text-white ${sidebarOpen ? 'w-64' : 'w-20'} transition-all duration-300 flex flex-col z-50`}
+      initial={{ width: 256 }}
+      animate={{ width: sidebarOpen ? 256 : 80 }}
+    >
       <div className="p-4 flex items-center justify-between border-b border-orange-500">
         {sidebarOpen ? (
           <h1 className="text-2xl font-bold">Raynott Admin</h1>
@@ -38,13 +42,13 @@ const Sidebar = ({ sidebarOpen, setSidebarOpen, activeTab, setActiveTab }) => {
       </div>
 
       <nav className="flex-1 overflow-y-auto py-4">
-        <NavItem 
+        {/* <NavItem 
           icon={<FaHome />} 
           text="Dashboard" 
           active={activeTab === 'dashboard'} 
           onClick={() => setActiveTab('dashboard')}
           sidebarOpen={sidebarOpen}
-        />
+        /> */}
         <NavItem 
           icon={<FaSchool />} 
           text="Schools" 
@@ -87,20 +91,23 @@ const Sidebar = ({ sidebarOpen, setSidebarOpen, activeTab, setActiveTab }) => {
           onClick={() => setActiveTab('Registered')}
           sidebarOpen={sidebarOpen}
         />
+        <NavItem 
+          icon={<FaCog />} 
+          text="Bookings" 
+          active={activeTab === 'Bookings'} 
+          onClick={() => setActiveTab('Bookings')}
+          sidebarOpen={sidebarOpen}
+        />
       </nav>
 
       <div className="p-4 border-t border-orange-500">
-        <div className="flex items-center space-x-3">
-          <div className="w-10 h-10 rounded-full bg-orange-400 flex items-center justify-center">
-            <FaUserCircle className="text-xl" />
-          </div>
-          {sidebarOpen && (
-            <div>
-              <p className="font-medium">Admin User</p>
-              {/* <p className="text-xs text-orange-200">admin@raynott.com</p> */}
-            </div>
-          )}
-        </div>
+        <NavItem 
+          icon={<FaSignOutAlt />} 
+          text="Logout" 
+          active={false}
+          onClick={handleLogout}
+          sidebarOpen={sidebarOpen}
+        />
       </div>
     </motion.div>
   );

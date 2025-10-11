@@ -235,7 +235,7 @@ function AllSchools() {
               {totalSchools} Schools 
             </p>
           </div>
-          <motion.button
+          {/* <motion.button
             className="bg-orange-600 hover:bg-orange-700 text-white font-semibold py-2 px-6 rounded-full transition duration-300 mt-4 md:mt-0 flex items-center"
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
@@ -243,7 +243,7 @@ function AllSchools() {
           >
             <FaFilter className="mr-2" />
             Filters ({filters.board.length + filters.schoolType.length + filters.gender.length})
-          </motion.button>
+          </motion.button> */}
         </div>
 
         {/* Loading and Error States */}

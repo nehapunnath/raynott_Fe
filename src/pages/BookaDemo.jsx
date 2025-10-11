@@ -5,26 +5,85 @@ import 'react-datepicker/dist/react-datepicker.css';
 import 'react-time-picker/dist/TimePicker.css';
 import Footer from '../components/Footer';
 import StickyButton from '../components/StickyButton';
-import "tailwindcss";
-
+import 'tailwindcss';
+import { bookaDemoApi } from '../services/BookaDemoApi'; // Adjust path to your API file
 
 const BookaDemo = () => {
   const [date, setDate] = useState(new Date());
   const [time, setTime] = useState('10:00');
   const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
+  const [email, setEmail] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!name || !phone) {
-      alert('Please fill in all required fields');
+    setError('');
+    setSuccess('');
+    setLoading(true);
+
+    // Client-side validation
+    if (!name || !phone || !email || !date || !time) {
+      setError('Please fill in all required fields');
+      setLoading(false);
       return;
     }
-    alert(`Demo booked for ${name} (${phone}) on ${date.toDateString()} at ${time}. You'll receive a confirmation email shortly.`);
+
+    const phoneRegex = /^[0-9]{10}$/;
+    if (!phoneRegex.test(phone)) {
+      setError('Please enter a valid 10-digit phone number');
+      setLoading(false);
+      return;
+    }
+
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      setError('Please enter a valid email address');
+      setLoading(false);
+      return;
+    }
+
+    const bookingDate = new Date(date);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    if (bookingDate < today) {
+      setError('Please select a date today or in the future');
+      setLoading(false);
+      return;
+    }
+
+    const timeRegex = /^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/;
+    if (!timeRegex.test(time)) {
+      setError('Please select a valid time in HH:mm format');
+      setLoading(false);
+      return;
+    }
+
+    try {
+      const response = await bookaDemoApi.bookDemo({
+        name,
+        phone,
+        email,
+        date: bookingDate.toISOString(),
+        time
+      });
+      setSuccess(response.message);
+      setName('');
+      setPhone('');
+      setEmail('');
+      setDate(new Date());
+      setTime('10:00');
+    } catch (err) {
+      setError(err.message || 'Failed to book demo. Please try again.');
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4 py-8">
+    <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-between px-4 py-8">
       <div className="bg-white rounded-2xl shadow-2xl max-w-4xl w-full overflow-hidden grid grid-cols-1 md:grid-cols-2">
         {/* Left Column - Information */}
         <div className="bg-orange-600 text-white p-8 flex flex-col justify-between">
@@ -39,7 +98,7 @@ const BookaDemo = () => {
                   </svg>
                 </div>
                 <div>
-                  <h3 className="font-semibold text-lg">India's largest education  Platform</h3>
+                  <h3 className="font-semibold text-lg">India's largest education Platform</h3>
                   <p className="text-orange-100">Thousands of institutions trust our platform—join them today.</p>
                 </div>
               </div>
@@ -83,6 +142,18 @@ const BookaDemo = () => {
             <p className="text-gray-600 mt-2">Schedule a personalized consultation with our education experts</p>
           </div>
 
+          {error && (
+            <div className="bg-red-50 border-l-4 border-red-500 p-4 mb-6">
+              <p className="text-red-700">{error}</p>
+            </div>
+          )}
+
+          {success && (
+            <div className="bg-green-50 border-l-4 border-green-500 p-4 mb-6">
+              <p className="text-green-700">{success}</p>
+            </div>
+          )}
+
           <div className="bg-orange-50 border-l-4 border-orange-500 p-4 text-left mb-6">
             <p className="text-gray-800 font-medium mb-2">Dear Education Professional,</p>
             <p className="text-gray-700 text-sm">
@@ -99,6 +170,18 @@ const BookaDemo = () => {
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 placeholder="Enter your full name"
+                className="w-full border-2 border-gray-200 p-3 rounded-lg focus:border-orange-500 focus:ring-2 focus:ring-orange-200 transition"
+                required
+              />
+            </div>
+
+            <div>
+              <label className="block font-semibold text-gray-800 mb-2">Email Address <span className="text-red-500">*</span></label>
+              <input
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="Enter your email address"
                 className="w-full border-2 border-gray-200 p-3 rounded-lg focus:border-orange-500 focus:ring-2 focus:ring-orange-200 transition"
                 required
               />
@@ -145,9 +228,10 @@ const BookaDemo = () => {
 
             <button
               type="submit"
-              className="w-full bg-orange-600 hover:bg-orange-700 text-white font-bold py-3 px-4 rounded-lg shadow-md transition duration-300 transform hover:scale-[1.02]"
+              className="w-full bg-orange-600 hover:bg-orange-700 text-white font-bold py-3 px-4 rounded-lg shadow-md transition duration-300 transform hover:scale-[1.02] disabled:bg-orange-400"
+              disabled={loading}
             >
-              Book My Demo Session
+              {loading ? 'Booking...' : 'Book My Demo Session'}
             </button>
           </form>
 
@@ -157,7 +241,7 @@ const BookaDemo = () => {
           </div>
         </div>
       </div>
-     
+      {/* <Footer /> */}
     </div>
   );
 };
