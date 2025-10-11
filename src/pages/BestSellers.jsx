@@ -23,14 +23,14 @@ const BestSellers = () => {
 
   const institutionTypes = ["School", "College", "PU College", "Coaching Center", "Tuition Center", "Professional Teacher", "Personal Mentor"];
   const ratingOptions = [0, 3.0, 3.5, 4.0, 4.5];
-  const locationOptions = ["Bengaluru", "Delhi", "Mumbai", "Hyderabad", "Chennai"];
+  const locationOptions = ["Bangalore", "Delhi", "Mumbai", "Hyderabad", "Chennai"];
 
   // Normalize city names to handle variations
   const normalizeCity = (city) => {
     const cityMap = {
-      'bangalore': 'Bengaluru',
-      'bangaluru': 'Bengaluru',
-      'bengaluru urban': 'Bengaluru',
+      'bangalore': 'Bangalore',
+      'bangaluru': 'Bangalore',
+      'bengaluru urban': 'Bangalore',
       'delhi': 'Delhi',
       'new delhi': 'Delhi',
       'mumbai': 'Mumbai',
