@@ -24,21 +24,53 @@ const LoginPage = () => {
     'All Teachers'
   ];
 
-  const handleLogin = async (e) => {
-    e.preventDefault();
-    setIsLoading(true);
-    setError('');
+ // Update the handleLogin function in LoginPage.jsx
+// Update the handleLogin function in LoginPage.jsx
+const handleLogin = async (e) => {
+  e.preventDefault();
+  setIsLoading(true);
+  setError('');
 
-    const result = await authApis.adminLogin(email, password);
-    
-    if (result.success) {
-      navigate('/admin/dashboard');
-    } else {
-      setError(result.error);
+  const result = await authApis.adminLogin(email, password);
+  
+  if (result.success) {
+    try {
+      // Get the token from the login response
+      const token = result.token;
+      
+      // Since you're storing custom claims on the Firebase user,
+      // you need to decode the token or make an API call to get user data
+      const userData = await authApis.getCurrentAdminUser(token);
+      
+      if (userData.success) {
+        localStorage.setItem('institutionType', userData.institutionType);
+        localStorage.setItem('institutionName', userData.institutionName);
+        
+        // Redirect based on institution type
+        const typeMap = {
+          'Schools': '/School-Dashboard',
+          'Colleges': '/college-Dashboard',
+          'PU College': '/Pu-college-Dashboard',
+          'Coaching/Tuition': '/Coaching-Tuition-Dashboard',
+          'All Teachers': '/Teachers-Dashboard'
+        };
+        
+        const redirectPath = typeMap[userData.institutionType] || '/admin/dashboard';
+        navigate(redirectPath);
+      } else {
+        setError(userData.error || 'Error loading user data');
+        setIsLoading(false);
+      }
+    } catch (error) {
+      console.error('Error loading user data:', error);
+      setError('Error loading user data');
+      setIsLoading(false);
     }
-    
+  } else {
+    setError(result.error);
     setIsLoading(false);
-  };
+  }
+};
 
   const handleRegister = async (e) => {
   e.preventDefault();

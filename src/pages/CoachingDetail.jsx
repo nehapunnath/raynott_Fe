@@ -456,7 +456,7 @@ const CoachingDetail = () => {
                     animate={{ opacity: 1, x: 0 }}
                     transition={{ duration: 0.6, delay: 0.4 }}
                 >
-                    <div className="bg-white rounded-2xl shadow-xl overflow-hidden border border-orange-100">
+                    {/* <div className="bg-white rounded-2xl shadow-xl overflow-hidden border border-orange-100">
                         <div className="p-6">
                             <h3 className="text-2xl font-bold mb-4 text-gray-800">Free Counselling</h3>
                             <p className="mb-6 text-gray-600">Get personalized guidance from our education experts</p>
@@ -500,7 +500,7 @@ const CoachingDetail = () => {
                                 </motion.button>
                             </div>
                         </div>
-                    </div>
+                    </div> */}
 
                     {/* Quick Facts */}
                     <div className="mt-6 bg-white rounded-2xl shadow-xl overflow-hidden border border-orange-100">
@@ -641,7 +641,7 @@ const CoachingDetail = () => {
             </AnimatePresence>
 
             {/* <Footer /> */}
-            <StickyButton />
+            {/* <StickyButton /> */}
         </div>
     );
 };

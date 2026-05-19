@@ -428,7 +428,7 @@ const TeachersDetails = () => {
           animate={{ opacity: 1, x: 0 }}
           transition={{ duration: 0.6, delay: 0.4 }}
         >
-          <div className="bg-white rounded-2xl shadow-xl overflow-hidden border border-orange-100">
+          {/* <div className="bg-white rounded-2xl shadow-xl overflow-hidden border border-orange-100">
             <div className="p-6">
               <h3 className="text-2xl font-bold mb-4 text-gray-800">Book a Session</h3>
               <p className="mb-6 text-gray-600">Schedule a class with {teacher.name.split(' ')[0]}</p>
@@ -480,7 +480,7 @@ const TeachersDetails = () => {
                 </motion.button>
               </div>
             </div>
-          </div>
+          </div> */}
 
           {/* Quick Facts */}
           <div className="mt-6 bg-white rounded-2xl shadow-xl overflow-hidden border border-orange-100">
@@ -643,7 +643,7 @@ const TeachersDetails = () => {
           </div>
         </motion.div>
       )}
-      <StickyButton />
+      {/* <StickyButton /> */}
     </div>
   );
 };

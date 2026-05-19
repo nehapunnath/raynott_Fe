@@ -30,7 +30,6 @@ export const authApis = {
     try {
       const { institutionName, institutionType, email, password } = institutionData;
       
-      // First, call your backend registration API
       const result = await commonApis(
         `${base_url}/register`,
         "POST",
@@ -44,23 +43,15 @@ export const authApis = {
       );
 
       if (result.success) {
-        // Store the token if returned
         if (result.token) {
           localStorage.setItem("adminToken", result.token);
         }
         
-        // Optionally, also create user in Firebase client-side auth
         try {
-          // This creates a Firebase Auth user on the client side
-          // Note: Your backend already creates the user via Admin SDK
-          // This is optional and can be removed if you don't need client-side auth state
           const userCredential = await createUserWithEmailAndPassword(auth, email, password);
           console.log("Firebase client auth user created:", userCredential.user.uid);
         } catch (firebaseError) {
-          // If Firebase client error occurs but backend succeeded, still return success
           console.warn("Client-side Firebase auth error:", firebaseError.message);
-          // Don't fail the registration if client-side creation fails
-          // The user is already created on backend
         }
         
         return { 
@@ -87,13 +78,12 @@ export const authApis = {
 
   async adminLogout() {
     try {
-      // Sign out from Firebase client auth
       await auth.signOut();
       localStorage.removeItem("adminToken");
       return { success: true };
     } catch (error) {
       console.error("Logout error:", error);
-      localStorage.removeItem("adminToken"); // Still remove token even if signOut fails
+      localStorage.removeItem("adminToken");
       return { success: false, error: error.message };
     }
   },
@@ -114,7 +104,6 @@ export const authApis = {
         return { success: false, error: "No token found" };
       }
 
-      // Verify token with backend
       const result = await commonApis(
         `${base_url}/verify-token`,
         "POST",
@@ -129,19 +118,48 @@ export const authApis = {
     } catch (error) {
       return { success: false, error: "Token verification failed" };
     }
-  }
-};
+  },
 
-// Optional: Add a helper function to get current Firebase user
-export const getCurrentAdminUser = () => {
-  return new Promise((resolve, reject) => {
-    const unsubscribe = auth.onAuthStateChanged((user) => {
-      unsubscribe();
-      if (user) {
-        resolve(user);
-      } else {
-        resolve(null);
+  // Add this function properly inside the authApis object
+  async getCurrentAdminUser(token) {
+    try {
+      // Decode the JWT token on client side to get claims
+      const base64Url = token.split('.')[1];
+      const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+      const jsonPayload = decodeURIComponent(atob(base64).split('').map(function(c) {
+        return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
+      }).join(''));
+      
+      const decodedToken = JSON.parse(jsonPayload);
+      
+      // Extract claims from the decoded token
+      return {
+        success: true,
+        institutionType: decodedToken.institutionType,
+        institutionName: decodedToken.institutionName,
+        uid: decodedToken.user_id,
+        email: decodedToken.email
+      };
+    } catch (error) {
+      console.error('Error decoding token:', error);
+      
+      // Fallback: Make an API call to get user data
+      try {
+        const result = await commonApis(
+          `${base_url}/admin/user-data`,
+          "GET",
+          { 
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${token}`
+          }
+        );
+        return result;
+      } catch (apiError) {
+        return {
+          success: false,
+          error: "Failed to get user data"
+        };
       }
-    }, reject);
-  });
+    }
+  }
 };

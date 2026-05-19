@@ -493,7 +493,7 @@ function PuCollegeList() {
 
       
       {/* <Footer /> */}
-      <StickyButton />
+      {/* <StickyButton /> */}
     </div>
   );
 }

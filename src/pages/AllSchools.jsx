@@ -480,7 +480,7 @@ function AllSchools() {
           </motion.div>
         )}
       </AnimatePresence>
-      <StickyButton />
+      {/* <StickyButton /> */}
     </div>
   );
 }

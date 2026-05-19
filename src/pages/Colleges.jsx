@@ -483,7 +483,7 @@ function Colleges() {
         )}
       </AnimatePresence>
       <Footer />
-      <StickyButton />
+      {/* <StickyButton /> */}
     </div>
   );
 }

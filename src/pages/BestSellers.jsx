@@ -539,7 +539,7 @@ const BestSellers = () => {
           </motion.div>
         )}
       </AnimatePresence>
-      <StickyButton />
+      {/* <StickyButton /> */}
     </div>
   );
 };

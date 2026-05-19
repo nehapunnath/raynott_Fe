@@ -501,7 +501,7 @@ function AllPuColleges() {
       </AnimatePresence>
 
       {/* <Footer /> */}
-      <StickyButton />
+      {/* <StickyButton /> */}
     </div>
   );
 }

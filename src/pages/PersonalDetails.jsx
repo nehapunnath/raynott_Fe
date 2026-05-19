@@ -1,24 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import {
-  FaChalkboardTeacher,
-  FaSearch,
-  FaStar,
-  FaPhone,
-  FaMapMarkerAlt,
-  FaGraduationCap,
-  FaChevronLeft,
-  FaChevronRight,
-  FaTimes,
-  FaBook,
-  FaClock,
-  FaMoneyBillWave,
-  FaLaptop,
-  FaUserGraduate,
-  FaCertificate,
-  FaRegHeart,
-  FaHeart
-} from 'react-icons/fa';
+import {FaChalkboardTeacher,FaSearch,FaStar,FaPhone,FaMapMarkerAlt,FaGraduationCap,FaChevronLeft,FaChevronRight,FaTimes,FaBook,FaClock,FaMoneyBillWave,FaLaptop,FaUserGraduate,FaCertificate,FaRegHeart,FaHeart} from 'react-icons/fa';
 import { IoMdTime } from 'react-icons/io';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import StickyButton from '../components/StickyButton';
@@ -417,7 +399,7 @@ const PersonalDetails = () => {
           animate={{ opacity: 1, x: 0 }}
           transition={{ duration: 0.6, delay: 0.4 }}
         >
-          <div className="bg-white rounded-2xl shadow-xl overflow-hidden border border-orange-100">
+          {/* <div className="bg-white rounded-2xl shadow-xl overflow-hidden border border-orange-100">
             <div className="p-6">
               <h3 className="text-2xl font-bold mb-4 text-gray-800">Book a Session</h3>
               <p className="mb-6 text-gray-600">Schedule a mentoring session with {mentor.name.split(' ')[0]}</p>
@@ -468,7 +450,7 @@ const PersonalDetails = () => {
                 </motion.button>
               </div>
             </div>
-          </div>
+          </div> */}
 
           <div className="mt-6 bg-white rounded-2xl shadow-xl overflow-hidden border border-orange-100">
             <div className="p-6">
@@ -573,7 +555,7 @@ const PersonalDetails = () => {
           </div>
         </motion.div>
       )}
-      <StickyButton />
+      {/* <StickyButton /> */}
     </div>
   );
 };

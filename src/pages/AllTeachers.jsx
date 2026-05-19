@@ -130,7 +130,7 @@ function AllTeachers() {
         </div>
       </main>
 
-      <StickyButton />
+      {/* <StickyButton /> */}
     </div>
   );
 }

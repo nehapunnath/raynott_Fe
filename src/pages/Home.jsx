@@ -424,7 +424,7 @@ function Home() {
           </div>
         </div>
       </div>
-      <StickyButton />
+      {/* <StickyButton /> */}
     </div>
   );
 }

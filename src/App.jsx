@@ -48,6 +48,11 @@ import PersonalTeachers from './pages/PersonalTeachers'
 import PersonalDetails from './pages/PersonalDetails'
 import SearchResults from './components/SearchResults'
 import RegistrationDetails from './pages/Admin/RegistrationDetails'
+import SchoolDashboard from './pages/SchoolDashboard'
+import CollegeDashboard from './pages/CollegeDashboard'
+import PuCollegeDashboard from './pages/PuCollegeDashboard'
+import CoachingDashboard from './pages/CoachingDashboard'
+import TeachersDashboard from './pages/TeachersDashboard'
 
 function App() {
   const location = useLocation()
@@ -82,7 +87,11 @@ function App() {
         <Route path='/professional' element={<Professional/>}/>
         <Route path='/personal' element={<PersonalTeachers/>}/>
 
-
+        <Route path='/School-Dashboard' element={<SchoolDashboard/>}/>
+        <Route path='/college-Dashboard' element={<CollegeDashboard/>}/>
+        <Route path='/Pu-college-Dashboard' element={<PuCollegeDashboard/>}/>
+        <Route path='/Coaching-Tuition-Dashboard' element={<CoachingDashboard/>}/>
+        <Route path='/Teachers-Dashboard' element={<TeachersDashboard/>}/>
 
 
         <Route path='/login' element={<LoginPage/>}/>

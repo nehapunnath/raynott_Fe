@@ -500,7 +500,7 @@ function AllColleges() {
         )}
       </AnimatePresence>
       {/* <Footer /> */}
-      <StickyButton />
+      {/* <StickyButton /> */}
     </div>
   );
 }
