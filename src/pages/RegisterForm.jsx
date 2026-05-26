@@ -398,37 +398,52 @@ const RegisterForm = () => {
     setCurrentStep(1);
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    setLoading(true);
-    setError(null);
+  // In RegisterForm.jsx, update the handleSubmit function
+const handleSubmit = async (e) => {
+  e.preventDefault();
+  setLoading(true);
+  setError(null);
 
-    const completeFormData = { ...formData, ...dynamicFields };
-    const formDataToSend = new FormData();
+  const completeFormData = { ...formData, ...dynamicFields };
+  const formDataToSend = new FormData();
 
-    Object.keys(completeFormData).forEach(key => {
-      if (key === 'facilities' || key === 'socialMedia' || key === 'languages' || key === 'streams' || key === 'subjects' || key === 'coursesOffered') {
-        formDataToSend.append(key, JSON.stringify(completeFormData[key]));
-      } else if (completeFormData[key] instanceof File) {
-        formDataToSend.append(key, completeFormData[key]);
-      } else if (Array.isArray(completeFormData[key]) && completeFormData[key][0] instanceof File) {
-        completeFormData[key].forEach(file => {
-          formDataToSend.append(key, file);
-        });
-      } else {
-        formDataToSend.append(key, completeFormData[key]);
-      }
-    });
-
-    try {
-      await registerApi.submitRegistration(formDataToSend);
-      setShowModal(true);
-    } catch (err) {
-      setError(err.message || 'An error occurred during submission');
-    } finally {
-      setLoading(false);
+  Object.keys(completeFormData).forEach(key => {
+    if (key === 'facilities' || key === 'socialMedia' || key === 'languages' || key === 'streams' || key === 'subjects' || key === 'coursesOffered') {
+      formDataToSend.append(key, JSON.stringify(completeFormData[key]));
+    } else if (completeFormData[key] instanceof File) {
+      formDataToSend.append(key, completeFormData[key]);
+    } else if (Array.isArray(completeFormData[key]) && completeFormData[key][0] instanceof File) {
+      completeFormData[key].forEach(file => {
+        formDataToSend.append(key, file);
+      });
+    } else {
+      formDataToSend.append(key, completeFormData[key]);
     }
-  };
+  });
+
+  try {
+    const response = await registerApi.submitRegistration(formDataToSend);
+    
+    // Save the registration request ID
+    if (response.id) {
+      localStorage.setItem('registrationRequestId', response.id);
+      localStorage.setItem('institutionName', completeFormData.name);
+      localStorage.setItem('institutionType', completeFormData.institutionType);
+    }
+    
+    setShowModal(true);
+    
+    // Redirect to dashboard after 2 seconds
+    setTimeout(() => {
+      navigate('/school-dashboard');
+    }, 2000);
+    
+  } catch (err) {
+    setError(err.message || 'An error occurred during submission');
+  } finally {
+    setLoading(false);
+  }
+};
 
   const nextStep = () => {
     setCurrentStep(prev => prev + 1);

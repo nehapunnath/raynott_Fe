@@ -5,7 +5,7 @@ import {
   FaArrowLeft, FaFileAlt, FaSchool, FaUniversity, FaGraduationCap, 
   FaChalkboardTeacher, FaMapMarkerAlt, FaPhone, FaEnvelope, 
   FaGlobe, FaFacebook, FaTwitter, FaInstagram, FaLinkedin, FaRupeeSign, 
-  FaInfoCircle, FaSpinner
+  FaInfoCircle, FaSpinner, FaCheck, FaTimes, FaDownload, FaImage
 } from 'react-icons/fa';
 import { registerApi } from '../../services/RegisterApi';
 
@@ -25,8 +25,14 @@ class ErrorBoundary extends React.Component {
     if (this.state.hasError) {
       return (
         <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded max-w-2xl mx-auto mt-8">
-          <p>Error: Something went wrong while rendering the component.</p>
+          <h3 className="font-bold mb-2">Something went wrong</h3>
           <p>{this.state.error?.message}</p>
+          <button
+            onClick={() => window.location.reload()}
+            className="mt-3 bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700"
+          >
+            Reload Page
+          </button>
         </div>
       );
     }
@@ -40,6 +46,9 @@ const RegistrationDetails = () => {
   const [registration, setRegistration] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState('');
+  const [processing, setProcessing] = useState(false);
+  const [showRejectModal, setShowRejectModal] = useState(false);
+  const [rejectReason, setRejectReason] = useState('');
 
   useEffect(() => {
     const fetchDetails = async () => {
@@ -47,25 +56,68 @@ const RegistrationDetails = () => {
         setIsLoading(true);
         const response = await registerApi.getRegistrationById(id);
 
+        // Handle different response formats
+        let registrationData;
         if (response.success && response.data) {
-          const registrationData = response.data;
+          registrationData = response.data;
+        } else if (response.data) {
+          registrationData = response.data;
+        } else if (response.registration) {
+          registrationData = response.registration;
+        } else {
+          registrationData = response;
+        }
 
+        if (registrationData) {
           // Get the first image from photos array to use as main image if mainImage is not available
           const photosArray = Array.isArray(registrationData.photos) ? registrationData.photos : [];
           const mainImage = registrationData.mainImage || (photosArray.length > 0 ? photosArray[0] : '');
 
+          // Parse JSON strings if needed
+          const parseJsonField = (field) => {
+            if (!field) return [];
+            if (Array.isArray(field)) return field;
+            if (typeof field === 'string') {
+              try {
+                const parsed = JSON.parse(field);
+                return Array.isArray(parsed) ? parsed : [];
+              } catch (e) {
+                return [];
+              }
+            }
+            return [];
+          };
+
+          const parseSocialMedia = (socialMedia) => {
+            if (!socialMedia) return { facebook: '', twitter: '', instagram: '', linkedin: '' };
+            if (typeof socialMedia === 'object') return socialMedia;
+            if (typeof socialMedia === 'string') {
+              try {
+                return JSON.parse(socialMedia);
+              } catch (e) {
+                return { facebook: '', twitter: '', instagram: '', linkedin: '' };
+              }
+            }
+            return { facebook: '', twitter: '', instagram: '', linkedin: '' };
+          };
+
           // Normalize arrays and objects
           setRegistration({
-            id,
+            id: registrationData.id || id,
             name: registrationData.name || '',
             teacherName: registrationData.teacherName || '',
             institutionType: registrationData.institutionType || '',
             tagline: registrationData.tagline || '',
             establishmentYear: registrationData.establishmentYear || '',
             about: registrationData.about || '',
-            status: registrationData.status || '',
-            createdAt: registrationData.createdAt || '',
+            status: registrationData.status || 'pending',
+            submittedAt: registrationData.submittedAt || registrationData.createdAt || '',
+            approvedAt: registrationData.approvedAt || '',
+            rejectedAt: registrationData.rejectedAt || '',
+            rejectionReason: registrationData.rejectionReason || '',
             adminNotes: registrationData.adminNotes || '',
+            
+            // Institution specific
             typeOfSchool: registrationData.typeOfSchool || '',
             affiliation: registrationData.affiliation || '',
             grade: registrationData.grade || '',
@@ -76,7 +128,7 @@ const RegistrationDetails = () => {
             studentTeacherRatio: registrationData.studentTeacherRatio || '',
             typeOfCollege: registrationData.typeOfCollege || '',
             universityAffiliation: registrationData.universityAffiliation || '',
-            coursesOffered: Array.isArray(registrationData.coursesOffered) ? registrationData.coursesOffered : [],
+            coursesOffered: parseJsonField(registrationData.coursesOffered),
             duration: registrationData.duration || '',
             accreditation: registrationData.accreditation || '',
             placementStatistics: registrationData.placementStatistics || '',
@@ -97,6 +149,8 @@ const RegistrationDetails = () => {
             infrastructure: registrationData.infrastructure || '',
             demoClass: registrationData.demoClass || '',
             flexibleTimings: registrationData.flexibleTimings || '',
+            
+            // Teacher specific
             teacherType: registrationData.teacherType || '',
             institutionName: registrationData.institutionName || '',
             institutionPosition: registrationData.institutionPosition || '',
@@ -121,11 +175,15 @@ const RegistrationDetails = () => {
             progressReports: registrationData.progressReports || '',
             performanceTracking: registrationData.performanceTracking || '',
             teachingProcess: registrationData.teachingProcess || '',
+            
+            // Fee Structure
             totalAnnualFee: registrationData.totalAnnualFee || '',
             admissionFee: registrationData.admissionFee || '',
             tuitionFee: registrationData.tuitionFee || '',
             transportFee: registrationData.transportFee || '',
             booksUniformsFee: registrationData.booksUniformsFee || '',
+            
+            // Contact Information
             address: registrationData.address || '',
             city: registrationData.city || '',
             state: registrationData.state || '',
@@ -138,8 +196,10 @@ const RegistrationDetails = () => {
             alternatePhone: registrationData.alternatePhone || '',
             website: registrationData.website || '',
             officeHours: registrationData.officeHours || '',
-            socialMedia: registrationData.socialMedia || { facebook: '', twitter: '', instagram: '', linkedin: '' },
-            facilities: Array.isArray(registrationData.facilities) ? registrationData.facilities : [],
+            socialMedia: parseSocialMedia(registrationData.socialMedia),
+            
+            // Facilities & Infrastructure
+            facilities: parseJsonField(registrationData.facilities),
             affiliationNumber: registrationData.affiliationNumber || '',
             campusSize: registrationData.campusSize || '',
             classrooms: registrationData.classrooms || '',
@@ -153,18 +213,22 @@ const RegistrationDetails = () => {
             wifi: registrationData.wifi || '',
             hostel: registrationData.hostel || '',
             sports: registrationData.sports || '',
+            
+            // Admission
             admissionLink: registrationData.admissionLink || '',
             admissionProcess: registrationData.admissionProcess || '',
+            
+            // Documents
             registrationCertificate: registrationData.registrationCertificate || '',
-            qualificationCertificates: Array.isArray(registrationData.qualificationCertificates) ? registrationData.qualificationCertificates : [],
+            qualificationCertificates: parseJsonField(registrationData.qualificationCertificates),
             idProof: registrationData.idProof || '',
             profileImage: registrationData.profileImage || '',
-            mainImage: mainImage, // Use the first gallery image if mainImage is not available
+            mainImage: mainImage,
             photos: photosArray,
-            otherDocuments: Array.isArray(registrationData.otherDocuments) ? registrationData.otherDocuments : [],
+            otherDocuments: parseJsonField(registrationData.otherDocuments),
           });
         } else {
-          setError(response.message || 'Failed to fetch registration details');
+          setError('No registration data found');
         }
       } catch (error) {
         console.error('Error fetching registration:', error);
@@ -176,29 +240,64 @@ const RegistrationDetails = () => {
     fetchDetails();
   }, [id]);
 
-  if (isLoading) {
-    return (
-      <div className="flex justify-center items-center h-64">
-        <FaSpinner className="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-600" />
-      </div>
-    );
-  }
+  const handleApprove = async () => {
+    if (!window.confirm('Are you sure you want to approve this registration?')) return;
+    
+    setProcessing(true);
+    try {
+      await registerApi.approveRegistration(id, 'Approved by admin');
+      // Update local state
+      setRegistration(prev => ({ ...prev, status: 'approved', approvedAt: new Date().toISOString() }));
+      alert('Registration approved successfully!');
+    } catch (err) {
+      alert('Failed to approve registration: ' + err.message);
+    } finally {
+      setProcessing(false);
+    }
+  };
 
-  if (error || !registration) {
-    return (
-      <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded max-w-2xl mx-auto mt-8">
-        <p>Error: {error || 'No registration data available'}</p>
-        <button
-          onClick={() => navigate('/admin/registrations')}
-          className="mt-2 bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700"
-        >
-          Back
-        </button>
-      </div>
-    );
-  }
+  const handleReject = async () => {
+    if (!rejectReason.trim()) {
+      alert('Please provide a reason for rejection');
+      return;
+    }
+    
+    setProcessing(true);
+    try {
+      await registerApi.rejectRegistration(id, rejectReason, 'Rejected by admin');
+      setRegistration(prev => ({ 
+        ...prev, 
+        status: 'rejected', 
+        rejectedAt: new Date().toISOString(),
+        rejectionReason: rejectReason 
+      }));
+      setShowRejectModal(false);
+      setRejectReason('');
+      alert('Registration rejected successfully!');
+    } catch (err) {
+      alert('Failed to reject registration: ' + err.message);
+    } finally {
+      setProcessing(false);
+    }
+  };
+
+  const getStatusBadge = () => {
+    const status = registration?.status;
+    switch (status) {
+      case 'pending':
+        return { color: 'bg-yellow-100 text-yellow-800', icon: <FaSpinner className="mr-2 animate-spin" />, text: 'Pending Approval' };
+      case 'approved':
+        return { color: 'bg-green-100 text-green-800', icon: <FaCheck className="mr-2" />, text: 'Approved' };
+      case 'rejected':
+        return { color: 'bg-red-100 text-red-800', icon: <FaTimes className="mr-2" />, text: 'Rejected' };
+      default:
+        return { color: 'bg-gray-100 text-gray-800', icon: null, text: status || 'Unknown' };
+    }
+  };
 
   const renderInstitutionSpecificFields = () => {
+    if (!registration) return null;
+    
     switch (registration.institutionType) {
       case 'school':
         return (
@@ -290,24 +389,73 @@ const RegistrationDetails = () => {
     }
   };
 
+  if (isLoading) {
+    return (
+      <div className="flex justify-center items-center h-64">
+        <FaSpinner className="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-600" />
+      </div>
+    );
+  }
+
+  if (error || !registration) {
+    return (
+      <div className="min-h-screen bg-gradient-to-b from-orange-50 to-white py-8">
+        <div className="max-w-2xl mx-auto px-4">
+          <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded">
+            <p>Error: {error || 'No registration data available'}</p>
+            <button
+              onClick={() => navigate('/admin/dashboard')}
+              className="mt-3 bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700"
+            >
+              Back to Registrations
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  const statusBadge = getStatusBadge();
+
   return (
     <ErrorBoundary>
-      <div className="min-h-screen w-full bg-gradient-to-b from-orange-50 to-white">
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6 }}
-          className="w-full max-w-4xl mx-auto px-6 py-8"
-        >
-          <h1 className="text-4xl font-bold text-center text-gray-800 mb-8">Registration Details</h1>
-          <div className="bg-white rounded-2xl shadow-xl p-8 border border-orange-100">
+      <div className="min-h-screen bg-gradient-to-b from-orange-50 to-white py-8">
+        <div className="max-w-5xl mx-auto px-4">
+          {/* Back Button */}
+          <motion.button
+            onClick={() => navigate('/admin/registrations')}
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+            className="flex items-center space-x-2 text-orange-600 hover:text-orange-700 transition mb-6"
+          >
+            <FaArrowLeft className="text-xl" />
+            <span className="font-medium">Back to Registrations</span>
+          </motion.button>
+
+          {/* Header Card */}
+          <div className="bg-white rounded-2xl shadow-xl overflow-hidden mb-6">
+            <div className="bg-gradient-to-r from-orange-600 to-amber-600 px-8 py-6">
+              <div className="flex justify-between items-start flex-wrap gap-4">
+                <div>
+                  <h1 className="text-2xl font-bold text-white">
+                    {registration.name || registration.teacherName || 'Unnamed'}
+                  </h1>
+                  <p className="text-white/90 capitalize mt-1">
+                    {registration.institutionType?.replace('_', ' ') || 'Unknown Type'}
+                  </p>
+                </div>
+                <div className={`px-4 py-2 rounded-full ${statusBadge.color} flex items-center shadow-md`}>
+                  {statusBadge.icon}
+                  <span className="font-medium">{statusBadge.text}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Main Content */}
+          <div className="bg-white rounded-2xl shadow-xl p-8">
             {/* Basic Information */}
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5 }}
-              className="mb-8"
-            >
+            <div className="mb-8">
               <h2 className="text-2xl font-bold text-gray-800 mb-4 flex items-center">
                 <span className="w-2 h-8 bg-orange-600 rounded-full mr-3"></span>
                 Basic Information
@@ -319,476 +467,234 @@ const RegistrationDetails = () => {
                 </div>
                 <div>
                   <label className="text-gray-700 font-semibold">Type</label>
-                  <p className="text-gray-900">{registration.institutionType || 'N/A'}</p>
+                  <p className="text-gray-900 capitalize">{registration.institutionType?.replace('_', ' ') || 'N/A'}</p>
                 </div>
-                <div>
-                  <label className="text-gray-700 font-semibold">Tagline</label>
-                  <p className="text-gray-900">{registration.tagline || 'N/A'}</p>
-                </div>
-                <div>
-                  <label className="text-gray-700 font-semibold">Establishment Year</label>
-                  <p className="text-gray-900">{registration.establishmentYear || 'N/A'}</p>
-                </div>
-                <div>
-                  <label className="text-gray-700 font-semibold">About</label>
-                  <p className="text-gray-900">{registration.about || 'N/A'}</p>
-                </div>
-                <div>
-                  <label className="text-gray-700 font-semibold">Status</label>
-                  <p className="text-gray-900">
-                    <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                      registration.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
-                      registration.status === 'approved' ? 'bg-green-100 text-green-800' :
-                      'bg-red-100 text-red-800'
-                    }`}>
-                      {registration.status || 'N/A'}
-                    </span>
-                  </p>
-                </div>
+                {registration.tagline && (
+                  <div>
+                    <label className="text-gray-700 font-semibold">Tagline</label>
+                    <p className="text-gray-900">{registration.tagline}</p>
+                  </div>
+                )}
+                {registration.establishmentYear && (
+                  <div>
+                    <label className="text-gray-700 font-semibold">Establishment Year</label>
+                    <p className="text-gray-900">{registration.establishmentYear}</p>
+                  </div>
+                )}
                 <div>
                   <label className="text-gray-700 font-semibold">Submitted On</label>
-                  <p className="text-gray-900">{registration.createdAt ? new Date(registration.createdAt).toLocaleDateString() : 'N/A'}</p>
+                  <p className="text-gray-900">{registration.submittedAt ? new Date(registration.submittedAt).toLocaleString() : 'N/A'}</p>
                 </div>
-                <div>
-                  <label className="text-gray-700 font-semibold">Admin Notes</label>
-                  <p className="text-gray-900">{registration.adminNotes || 'N/A'}</p>
-                </div>
+                {registration.approvedAt && (
+                  <div>
+                    <label className="text-gray-700 font-semibold">Approved On</label>
+                    <p className="text-gray-900 text-green-600">{new Date(registration.approvedAt).toLocaleString()}</p>
+                  </div>
+                )}
+                {registration.rejectedAt && (
+                  <div>
+                    <label className="text-gray-700 font-semibold">Rejected On</label>
+                    <p className="text-gray-900 text-red-600">{new Date(registration.rejectedAt).toLocaleString()}</p>
+                  </div>
+                )}
+                {registration.rejectionReason && (
+                  <div className="md:col-span-2">
+                    <label className="text-gray-700 font-semibold">Rejection Reason</label>
+                    <p className="text-red-600 bg-red-50 p-2 rounded">{registration.rejectionReason}</p>
+                  </div>
+                )}
+                {registration.about && (
+                  <div className="md:col-span-2">
+                    <label className="text-gray-700 font-semibold">About</label>
+                    <p className="text-gray-900 whitespace-pre-wrap">{registration.about}</p>
+                  </div>
+                )}
               </div>
-            </motion.div>
+            </div>
 
-            {/* Main Image (for Institutions) - Now shows first gallery image if mainImage is not available */}
+            {/* Main Image */}
             {registration.institutionType !== 'teacher' && (registration.mainImage || registration.photos.length > 0) && (
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.5, delay: 0.7 }}
-                className="mb-8"
-              >
+              <div className="mb-8">
                 <h2 className="text-2xl font-bold text-gray-800 mb-4 flex items-center">
                   <span className="w-2 h-8 bg-orange-600 rounded-full mr-3"></span>
                   Main Image
                 </h2>
-                <div className="flex items-center gap-4 mb-2">
-                  {!registration.mainImage && registration.photos.length > 0 && (
-                    <span className="text-sm text-orange-600 bg-orange-50 px-3 py-1 rounded-full">
-                      Using first image from gallery
-                    </span>
-                  )}
-                </div>
-                <motion.div
-                  className="relative aspect-video overflow-hidden rounded-xl mt-4 max-w-2xl mx-auto"
-                  whileHover={{ scale: 1.02 }}
-                >
+                {!registration.mainImage && registration.photos.length > 0 && (
+                  <div className="mb-3 p-2 bg-orange-50 rounded-lg">
+                    <p className="text-orange-700 text-sm flex items-center">
+                      <FaInfoCircle className="mr-2" />
+                      Using first image from gallery as main image
+                    </p>
+                  </div>
+                )}
+                <div className="relative aspect-video overflow-hidden rounded-xl max-w-2xl">
                   <img
                     src={registration.mainImage || registration.photos[0]}
                     alt="Main Image"
                     className="w-full h-full object-cover"
                   />
-                </motion.div>
-              </motion.div>
+                </div>
+              </div>
             )}
 
-            {/* Profile Image (for Teachers) */}
+            {/* Profile Image for Teachers */}
             {registration.institutionType === 'teacher' && registration.profileImage && (
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.5, delay: 0.8 }}
-                className="mb-8"
-              >
+              <div className="mb-8">
                 <h2 className="text-2xl font-bold text-gray-800 mb-4 flex items-center">
                   <span className="w-2 h-8 bg-orange-600 rounded-full mr-3"></span>
                   Profile Image
                 </h2>
-                <motion.div
-                  className="relative aspect-square overflow-hidden rounded-xl mt-4 max-w-sm"
-                  whileHover={{ scale: 1.02 }}
-                >
-                  <img
-                    src={registration.profileImage}
-                    alt="Profile Image"
-                    className="w-full h-full object-cover"
-                  />
-                </motion.div>
-              </motion.div>
+                <div className="relative aspect-square overflow-hidden rounded-xl max-w-sm">
+                  <img src={registration.profileImage} alt="Profile" className="w-full h-full object-cover" />
+                </div>
+              </div>
             )}
 
-            {/* Institution-Specific Details */}
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5, delay: 0.1 }}
-              className="mb-8"
-            >
+            {/* Institution Specific Details */}
+            <div className="mb-8">
               <h2 className="text-2xl font-bold text-gray-800 mb-4 flex items-center">
                 <span className="w-2 h-8 bg-orange-600 rounded-full mr-3"></span>
                 {registration.institutionType === 'teacher' ? 'Teaching Details' : 'Institution Details'}
               </h2>
               {renderInstitutionSpecificFields()}
-            </motion.div>
+            </div>
 
-            {/* Fee Structure */}
-            {registration.institutionType !== 'teacher' && (
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.5, delay: 0.2 }}
-                className="mb-8"
-              >
-                <h2 className="text-2xl font-bold text-gray-800 mb-4 flex items-center">
-                  <span className="w-2 h-8 bg-orange-600 rounded-full mr-3"></span>
-                  Fee Structure
-                </h2>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div>
-                    <label className="text-gray-700 font-semibold">Total Annual Fee</label>
-                    <p className="text-gray-900">{registration.totalAnnualFee || 'N/A'}</p>
-                  </div>
-                  <div>
-                    <label className="text-gray-700 font-semibold">Admission Fee</label>
-                    <p className="text-gray-900">{registration.admissionFee || 'N/A'}</p>
-                  </div>
-                  <div>
-                    <label className="text-gray-700 font-semibold">Tuition Fee</label>
-                    <p className="text-gray-900">{registration.tuitionFee || 'N/A'}</p>
-                  </div>
-                  <div>
-                    <label className="text-gray-700 font-semibold">Transport Fee</label>
-                    <p className="text-gray-900">{registration.transportFee || 'N/A'}</p>
-                  </div>
-                  <div>
-                    <label className="text-gray-700 font-semibold">Books & Uniforms Fee</label>
-                    <p className="text-gray-900">{registration.booksUniformsFee || 'N/A'}</p>
-                  </div>
-                </div>
-              </motion.div>
-            )}
-
-            {/* Contact Details */}
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5, delay: 0.3 }}
-              className="mb-8"
-            >
+            {/* Contact Information */}
+            <div className="mb-8">
               <h2 className="text-2xl font-bold text-gray-800 mb-4 flex items-center">
                 <span className="w-2 h-8 bg-orange-600 rounded-full mr-3"></span>
-                Contact Details
+                Contact Information
               </h2>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {registration.institutionType !== 'teacher' && (
-                  <>
+                {registration.email && (
+                  <div className="flex items-center space-x-3">
+                    <FaEnvelope className="text-orange-600" />
                     <div>
-                      <label className="text-gray-700 font-semibold">Principal/Director Name</label>
-                      <p className="text-gray-900">{registration.principalName || 'N/A'}</p>
+                      <p className="text-sm text-gray-500">Email</p>
+                      <a href={`mailto:${registration.email}`} className="text-blue-600 hover:underline">{registration.email}</a>
                     </div>
-                    <div>
-                      <label className="text-gray-700 font-semibold">Contact Person</label>
-                      <p className="text-gray-900">{registration.contactPerson || 'N/A'}</p>
-                    </div>
-                    <div>
-                      <label className="text-gray-700 font-semibold">Address</label>
-                      <p className="text-gray-900">{registration.address || 'N/A'}</p>
-                    </div>
-                    <div>
-                      <label className="text-gray-700 font-semibold">City</label>
-                      <p className="text-gray-900">{registration.city || 'N/A'}</p>
-                    </div>
-                    <div>
-                      <label className="text-gray-700 font-semibold">State</label>
-                      <p className="text-gray-900">{registration.state || 'N/A'}</p>
-                    </div>
-                    <div>
-                      <label className="text-gray-700 font-semibold">Pincode</label>
-                      <p className="text-gray-900">{registration.pincode || 'N/A'}</p>
-                    </div>
-                  </>
+                  </div>
                 )}
-                <div>
-                  <label className="text-gray-700 font-semibold">Email</label>
-                  <p className="text-gray-900">{registration.email || 'N/A'}</p>
-                </div>
-                <div>
-                  <label className="text-gray-700 font-semibold">Phone</label>
-                  <p className="text-gray-900">{registration.phone || 'N/A'}</p>
-                </div>
-                <div>
-                  <label className="text-gray-700 font-semibold">Alternate Phone</label>
-                  <p className="text-gray-900">{registration.alternatePhone || 'N/A'}</p>
-                </div>
-                <div>
-                  <label className="text-gray-700 font-semibold">Website</label>
-                  <p className="text-gray-900">
-                    {registration.website ? (
-                      <a href={registration.website} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">
-                        {registration.website}
-                      </a>
-                    ) : 'N/A'}
-                  </p>
-                </div>
-                <div>
-                  <label className="text-gray-700 font-semibold">Office Hours/Availability</label>
-                  <p className="text-gray-900">{registration.officeHours || registration.availability || 'N/A'}</p>
-                </div>
-                <div>
-                  <label className="text-gray-700 font-semibold">Social Media</label>
-                  <p className="text-gray-900">
-                    {registration.socialMedia && (registration.socialMedia.facebook || registration.socialMedia.twitter || registration.socialMedia.instagram || registration.socialMedia.linkedin) ? (
-                      <div className="space-y-1">
-                        {registration.socialMedia.facebook && (
-                          <a href={registration.socialMedia.facebook} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline block">
-                            Facebook
-                          </a>
-                        )}
-                        {registration.socialMedia.twitter && (
-                          <a href={registration.socialMedia.twitter} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline block">
-                            Twitter
-                          </a>
-                        )}
-                        {registration.socialMedia.instagram && (
-                          <a href={registration.socialMedia.instagram} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline block">
-                            Instagram
-                          </a>
-                        )}
-                        {registration.socialMedia.linkedin && (
-                          <a href={registration.socialMedia.linkedin} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline block">
-                            LinkedIn
-                          </a>
-                        )}
-                      </div>
-                    ) : 'N/A'}
-                  </p>
-                </div>
-                {registration.institutionType !== 'teacher' && (
-                  <div className="col-span-2">
-                    <label className="text-gray-700 font-semibold">Google Maps</label>
-                    {registration.googleMapsEmbedUrl ? (
-                      <iframe
-                        src={registration.googleMapsEmbedUrl}
-                        width="100%"
-                        height="300"
-                        style={{ border: 0 }}
-                        allowFullScreen=""
-                        loading="lazy"
-                        className="rounded-lg mt-2"
-                      ></iframe>
-                    ) : (
-                      <p className="text-gray-900">No map available</p>
-                    )}
+                {registration.phone && (
+                  <div className="flex items-center space-x-3">
+                    <FaPhone className="text-orange-600" />
+                    <div>
+                      <p className="text-sm text-gray-500">Phone</p>
+                      <a href={`tel:${registration.phone}`} className="text-blue-600 hover:underline">{registration.phone}</a>
+                    </div>
+                  </div>
+                )}
+                {registration.alternatePhone && (
+                  <div className="flex items-center space-x-3">
+                    <FaPhone className="text-orange-600" />
+                    <div>
+                      <p className="text-sm text-gray-500">Alternate Phone</p>
+                      <p>{registration.alternatePhone}</p>
+                    </div>
+                  </div>
+                )}
+                {registration.website && (
+                  <div className="flex items-center space-x-3">
+                    <FaGlobe className="text-orange-600" />
+                    <div>
+                      <p className="text-sm text-gray-500">Website</p>
+                      <a href={registration.website} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">{registration.website}</a>
+                    </div>
+                  </div>
+                )}
+                {registration.address && (
+                  <div className="flex items-center space-x-3 md:col-span-2">
+                    <FaMapMarkerAlt className="text-orange-600" />
+                    <div>
+                      <p className="text-sm text-gray-500">Address</p>
+                      <p>{registration.address}, {registration.city}, {registration.state} - {registration.pincode}</p>
+                    </div>
                   </div>
                 )}
               </div>
-            </motion.div>
-
-            {/* Facilities */}
-            {registration.institutionType !== 'teacher' && (
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.5, delay: 0.4 }}
-                className="mb-8"
-              >
-                <h2 className="text-2xl font-bold text-gray-800 mb-4 flex items-center">
-                  <span className="w-2 h-8 bg-orange-600 rounded-full mr-3"></span>
-                  Facilities
-                </h2>
-                <div>
-                  <label className="text-gray-700 font-semibold">Facilities</label>
-                  <p className="text-gray-900">{registration.facilities.length > 0 ? registration.facilities.join(', ') : 'N/A'}</p>
-                </div>
-              </motion.div>
-            )}
-
-            {/* Infrastructure */}
-            {registration.institutionType !== 'teacher' && (
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.5, delay: 0.5 }}
-                className="mb-8"
-              >
-                <h2 className="text-2xl font-bold text-gray-800 mb-4 flex items-center">
-                  <span className="w-2 h-8 bg-orange-600 rounded-full mr-3"></span>
-                  Infrastructure
-                </h2>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  {['campusSize', 'classrooms', 'laboratories', 'library', 'playground', 'auditorium', 'smartBoards', 'cctv', 'medicalRoom', 'wifi', 'hostel', 'sports'].map(field => (
-                    <div key={field}>
-                      <label className="text-gray-700 font-semibold capitalize">{field.replace(/([A-Z])/g, ' $1').trim()}</label>
-                      <p className="text-gray-900">{registration[field] || 'N/A'}</p>
-                    </div>
-                  ))}
-                </div>
-              </motion.div>
-            )}
-
-            {/* Admission Details */}
-            {registration.institutionType !== 'teacher' && (
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.5, delay: 0.6 }}
-                className="mb-8"
-              >
-                <h2 className="text-2xl font-bold text-gray-800 mb-4 flex items-center">
-                  <span className="w-2 h-8 bg-orange-600 rounded-full mr-3"></span>
-                  Admission Details
-                </h2>
-                <div>
-                  <label className="text-gray-700 font-semibold">Admission Link</label>
-                  <p className="text-gray-900">
-                    {registration.admissionLink ? (
-                      <a href={registration.admissionLink} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">
-                        {registration.admissionLink}
-                      </a>
-                    ) : 'N/A'}
-                  </p>
-                </div>
-                <div className="mt-4">
-                  <label className="text-gray-700 font-semibold">Admission Process</label>
-                  <p className="text-gray-900 whitespace-pre-wrap">{registration.admissionProcess || 'N/A'}</p>
-                </div>
-              </motion.div>
-            )}
-
-            {/* Gallery (for Institutions) - Now starts from second image if first is used as main */}
-            {registration.institutionType !== 'teacher' && registration.photos.length > 0 && (
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.5, delay: 0.9 }}
-                className="mb-8"
-              >
-                <h2 className="text-2xl font-bold text-gray-800 mb-4 flex items-center">
-                  <span className="w-2 h-8 bg-orange-600 rounded-full mr-3"></span>
-                  Gallery
-                </h2>
-                {/* Show indicator if first image is being used as main image */}
-                {!registration.mainImage && registration.photos.length > 0 && (
-                  <div className="mb-4 p-3 bg-orange-50 rounded-lg border border-orange-200">
-                    <p className="text-orange-700 text-sm">
-                      <FaInfoCircle className="inline mr-2" />
-                      First image from gallery is displayed as the main image above
-                    </p>
-                  </div>
-                )}
-                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 mt-4">
-                  {/* If mainImage is not available and we're using first gallery image, start from index 1 */}
-                  {registration.photos
-                    .filter((_, index) => registration.mainImage || index > 0) // Skip first image if it's being used as main
-                    .map((photo, index) => (
-                      <motion.div
-                        key={index}
-                        className="relative aspect-square overflow-hidden rounded-xl"
-                        whileHover={{ scale: 1.02 }}
-                      >
-                        <img
-                          src={photo}
-                          alt={`Gallery Photo ${index + 1}`}
-                          className="w-full h-full object-cover"
-                        />
-                      </motion.div>
-                    ))}
-                </div>
-              </motion.div>
-            )}
-
-            {/* Documents */}
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5, delay: 1.0 }}
-              className="mb-8"
-            >
-              <h2 className="text-2xl font-bold text-gray-800 mb-4 flex items-center">
-                <span className="w-2 h-8 bg-orange-600 rounded-full mr-3"></span>
-                Documents
-              </h2>
-              {registration.institutionType === 'teacher' ? (
-                <div className="grid grid-cols-1 gap-4">
-                  {registration.qualificationCertificates.length > 0 && (
-                    <div>
-                      <label className="text-gray-700 font-semibold">Qualification Certificates</label>
-                      <div className="space-y-1">
-                        {registration.qualificationCertificates.map((file, index) => (
-                          <a
-                            key={index}
-                            href={file}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="text-blue-600 hover:underline block"
-                          >
-                            Certificate {index + 1}
-                          </a>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                  {registration.idProof && (
-                    <div>
-                      <label className="text-gray-700 font-semibold">ID Proof</label>
-                      <a
-                        href={registration.idProof}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-blue-600 hover:underline block"
-                      >
-                        ID Proof
-                      </a>
-                    </div>
-                  )}
-                </div>
-              ) : (
-                <div className="grid grid-cols-1 gap-4">
-                  {registration.registrationCertificate && (
-                    <div>
-                      <label className="text-gray-700 font-semibold">Registration Certificate</label>
-                      <a
-                        href={registration.registrationCertificate}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-blue-600 hover:underline block"
-                      >
-                        Registration Certificate
-                      </a>
-                    </div>
-                  )}
-                  {registration.otherDocuments.length > 0 && (
-                    <div>
-                      <label className="text-gray-700 font-semibold">Other Documents</label>
-                      <div className="space-y-1">
-                        {registration.otherDocuments.map((doc, index) => (
-                          <a
-                            key={index}
-                            href={doc}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="text-blue-600 hover:underline block"
-                          >
-                            Document {index + 1}
-                          </a>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                </div>
-              )}
-            </motion.div>
-
-            {/* Action Buttons */}
-            <div className="flex space-x-4">
-              <motion.button
-                onClick={() => navigate('/admin/dashboard')}
-                whileHover={{ scale: 1.03, boxShadow: '0 4px 15px rgba(249, 115, 22, 0.3)' }}
-                whileTap={{ scale: 0.98 }}
-                className="w-full bg-gradient-to-r from-orange-500 to-amber-600 text-white py-3 rounded-lg font-bold transition-all shadow-lg hover:from-orange-600 hover:to-amber-700"
-              >
-                Back
-              </motion.button>
             </div>
+
+            {/* Action Buttons for Pending Status */}
+            {registration.status === 'pending' && (
+              <div className="flex space-x-4 mt-8 pt-6 border-t">
+                <motion.button
+                  onClick={handleApprove}
+                  disabled={processing}
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                  className="flex-1 bg-green-600 text-white py-3 rounded-lg font-bold hover:bg-green-700 transition disabled:opacity-50 flex items-center justify-center space-x-2"
+                >
+                  {processing ? <FaSpinner className="animate-spin" /> : <FaCheck />}
+                  <span>Approve Registration</span>
+                </motion.button>
+                <motion.button
+                  onClick={() => setShowRejectModal(true)}
+                  disabled={processing}
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                  className="flex-1 bg-red-600 text-white py-3 rounded-lg font-bold hover:bg-red-700 transition disabled:opacity-50 flex items-center justify-center space-x-2"
+                >
+                  <FaTimes />
+                  <span>Reject Registration</span>
+                </motion.button>
+              </div>
+            )}
+
+            {/* Back Button for Non-Pending */}
+            {registration.status !== 'pending' && (
+              <div className="mt-8 pt-6 border-t">
+                <motion.button
+                  onClick={() => navigate('/admin/registrations')}
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                  className="w-full bg-gradient-to-r from-orange-500 to-amber-600 text-white py-3 rounded-lg font-bold hover:from-orange-600 hover:to-amber-700 transition"
+                >
+                  Back to Registrations
+                </motion.button>
+              </div>
+            )}
           </div>
-        </motion.div>
+        </div>
       </div>
+
+      {/* Reject Modal */}
+      {showRejectModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <motion.div
+            initial={{ scale: 0.9, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            className="bg-white rounded-xl shadow-xl max-w-md w-full p-6"
+          >
+            <h3 className="text-xl font-bold text-gray-800 mb-4">Reject Registration</h3>
+            <p className="text-gray-600 mb-4">Please provide a reason for rejecting this registration:</p>
+            <textarea
+              value={rejectReason}
+              onChange={(e) => setRejectReason(e.target.value)}
+              className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 mb-4"
+              rows="4"
+              placeholder="Enter rejection reason..."
+            />
+            <div className="flex space-x-3">
+              <button
+                onClick={handleReject}
+                disabled={processing}
+                className="flex-1 bg-red-600 text-white py-2 rounded-lg hover:bg-red-700 transition disabled:opacity-50"
+              >
+                {processing ? <FaSpinner className="animate-spin mx-auto" /> : 'Confirm Reject'}
+              </button>
+              <button
+                onClick={() => {
+                  setShowRejectModal(false);
+                  setRejectReason('');
+                }}
+                className="flex-1 bg-gray-300 text-gray-700 py-2 rounded-lg hover:bg-gray-400 transition"
+              >
+                Cancel
+              </button>
+            </div>
+          </motion.div>
+        </div>
+      )}
     </ErrorBoundary>
   );
 };

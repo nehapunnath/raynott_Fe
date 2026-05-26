@@ -1,62 +1,144 @@
 // src/components/dashboards/SchoolDashboard.jsx
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { FiPlus, FiList, FiEdit, FiTrash2, FiEye } from 'react-icons/fi';
-import AddSchools from '../pages/Admin/AddSchools';
-import SchoolsList from '../pages/Admin/SchoolsList';
+import { FiHome, FiEye, FiEdit, FiClock, FiCheckCircle, FiXCircle } from 'react-icons/fi';
 import { schoolApi } from '../services/schoolApi';
+import { registerApi } from '../services/RegisterApi';
 import DashSidebar from '../components/DashSidebar';
+import SchoolStats from '../pages/DasboardDetails/Schools/SchoolStats';
+import SchoolDetailsView from '../pages/DasboardDetails/Schools/SchoolDetailsView';
+import EditSchoolDetails from '../pages/DasboardDetails/Schools/EditSchools';
+import RegistrationStatus from '../pages/DasboardDetails/Schools/RegistrationStatus';
 
 const SchoolDashboard = () => {
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [activeTab, setActiveTab] = useState('dashboard');
   const [institutionData, setInstitutionData] = useState(null);
+  const [registrationRequest, setRegistrationRequest] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [requestId, setRequestId] = useState(null);
 
   useEffect(() => {
-    loadInstitutionData();
+    loadRegistrationData();
   }, []);
 
-  const loadInstitutionData = async () => {
+  const loadRegistrationData = async () => {
+    const savedRequestId = localStorage.getItem('registrationRequestId');
     const institutionName = localStorage.getItem('institutionName');
     const institutionType = localStorage.getItem('institutionType');
     
-    if (institutionName && institutionType === 'Schools') {
-      // Fetch the specific school data
+    if (savedRequestId) {
       try {
-        const schools = await schoolApi.getSchools();
-        const school = schools.find(s => s.name === institutionName);
-        setInstitutionData(school);
+        // Check registration status
+        const statusResponse = await registerApi.getRegistrationStatus(savedRequestId);
+        if (statusResponse.success && statusResponse.data) {
+          setRegistrationRequest(statusResponse.data);
+          setRequestId(savedRequestId);
+          
+          // If approved, fetch the institution data
+          if (statusResponse.data.status === 'approved') {
+            await loadInstitutionData(institutionName, institutionType);
+          }
+        }
       } catch (error) {
-        console.error('Error loading school data:', error);
+        console.error('Error loading registration status:', error);
       }
+    } else if (institutionName && institutionType === 'Schools') {
+      // Check if already registered as approved institution
+      await loadInstitutionData(institutionName, institutionType);
     }
+    
     setLoading(false);
   };
 
-  const schoolMenuItems = [
-    { id: 'dashboard', label: 'Dashboard', icon: <FiEye className="w-5 h-5" /> },
-    { id: 'add-school', label: 'Add School', icon: <FiPlus className="w-5 h-5" /> },
-    { id: 'manage-schools', label: 'My Schools', icon: <FiList className="w-5 h-5" /> },
-    { id: 'edit-school', label: 'Edit Details', icon: <FiEdit className="w-5 h-5" /> },
-  ];
-
-  const renderContent = () => {
-    switch (activeTab) {
-      case 'dashboard':
-        return <SchoolDashboardStats institutionData={institutionData} />;
-      case 'add-school':
-        return <AddSchools />;
-      case 'manage-schools':
-        return <SchoolsList showOnlyOwn={true} institutionName={localStorage.getItem('institutionName')} />;
-      case 'edit-school':
-        return <EditSchool schoolData={institutionData} />;
-      default:
-        return <SchoolDashboardStats institutionData={institutionData} />;
+  const loadInstitutionData = async (institutionName, institutionType) => {
+    try {
+      const response = await schoolApi.getSchools();
+      let schools = [];
+      if (Array.isArray(response)) {
+        schools = response;
+      } else if (response && response.data && Array.isArray(response.data)) {
+        schools = response.data;
+      } else if (response && response.schools && Array.isArray(response.schools)) {
+        schools = response.schools;
+      }
+      
+      const school = schools.find(s => s.name === institutionName);
+      if (school) {
+        setInstitutionData(school);
+        localStorage.setItem('schoolId', school._id || school.id);
+      }
+    } catch (error) {
+      console.error('Error loading institution data:', error);
     }
   };
 
-  if (loading) return <div className="flex justify-center items-center h-screen">Loading...</div>;
+  const handleRegistrationSuccess = (newRequestId) => {
+    localStorage.setItem('registrationRequestId', newRequestId);
+    setRequestId(newRequestId);
+    loadRegistrationData();
+  };
+
+  const schoolMenuItems = [
+    { id: 'dashboard', label: 'Dashboard', icon: <FiHome className="w-5 h-5" /> },
+    ...(registrationRequest?.status === 'approved' && institutionData ? [
+      { id: 'view-school', label: 'My Institution', icon: <FiEye className="w-5 h-5" /> },
+      { id: 'edit-school', label: 'Edit Details', icon: <FiEdit className="w-5 h-5" /> }
+    ] : [])
+  ];
+
+  const renderContent = () => {
+    // If no registration request and no institution data, show registration form
+    if (!registrationRequest && !institutionData) {
+      return <RegistrationStatus 
+        status="not_registered" 
+        onRegister={handleRegistrationSuccess}
+      />;
+    }
+
+    // If registration is pending
+    if (registrationRequest?.status === 'pending') {
+      return <RegistrationStatus 
+        status="pending" 
+        registrationData={registrationRequest}
+      />;
+    }
+
+    // If registration is rejected
+    if (registrationRequest?.status === 'rejected') {
+      return <RegistrationStatus 
+        status="rejected" 
+        registrationData={registrationRequest}
+        onRegister={handleRegistrationSuccess}
+      />;
+    }
+
+    // If approved and data exists
+    if (registrationRequest?.status === 'approved' && institutionData) {
+      switch (activeTab) {
+        case 'dashboard':
+          return <SchoolStats institutionData={institutionData} registrationStatus="approved" />;
+        case 'view-school':
+          return <SchoolDetailsView schoolData={institutionData} />;
+        case 'edit-school':
+          return <EditSchoolDetails 
+            schoolData={institutionData} 
+            schoolId={institutionData._id || institutionData.id} 
+            onUpdate={() => loadInstitutionData(institutionData.name, 'Schools')} 
+          />;
+        default:
+          return <SchoolStats institutionData={institutionData} registrationStatus="approved" />;
+      }
+    }
+
+    return <RegistrationStatus status="not_registered" onRegister={handleRegistrationSuccess} />;
+  };
+
+  if (loading) return (
+    <div className="flex justify-center items-center h-screen">
+      <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-600"></div>
+    </div>
+  );
 
   return (
     <div className="flex h-screen bg-orange-50 font-sans">
@@ -68,31 +150,11 @@ const SchoolDashboard = () => {
         menuItems={schoolMenuItems}
         institutionType="Schools"
       />
-      <div className={`flex-1 transition-all duration-300 ${sidebarOpen ? 'ml-64' : 'ml-20'}`}>
+      <div className={`flex-1 transition-all duration-300 overflow-y-auto ${sidebarOpen ? 'ml-64' : 'ml-20'}`}>
         {renderContent()}
       </div>
     </div>
   );
 };
-
-const SchoolDashboardStats = ({ institutionData }) => (
-  <div className="p-6">
-    <h1 className="text-3xl font-bold text-gray-800 mb-6">School Dashboard</h1>
-    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-      <div className="bg-white rounded-lg shadow p-6">
-        <h3 className="text-lg font-semibold mb-2">Total Students</h3>
-        <p className="text-3xl text-orange-600">{institutionData?.totalStudents || 0}</p>
-      </div>
-      <div className="bg-white rounded-lg shadow p-6">
-        <h3 className="text-lg font-semibold mb-2">Total Teachers</h3>
-        <p className="text-3xl text-orange-600">{institutionData?.totalTeachers || 0}</p>
-      </div>
-      <div className="bg-white rounded-lg shadow p-6">
-        <h3 className="text-lg font-semibold mb-2">Active Listings</h3>
-        <p className="text-3xl text-orange-600">1</p>
-      </div>
-    </div>
-  </div>
-);
 
 export default SchoolDashboard;
