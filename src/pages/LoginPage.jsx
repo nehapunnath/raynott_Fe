@@ -297,7 +297,7 @@ const handleLogin = async (e) => {
                 </motion.button>
               </motion.div>
 
-              <div className="text-center">
+               <div className="text-center">
                 <button
                   type="button"
                   onClick={() => setIsLoginMode(false)}
@@ -305,7 +305,7 @@ const handleLogin = async (e) => {
                 >
                   Don't have an account? Register here
                 </button>
-              </div>
+              </div> 
             </form>
           ) : (
             // Registration Form

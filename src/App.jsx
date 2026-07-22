@@ -87,11 +87,11 @@ function App() {
         <Route path='/professional' element={<Professional/>}/>
         <Route path='/personal' element={<PersonalTeachers/>}/>
 
-        <Route path='/School-Dashboard' element={<SchoolDashboard/>}/>
+        {/* <Route path='/School-Dashboard' element={<SchoolDashboard/>}/>
         <Route path='/college-Dashboard' element={<CollegeDashboard/>}/>
         <Route path='/Pu-college-Dashboard' element={<PuCollegeDashboard/>}/>
         <Route path='/Coaching-Tuition-Dashboard' element={<CoachingDashboard/>}/>
-        <Route path='/Teachers-Dashboard' element={<TeachersDashboard/>}/>
+        <Route path='/Teachers-Dashboard' element={<TeachersDashboard/>}/> */}
 
 
         <Route path='/login' element={<LoginPage/>}/>

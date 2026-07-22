@@ -8,31 +8,31 @@ const aboutData = [
   {
     title: 'About School',
     content: 'At Raynott, we understand the importance of early education in shaping a child’s future. Our platform connects parents with schools that emphasize holistic development, creativity, and strong academic foundations. Whether you’re seeking preschools or primary institutions, we simplify your search based on curriculum, teaching philosophy, and location.',
-    image: 'https://images.unsplash.com/photo-1588072432836-e10032774350?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=800&q=80',
+    // image: 'https://images.unsplash.com/photo-1588072432836-e10032774350?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=800&q=80',
     stats: '50k+ School Searches'
   },
   {
     title: 'About Colleges',
     content: 'Raynott helps aspiring students discover top colleges offering career-oriented programs, practical exposure, and dynamic learning environments. We focus on institutions that blend academic rigor with innovation, enabling students to thrive in both traditional and emerging fields of study.',
-    image: 'https://images.unsplash.com/photo-1523240795612-9a054b0db644?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=800&q=80',
+    // image: 'https://images.unsplash.com/photo-1523240795612-9a054b0db644?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=800&q=80',
     stats: '30k+ College Explorations'
   },
   {
     title: 'About PU College',
     content: 'Pre-University education plays a pivotal role in a student’s academic journey. Raynott highlights PU colleges that offer focused academic streams, mentorship, and a track record of success in board exams and competitive entrances — giving students the right launchpad for higher studies.',
-    image: 'https://images.unsplash.com/photo-1522202176988-66273c2fd55f?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=800&q=80',
+    // image: 'https://images.unsplash.com/photo-1522202176988-66273c2fd55f?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=800&q=80',
     stats: '20k+ PU College Matches'
   },
   {
     title: 'About Coaching / Tuition Centers',
     content: 'From competitive exams to skill-building, coaching centers are vital to academic success. Raynott showcases centers with proven results, expert faculty, and student-centric teaching methods. We help learners choose the right programs based on performance metrics and real student reviews.',
-    image: 'https://images.unsplash.com/photo-1549861833-c5932fd19229?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=800&q=80',
+    // image: 'https://images.unsplash.com/photo-1549861833-c5932fd19229?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=800&q=80',
     stats: '15k+ Coaching Center Visits'
   },
   {
   title: 'About Teachers',
   content: 'Teachers are the backbone of any educational system. At Raynott, we celebrate educators who inspire, innovate, and nurture future generations. Our platform empowers parents and students to discover institutions with qualified, passionate, and experienced teachers who make learning meaningful, inclusive, and engaging.',
-  image: 'https://miro.medium.com/v2/resize:fit:1200/1*atHlGe_kjhjlOiLn8S5Mrw.jpeg',
+  // image: 'https://miro.medium.com/v2/resize:fit:1200/1*atHlGe_kjhjlOiLn8S5Mrw.jpeg',
   stats: '40k+ Teacher Profiles Explored'
 }
 
