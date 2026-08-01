@@ -961,7 +961,7 @@ const handleSubmit = async (e) => {
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-orange-50 to-white py-8">
-      <div className="max-w-4xl mx-auto px-4 mb-6">
+      {/* <div className="max-w-4xl mx-auto px-4 mb-6">
         <motion.button
           onClick={() => navigate('/')}
           whileHover={{ scale: 1.05 }}
@@ -971,7 +971,7 @@ const handleSubmit = async (e) => {
           <FaHome className="text-xl" />
           <span className="font-medium">Back to Home</span>
         </motion.button>
-      </div>
+      </div> */}
       
       <div className="max-w-4xl mx-auto bg-white rounded-2xl shadow-xl overflow-hidden">
         <div className="bg-gradient-to-r from-orange-600 to-amber-600 text-white py-6 px-8 text-center relative">

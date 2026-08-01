@@ -423,7 +423,7 @@ const RegistrationDetails = () => {
         <div className="max-w-5xl mx-auto px-4">
           {/* Back Button */}
           <motion.button
-            onClick={() => navigate('/admin/registrations')}
+            onClick={() => navigate('/admin/dashboard')}
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
             className="flex items-center space-x-2 text-orange-600 hover:text-orange-700 transition mb-6"
@@ -644,7 +644,7 @@ const RegistrationDetails = () => {
             {registration.status !== 'pending' && (
               <div className="mt-8 pt-6 border-t">
                 <motion.button
-                  onClick={() => navigate('/admin/registrations')}
+                  onClick={() => navigate('/admin/dashboard')}
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.98 }}
                   className="w-full bg-gradient-to-r from-orange-500 to-amber-600 text-white py-3 rounded-lg font-bold hover:from-orange-600 hover:to-amber-700 transition"

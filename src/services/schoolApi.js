@@ -1,7 +1,6 @@
 import axios from 'axios';
 import base_url from './base_urls';
 
-
 // Create axios instance with default config
 const api = axios.create({
   baseURL: base_url,
@@ -51,16 +50,29 @@ export const schoolApi = {
   },
 
   // Get all schools
-  getSchools: async () => {
+  // In schoolApi.js - Update getSchools method
+getSchools: async () => {
+  try {
+    const response = await api.get('/admin/getschools');
+    // Return the entire response, let the component handle the data structure
+    return response.data;
+  } catch (error) {
+    throw new Error(error.response?.data?.message || 'Failed to fetch schools');
+  }
+},
+
+  // Get a single school by ID - FIXED METHOD NAME
+  getSchoolById: async (id) => {
     try {
-      const response = await api.get('/admin/getschools');
+      const response = await api.get(`/admin/getschools/${id}`);
       return response.data;
     } catch (error) {
-      throw new Error(error.response?.data?.message || 'Failed to fetch schools');
+      console.error('Error fetching school by ID:', error);
+      throw new Error(error.response?.data?.message || 'Failed to fetch school');
     }
   },
 
-  // Get a single school by ID
+  // Get a single school by ID (alias for getSchoolById)
   getSchool: async (id) => {
     try {
       const response = await api.get(`/admin/getschools/${id}`);
@@ -73,7 +85,6 @@ export const schoolApi = {
   // Update a school
   updateSchool: async (id, formData) => {
     try {
-        
       const response = await api.put(`/admin/updateschools/${id}`, formData, {
         headers: {
           'Content-Type': 'multipart/form-data',
@@ -94,6 +105,8 @@ export const schoolApi = {
       throw new Error(error.response?.data?.message || 'Failed to delete school');
     }
   },
+
+  // Get schools with filters
   getSchoolsWithFilters: async (params) => {
     try {
       const response = await api.get('/getschools/filtered', { params });
@@ -102,7 +115,9 @@ export const schoolApi = {
       throw new Error(error.response?.data?.message || 'Failed to fetch filtered schools');
     }
   },
-   addReview: async (schoolId, reviewData) => {
+
+  // Add review
+  addReview: async (schoolId, reviewData) => {
     try {
       const response = await api.post(`/admin/schools/${schoolId}/reviews`, reviewData);
       return response.data;
@@ -111,6 +126,7 @@ export const schoolApi = {
     }
   },
 
+  // Get reviews
   getReviews: async (schoolId) => {
     try {
       const response = await api.get(`/schools/${schoolId}/reviews`);
@@ -120,6 +136,7 @@ export const schoolApi = {
     }
   },
 
+  // Like review
   likeReview: async (schoolId, reviewId) => {
     try {
       const response = await api.put(`/schools/${schoolId}/reviews/${reviewId}/like`);
@@ -129,6 +146,7 @@ export const schoolApi = {
     }
   },
 
+  // Dislike review
   dislikeReview: async (schoolId, reviewId) => {
     try {
       const response = await api.put(`/schools/${schoolId}/reviews/${reviewId}/dislike`);
