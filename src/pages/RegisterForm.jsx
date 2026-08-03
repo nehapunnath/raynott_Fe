@@ -435,7 +435,7 @@ const handleSubmit = async (e) => {
     
     // Redirect to dashboard after 2 seconds
     setTimeout(() => {
-      navigate('/school-dashboard');
+      navigate('/dashboard');
     }, 2000);
     
   } catch (err) {

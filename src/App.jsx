@@ -53,12 +53,15 @@ import CollegeDashboard from './pages/CollegeDashboard'
 import PuCollegeDashboard from './pages/PuCollegeDashboard'
 import CoachingDashboard from './pages/CoachingDashboard'
 import TeachersDashboard from './pages/TeachersDashboard'
+import Dashboard from './components/Dashboard'
+import { ToastContainer } from 'react-toastify'
+import SchoolProfile from './components/SchoolProfile'
 
 function App() {
   const location = useLocation()
 
   // Paths where footer should be hidden
-  const hideFooterPaths = ['/login', '/admin/dashboard','/admin/edit-school/:id','/admin/view-school/:id','/register-form','/School-Dashboard','/college-Dashboard','/Pu-college-Dashboard','/Coaching-Tuition-Dashboard','/Teachers-Dashboard']
+  const hideFooterPaths = ['/login', '/admin/dashboard','/admin/edit-school/:id','/admin/view-school/:id','/register-form','/dashboard' ,'/school-profile/:id','/college-Dashboard','/Pu-college-Dashboard','/Coaching-Tuition-Dashboard','/Teachers-Dashboard']
 
   const shouldShowFooter = !hideFooterPaths.includes(location.pathname)
 
@@ -87,11 +90,13 @@ function App() {
         <Route path='/professional' element={<Professional/>}/>
         <Route path='/personal' element={<PersonalTeachers/>}/>
 
-        <Route path='/School-Dashboard' element={<SchoolDashboard/>}/>
+        <Route path='/dashboard' element={<Dashboard/>}/>
+        <Route path='/school-profile/:id' element={<SchoolProfile/>}/>
+        {/* <Route path='/School-Dashboard' element={<SchoolDashboard/>}/>
         <Route path='/college-Dashboard' element={<CollegeDashboard/>}/>
         <Route path='/Pu-college-Dashboard' element={<PuCollegeDashboard/>}/>
         <Route path='/Coaching-Tuition-Dashboard' element={<CoachingDashboard/>}/>
-         <Route path='/Teachers-Dashboard' element={<TeachersDashboard/>}/>
+        <Route path='/Teachers-Dashboard' element={<TeachersDashboard/>}/> */}
 
 
         <Route path='/login' element={<LoginPage/>}/>
@@ -134,6 +139,7 @@ function App() {
 
 
       </Routes>
+      <ToastContainer/>
 
       {/* Only show footer if path is not in hideFooterPaths */}
       {shouldShowFooter && <Footer />}

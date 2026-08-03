@@ -1,3 +1,4 @@
+// services/schoolApi.js
 import axios from 'axios';
 import base_url from './base_urls';
 
@@ -50,34 +51,39 @@ export const schoolApi = {
   },
 
   // Get all schools
-  // In schoolApi.js - Update getSchools method
-getSchools: async () => {
-  try {
-    const response = await api.get('/admin/getschools');
-    // Return the entire response, let the component handle the data structure
-    return response.data;
-  } catch (error) {
-    throw new Error(error.response?.data?.message || 'Failed to fetch schools');
-  }
-},
+  getSchools: async () => {
+    try {
+      const response = await api.get('/admin/getschools');
+      return response.data;
+    } catch (error) {
+      throw new Error(error.response?.data?.message || 'Failed to fetch schools');
+    }
+  },
 
-  // Get a single school by ID - FIXED METHOD NAME
+  // Get a single school by ID
+  getSchool: async (id) => {
+    try {
+      console.log('📡 Fetching school with ID:', id);
+      const response = await api.get(`/admin/getschools/${id}`);
+      console.log('📡 API Response:', response.data);
+      return response.data;
+    } catch (error) {
+      console.error('❌ Error fetching school:', error);
+      if (error.response) {
+        console.error('Status:', error.response.status);
+        console.error('Data:', error.response.data);
+      }
+      throw new Error(error.response?.data?.message || 'Failed to fetch school');
+    }
+  },
+
+  // Get a single school by ID (alias)
   getSchoolById: async (id) => {
     try {
       const response = await api.get(`/admin/getschools/${id}`);
       return response.data;
     } catch (error) {
       console.error('Error fetching school by ID:', error);
-      throw new Error(error.response?.data?.message || 'Failed to fetch school');
-    }
-  },
-
-  // Get a single school by ID (alias for getSchoolById)
-  getSchool: async (id) => {
-    try {
-      const response = await api.get(`/admin/getschools/${id}`);
-      return response.data;
-    } catch (error) {
       throw new Error(error.response?.data?.message || 'Failed to fetch school');
     }
   },

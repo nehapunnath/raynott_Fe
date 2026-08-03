@@ -24,8 +24,6 @@ const LoginPage = () => {
     'All Teachers'
   ];
 
- // Update the handleLogin function in LoginPage.jsx
-// Update the handleLogin function in LoginPage.jsx
 const handleLogin = async (e) => {
   e.preventDefault();
   setIsLoading(true);
@@ -35,28 +33,66 @@ const handleLogin = async (e) => {
   
   if (result.success) {
     try {
-      // Get the token from the login response
-      const token = result.token;
+      console.log('🔑 Login Result:', result);
       
-      // Since you're storing custom claims on the Firebase user,
-      // you need to decode the token or make an API call to get user data
+      // Get user data from login response
+      if (result.user && result.user.role) {
+        console.log('📋 User data from login response:', result.user);
+        
+        // Store user data in localStorage
+        localStorage.setItem('userRole', result.user.role);
+        localStorage.setItem('institutionType', result.user.institutionType || 'N/A');
+        localStorage.setItem('institutionName', result.user.institutionName || 'N/A');
+        localStorage.setItem('userEmail', result.user.email || '');
+        
+        // Determine redirect based on role
+        const userRole = result.user.role;
+        const isAdmin = userRole === 'admin';
+        
+        console.log('👤 User Role:', userRole);
+        console.log('🔀 Is Admin:', isAdmin);
+        
+        // Small delay to ensure localStorage is set
+        await new Promise(resolve => setTimeout(resolve, 100));
+        
+        if (isAdmin) {
+          console.log('🚀 Redirecting to /admin/dashboard');
+          navigate('/admin/dashboard', { replace: true });
+        } else {
+          console.log('🚀 Redirecting to /dashboard');
+          navigate('/dashboard', { replace: true });
+        }
+        
+        setIsLoading(false);
+        return;
+      }
+      
+      // Fallback: Get user data from token
+      const token = result.token;
       const userData = await authApis.getCurrentAdminUser(token);
       
       if (userData.success) {
-        localStorage.setItem('institutionType', userData.institutionType);
-        localStorage.setItem('institutionName', userData.institutionName);
+        console.log('📋 User data from token:', userData);
         
-        // Redirect based on institution type
-        const typeMap = {
-          'Schools': '/School-Dashboard',
-          'Colleges': '/college-Dashboard',
-          'PU College': '/Pu-college-Dashboard',
-          'Coaching/Tuition': '/Coaching-Tuition-Dashboard',
-          'All Teachers': '/Teachers-Dashboard'
-        };
+        localStorage.setItem('userRole', userData.role || 'institute');
+        localStorage.setItem('institutionType', userData.institutionType || 'N/A');
+        localStorage.setItem('institutionName', userData.institutionName || 'N/A');
+        localStorage.setItem('userEmail', userData.email || '');
+
+        const isAdmin = userData.role === 'admin' || userData.isAdmin === true;
         
-        const redirectPath = typeMap[userData.institutionType] || '/admin/dashboard';
-        navigate(redirectPath);
+        console.log('👤 User Role:', userData.role);
+        console.log('🔀 Is Admin:', isAdmin);
+
+        await new Promise(resolve => setTimeout(resolve, 100));
+
+        if (isAdmin) {
+          console.log('🚀 Redirecting to /admin/dashboard');
+          navigate('/admin/dashboard', { replace: true });
+        } else {
+          console.log('🚀 Redirecting to /dashboard');
+          navigate('/dashboard', { replace: true });
+        }
       } else {
         setError(userData.error || 'Error loading user data');
         setIsLoading(false);
@@ -85,7 +121,6 @@ const handleLogin = async (e) => {
   });
   
   if (result.success) {
-    // Registration successful - auto switch to login or auto-login
     setIsLoginMode(true);
     setError('');
     // Clear form

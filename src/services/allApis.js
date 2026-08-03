@@ -15,7 +15,21 @@ export const authApis = {
 
       if (result.success) {
         localStorage.setItem("adminToken", result.token);
-        return { success: true, token: result.token };
+        // Store user role from the response
+        if (result.user && result.user.role) {
+          localStorage.setItem("userRole", result.user.role);
+        }
+        if (result.user && result.user.institutionType) {
+          localStorage.setItem("institutionType", result.user.institutionType);
+        }
+        if (result.user && result.user.institutionName) {
+          localStorage.setItem("institutionName", result.user.institutionName);
+        }
+        return { 
+          success: true, 
+          token: result.token,
+          user: result.user 
+        };
       }
       return result;
     } catch (error) {
@@ -45,6 +59,7 @@ export const authApis = {
       if (result.success) {
         if (result.token) {
           localStorage.setItem("adminToken", result.token);
+          localStorage.setItem("userRole", 'institute');
         }
         
         try {
@@ -80,16 +95,26 @@ export const authApis = {
     try {
       await auth.signOut();
       localStorage.removeItem("adminToken");
+      localStorage.removeItem("userRole");
+      localStorage.removeItem("institutionType");
+      localStorage.removeItem("institutionName");
       return { success: true };
     } catch (error) {
       console.error("Logout error:", error);
       localStorage.removeItem("adminToken");
+      localStorage.removeItem("userRole");
+      localStorage.removeItem("institutionType");
+      localStorage.removeItem("institutionName");
       return { success: false, error: error.message };
     }
   },
 
   getAdminToken() {
     return localStorage.getItem("adminToken");
+  },
+
+  getUserRole() {
+    return localStorage.getItem("userRole");
   },
 
   isAdminAuthenticated() {
@@ -120,28 +145,63 @@ export const authApis = {
     }
   },
 
-  // Add this function properly inside the authApis object
   async getCurrentAdminUser(token) {
     try {
+      // First, try to get user data from localStorage
+      const storedRole = localStorage.getItem('userRole');
+      const storedInstitutionType = localStorage.getItem('institutionType');
+      const storedInstitutionName = localStorage.getItem('institutionName');
+      
+      // If we have data in localStorage, use it
+      if (storedRole && storedInstitutionType) {
+        console.log('📋 Using stored user data from localStorage');
+        return {
+          success: true,
+          role: storedRole,
+          institutionType: storedInstitutionType,
+          institutionName: storedInstitutionName || 'N/A'
+        };
+      }
+      
       // Decode the JWT token on client side to get claims
-      const base64Url = token.split('.')[1];
-      const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
-      const jsonPayload = decodeURIComponent(atob(base64).split('').map(function(c) {
-        return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
-      }).join(''));
-      
-      const decodedToken = JSON.parse(jsonPayload);
-      
-      // Extract claims from the decoded token
-      return {
-        success: true,
-        institutionType: decodedToken.institutionType,
-        institutionName: decodedToken.institutionName,
-        uid: decodedToken.user_id,
-        email: decodedToken.email
-      };
-    } catch (error) {
-      console.error('Error decoding token:', error);
+      try {
+        const base64Url = token.split('.')[1];
+        const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+        const jsonPayload = decodeURIComponent(atob(base64).split('').map(function(c) {
+          return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
+        }).join(''));
+        
+        const decodedToken = JSON.parse(jsonPayload);
+        console.log('📋 Decoded Token:', decodedToken);
+        
+        // Extract role from claims - check both 'role' and 'admin' fields
+        let role = decodedToken.role || 'institute';
+        
+        // If old format with admin: true, set as admin
+        if (decodedToken.admin === true && !decodedToken.role) {
+          role = 'admin';
+        }
+        
+        // Store in localStorage for future use
+        localStorage.setItem('userRole', role);
+        if (decodedToken.institutionType) {
+          localStorage.setItem('institutionType', decodedToken.institutionType);
+        }
+        if (decodedToken.institutionName) {
+          localStorage.setItem('institutionName', decodedToken.institutionName);
+        }
+        
+        return {
+          success: true,
+          role: role,
+          institutionType: decodedToken.institutionType || 'N/A',
+          institutionName: decodedToken.institutionName || 'N/A',
+          uid: decodedToken.user_id,
+          email: decodedToken.email
+        };
+      } catch (decodeError) {
+        console.error('Error decoding token:', decodeError);
+      }
       
       // Fallback: Make an API call to get user data
       try {
@@ -153,13 +213,32 @@ export const authApis = {
             "Authorization": `Bearer ${token}`
           }
         );
+        
+        if (result.success) {
+          // Store in localStorage
+          localStorage.setItem('userRole', result.role || 'institute');
+          if (result.institutionType) {
+            localStorage.setItem('institutionType', result.institutionType);
+          }
+          if (result.institutionName) {
+            localStorage.setItem('institutionName', result.institutionName);
+          }
+        }
+        
         return result;
       } catch (apiError) {
+        console.error('API error:', apiError);
         return {
           success: false,
           error: "Failed to get user data"
         };
       }
+    } catch (error) {
+      console.error('Error in getCurrentAdminUser:', error);
+      return {
+        success: false,
+        error: error.message || "Failed to get user data"
+      };
     }
   }
 };

@@ -234,7 +234,7 @@ const SchoolDashboard = () => {
       return (
         <div className="p-6 flex items-center justify-center min-h-[400px]">
           <div className="bg-red-50 border border-red-200 rounded-lg p-8 max-w-md w-full text-center">
-            <div className="text-red-500 text-5xl mb-4">⚠️</div>
+            {/* <div className="text-red-500 text-5xl mb-4">⚠️</div> */}
             <h3 className="text-xl font-semibold text-red-800 mb-2">Something went wrong</h3>
             <p className="text-red-600 mb-4">{error}</p>
             <button 
@@ -306,7 +306,7 @@ const SchoolDashboard = () => {
       return (
         <div className="p-6 flex items-center justify-center min-h-[400px]">
           <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-8 max-w-md w-full text-center">
-            <div className="text-yellow-500 text-5xl mb-4">⏳</div>
+            {/* <div className="text-yellow-500 text-5xl mb-4">⏳</div> */}
             <h3 className="text-xl font-semibold text-yellow-800 mb-2">Loading Institution Data</h3>
             <p className="text-yellow-600 mb-4">We're having trouble loading your institution data.</p>
             <button 
