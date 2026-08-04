@@ -1,11 +1,37 @@
+// services/authApis.js
 import base_url from "./base_urls";
 import commonApis from "./commonApis";
 import { auth } from "../firebase-client";
 import { signInWithEmailAndPassword, createUserWithEmailAndPassword } from "firebase/auth";
 
 export const authApis = {
+  // Clear all user-specific data from localStorage
+  clearUserData: () => {
+    const keysToRemove = [
+      'adminToken',
+      'userEmail', 
+      'userRole',
+      'institutionName',
+      'institutionType',
+      'userUid',
+      'registrationId',
+      'schoolId',
+      'schoolData',
+      'registrationData'
+    ];
+    
+    keysToRemove.forEach(key => {
+      localStorage.removeItem(key);
+    });
+    
+    console.log('🧹 All user data cleared from localStorage');
+  },
+
   async adminLogin(email, password) {
     try {
+      // Clear previous user data before login
+      this.clearUserData();
+      
       const result = await commonApis(
         `${base_url}/login`,
         "POST",
@@ -15,6 +41,8 @@ export const authApis = {
 
       if (result.success) {
         localStorage.setItem("adminToken", result.token);
+        localStorage.setItem("userEmail", email);
+        
         // Store user role from the response
         if (result.user && result.user.role) {
           localStorage.setItem("userRole", result.user.role);
@@ -25,6 +53,15 @@ export const authApis = {
         if (result.user && result.user.institutionName) {
           localStorage.setItem("institutionName", result.user.institutionName);
         }
+        
+        console.log('✅ Login successful for:', email);
+        console.log('📋 User data stored:', {
+          role: localStorage.getItem('userRole'),
+          institutionType: localStorage.getItem('institutionType'),
+          institutionName: localStorage.getItem('institutionName'),
+          email: localStorage.getItem('userEmail')
+        });
+        
         return { 
           success: true, 
           token: result.token,
@@ -60,6 +97,9 @@ export const authApis = {
         if (result.token) {
           localStorage.setItem("adminToken", result.token);
           localStorage.setItem("userRole", 'institute');
+          localStorage.setItem("userEmail", email);
+          localStorage.setItem("institutionName", institutionName);
+          localStorage.setItem("institutionType", institutionType);
         }
         
         try {
@@ -94,17 +134,11 @@ export const authApis = {
   async adminLogout() {
     try {
       await auth.signOut();
-      localStorage.removeItem("adminToken");
-      localStorage.removeItem("userRole");
-      localStorage.removeItem("institutionType");
-      localStorage.removeItem("institutionName");
+      this.clearUserData();
       return { success: true };
     } catch (error) {
       console.error("Logout error:", error);
-      localStorage.removeItem("adminToken");
-      localStorage.removeItem("userRole");
-      localStorage.removeItem("institutionType");
-      localStorage.removeItem("institutionName");
+      this.clearUserData();
       return { success: false, error: error.message };
     }
   },
@@ -115,6 +149,10 @@ export const authApis = {
 
   getUserRole() {
     return localStorage.getItem("userRole");
+  },
+
+  getCurrentUserEmail() {
+    return localStorage.getItem("userEmail");
   },
 
   isAdminAuthenticated() {
@@ -151,6 +189,7 @@ export const authApis = {
       const storedRole = localStorage.getItem('userRole');
       const storedInstitutionType = localStorage.getItem('institutionType');
       const storedInstitutionName = localStorage.getItem('institutionName');
+      const storedEmail = localStorage.getItem('userEmail');
       
       // If we have data in localStorage, use it
       if (storedRole && storedInstitutionType) {
@@ -159,7 +198,8 @@ export const authApis = {
           success: true,
           role: storedRole,
           institutionType: storedInstitutionType,
-          institutionName: storedInstitutionName || 'N/A'
+          institutionName: storedInstitutionName || 'N/A',
+          email: storedEmail || ''
         };
       }
       
@@ -174,7 +214,7 @@ export const authApis = {
         const decodedToken = JSON.parse(jsonPayload);
         console.log('📋 Decoded Token:', decodedToken);
         
-        // Extract role from claims - check both 'role' and 'admin' fields
+        // Extract role from claims
         let role = decodedToken.role || 'institute';
         
         // If old format with admin: true, set as admin
@@ -190,6 +230,9 @@ export const authApis = {
         if (decodedToken.institutionName) {
           localStorage.setItem('institutionName', decodedToken.institutionName);
         }
+        if (decodedToken.email) {
+          localStorage.setItem('userEmail', decodedToken.email);
+        }
         
         return {
           success: true,
@@ -197,7 +240,7 @@ export const authApis = {
           institutionType: decodedToken.institutionType || 'N/A',
           institutionName: decodedToken.institutionName || 'N/A',
           uid: decodedToken.user_id,
-          email: decodedToken.email
+          email: decodedToken.email || ''
         };
       } catch (decodeError) {
         console.error('Error decoding token:', decodeError);
@@ -222,6 +265,9 @@ export const authApis = {
           }
           if (result.institutionName) {
             localStorage.setItem('institutionName', result.institutionName);
+          }
+          if (result.email) {
+            localStorage.setItem('userEmail', result.email);
           }
         }
         

@@ -2,14 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
-import { 
-  FiLogOut, FiUser, FiHome, FiPlus, FiUsers, FiCalendar, 
-  FiClock, FiBarChart2, FiMenu, FiX, 
-  FiCheckCircle, FiXCircle, FiAlertCircle, FiLoader,
-  FiFileText, FiMail, FiPhone, FiMapPin, FiBookOpen,
-  FiAward, FiBriefcase, FiFlag, FiCheck, FiClipboard,
-  FiInfo, FiDownload, FiArrowRight, FiRefreshCw
-} from 'react-icons/fi';
+import { FiLogOut, FiUser, FiHome, FiPlus, FiUsers, FiCalendar, FiClock, FiBarChart2, FiMenu, FiX, FiCheckCircle, FiXCircle, FiAlertCircle, FiLoader,FiFileText, FiMail, FiPhone, FiMapPin, FiBookOpen,FiAward, FiBriefcase, FiFlag, FiCheck, FiClipboard,FiInfo, FiDownload, FiArrowRight, FiRefreshCw} from 'react-icons/fi';
 import { authApis } from '../services/allApis';
 import registerApi from '../services/RegisterApi';
 import { schoolApi } from '../services/schoolApi';
@@ -29,61 +22,67 @@ const Dashboard = () => {
   const [pollingInterval, setPollingInterval] = useState(null);
   const navigate = useNavigate();
 
-  useEffect(() => {
-    // Check if user is logged in
-    const token = authApis.getAdminToken();
-    console.log('🔍 Dashboard - Token:', token ? 'Present' : 'Missing');
-    
-    if (!token) {
-      console.log('🔍 No token found, redirecting to login');
-      navigate('/login', { replace: true });
-      return;
-    }
 
-    // Get user data from localStorage
-    const name = localStorage.getItem('institutionName');
-    const type = localStorage.getItem('institutionType');
-    const email = localStorage.getItem('userEmail');
-    const role = localStorage.getItem('userRole');
-    const regId = localStorage.getItem('registrationId');
-    const storedSchoolId = localStorage.getItem('schoolId');
+useEffect(() => {
+  const token = authApis.getAdminToken();
+  console.log('🔍 Dashboard - Token:', token ? 'Present' : 'Missing');
+  
+  if (!token) {
+    console.log('🔍 No token found, redirecting to login');
+    navigate('/login', { replace: true });
+    return;
+  }
 
-    console.log('📋 Dashboard - User Data:', { name, type, email, role, regId, storedSchoolId });
+  // Get user data from localStorage
+  const name = localStorage.getItem('institutionName');
+  const type = localStorage.getItem('institutionType');
+  const email = localStorage.getItem('userEmail');
+  const role = localStorage.getItem('userRole');
+  
+  // Use email-specific keys for registration data
+  const registrationKey = email ? `registrationId_${email}` : 'registrationId';
+  const schoolKey = email ? `schoolId_${email}` : 'schoolId';
+  
+  const regId = localStorage.getItem(registrationKey);
+  const storedSchoolId = localStorage.getItem(schoolKey);
 
-    // If user is admin, redirect to admin dashboard
-    if (role === 'admin') {
-      console.log('🔍 User is admin, redirecting to /admin/dashboard');
-      navigate('/admin/dashboard', { replace: true });
-      return;
-    }
+  console.log('📋 Dashboard - User Data:', { 
+    name, type, email, role, regId, storedSchoolId 
+  });
 
-    if (name) setInstitutionName(name);
-    if (type) setInstitutionType(type);
-    if (email) setUserEmail(email);
-    if (storedSchoolId) setSchoolId(storedSchoolId);
-    
-    // Check for registration ID
+  // If user is admin, redirect to admin dashboard
+  if (role === 'admin') {
+    console.log('🔍 User is admin, redirecting to /admin/dashboard');
+    navigate('/admin/dashboard', { replace: true });
+    return;
+  }
+
+  if (name) setInstitutionName(name);
+  if (type) setInstitutionType(type);
+  if (email) {
+    setUserEmail(email);
+    // Check if there's registration data for this specific user
     if (regId) {
       setRegistrationId(regId);
       fetchRegistrationStatus(regId);
     } else if (email) {
-      // Check if there's any pending registration for this email
       checkExistingRegistration(email);
     } else {
       setRegistrationStatus('not_started');
       setIsLoading(false);
     }
+  } else {
+    setRegistrationStatus('not_started');
+    setIsLoading(false);
+  }
 
-    // Cleanup interval on unmount
-    return () => {
-      if (pollingInterval) {
-        clearInterval(pollingInterval);
-      }
-    };
-  }, [navigate]);
+  return () => {
+    if (pollingInterval) {
+      clearInterval(pollingInterval);
+    }
+  };
+}, [navigate]);
 
-  // Find school by email
-  // In Dashboard.jsx - Add this function to find school by email
 const findSchoolByEmail = async (email) => {
   try {
     console.log('🔍 Looking for school with email:', email);

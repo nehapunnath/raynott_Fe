@@ -1,6 +1,7 @@
+// LoginPage.jsx
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
-import { FiMail, FiLock, FiArrowRight, FiAlertCircle, FiUser, FiHome, FiBriefcase, FiChevronRight } from 'react-icons/fi';
+import { FiMail, FiLock, FiArrowRight, FiAlertCircle, FiUser, FiHome, FiBriefcase, FiChevronRight, FiInfo } from 'react-icons/fi';
 import { useNavigate } from 'react-router-dom';
 import { authApis } from '../services/allApis';
 import "tailwindcss";
@@ -24,120 +25,156 @@ const LoginPage = () => {
     'All Teachers'
   ];
 
-const handleLogin = async (e) => {
-  e.preventDefault();
-  setIsLoading(true);
-  setError('');
+  // Clear all user data
+  const clearUserData = () => {
+    const keysToRemove = [
+      'adminToken',
+      'userEmail', 
+      'userRole',
+      'institutionName',
+      'institutionType',
+      'userUid',
+      'registrationId',
+      'schoolId',
+      'schoolData',
+      'registrationData'
+    ];
+    keysToRemove.forEach(key => localStorage.removeItem(key));
+    console.log('🧹 All user data cleared');
+  };
 
-  const result = await authApis.adminLogin(email, password);
-  
-  if (result.success) {
-    try {
-      console.log('🔑 Login Result:', result);
-      
-      // Get user data from login response
-      if (result.user && result.user.role) {
-        console.log('📋 User data from login response:', result.user);
+  const handleLogin = async (e) => {
+    e.preventDefault();
+    setIsLoading(true);
+    setError('');
+
+    // Validate email
+    if (!email || !email.includes('@')) {
+      setError('Please enter a valid email address');
+      setIsLoading(false);
+      return;
+    }
+
+    // Clear previous user data
+    clearUserData();
+
+    const result = await authApis.adminLogin(email, password);
+    
+    if (result.success) {
+      try {
+        console.log('🔑 Login Result:', result);
         
-        // Store user data in localStorage
-        localStorage.setItem('userRole', result.user.role);
-        localStorage.setItem('institutionType', result.user.institutionType || 'N/A');
-        localStorage.setItem('institutionName', result.user.institutionName || 'N/A');
-        localStorage.setItem('userEmail', result.user.email || '');
+        // Store email immediately
+        localStorage.setItem('userEmail', email);
         
-        // Determine redirect based on role
-        const userRole = result.user.role;
-        const isAdmin = userRole === 'admin';
-        
-        console.log('👤 User Role:', userRole);
-        console.log('🔀 Is Admin:', isAdmin);
-        
-        // Small delay to ensure localStorage is set
-        await new Promise(resolve => setTimeout(resolve, 100));
-        
-        if (isAdmin) {
-          console.log('🚀 Redirecting to /admin/dashboard');
-          navigate('/admin/dashboard', { replace: true });
-        } else {
-          console.log('🚀 Redirecting to /dashboard');
-          navigate('/dashboard', { replace: true });
+        if (result.user && result.user.role) {
+          console.log('📋 User data from login response:', result.user);
+          
+          localStorage.setItem('userRole', result.user.role);
+          localStorage.setItem('institutionType', result.user.institutionType || 'N/A');
+          localStorage.setItem('institutionName', result.user.institutionName || 'N/A');
+          
+          const userRole = result.user.role;
+          const isAdmin = userRole === 'admin';
+          
+          await new Promise(resolve => setTimeout(resolve, 100));
+          
+          if (isAdmin) {
+            console.log('🚀 Redirecting to /admin/dashboard');
+            navigate('/admin/dashboard', { replace: true });
+          } else {
+            console.log('🚀 Redirecting to /dashboard');
+            navigate('/dashboard', { replace: true });
+          }
+          
+          setIsLoading(false);
+          return;
         }
         
-        setIsLoading(false);
-        return;
-      }
-      
-      // Fallback: Get user data from token
-      const token = result.token;
-      const userData = await authApis.getCurrentAdminUser(token);
-      
-      if (userData.success) {
-        console.log('📋 User data from token:', userData);
+        // Fallback
+        const token = result.token;
+        const userData = await authApis.getCurrentAdminUser(token);
         
-        localStorage.setItem('userRole', userData.role || 'institute');
-        localStorage.setItem('institutionType', userData.institutionType || 'N/A');
-        localStorage.setItem('institutionName', userData.institutionName || 'N/A');
-        localStorage.setItem('userEmail', userData.email || '');
+        if (userData.success) {
+          localStorage.setItem('userRole', userData.role || 'institute');
+          localStorage.setItem('institutionType', userData.institutionType || 'N/A');
+          localStorage.setItem('institutionName', userData.institutionName || 'N/A');
+          if (userData.email) {
+            localStorage.setItem('userEmail', userData.email);
+          }
 
-        const isAdmin = userData.role === 'admin' || userData.isAdmin === true;
-        
-        console.log('👤 User Role:', userData.role);
-        console.log('🔀 Is Admin:', isAdmin);
+          const isAdmin = userData.role === 'admin' || userData.isAdmin === true;
+          
+          await new Promise(resolve => setTimeout(resolve, 100));
 
-        await new Promise(resolve => setTimeout(resolve, 100));
-
-        if (isAdmin) {
-          console.log('🚀 Redirecting to /admin/dashboard');
-          navigate('/admin/dashboard', { replace: true });
+          if (isAdmin) {
+            navigate('/admin/dashboard', { replace: true });
+          } else {
+            navigate('/dashboard', { replace: true });
+          }
         } else {
-          console.log('🚀 Redirecting to /dashboard');
-          navigate('/dashboard', { replace: true });
+          setError(userData.error || 'Error loading user data');
+          setIsLoading(false);
         }
-      } else {
-        setError(userData.error || 'Error loading user data');
+      } catch (error) {
+        console.error('Error loading user data:', error);
+        setError('Error loading user data');
         setIsLoading(false);
       }
-    } catch (error) {
-      console.error('Error loading user data:', error);
-      setError('Error loading user data');
+    } else {
+      setError(result.error || 'Login failed. Please check your credentials.');
       setIsLoading(false);
     }
-  } else {
-    setError(result.error);
-    setIsLoading(false);
-  }
-};
+  };
 
   const handleRegister = async (e) => {
-  e.preventDefault();
-  setIsLoading(true);
-  setError('');
-
-  const result = await authApis.adminRegister({
-    institutionName,
-    institutionType,
-    email,
-    password
-  });
-  
-  if (result.success) {
-    setIsLoginMode(true);
+    e.preventDefault();
+    setIsLoading(true);
     setError('');
-    // Clear form
-    setInstitutionName('');
-    setInstitutionType('');
-    setEmail('');
-    setPassword('');
-    setConfirmPassword('');
+
+    // Validate email
+    if (!email || !email.includes('@')) {
+      setError('Please enter a valid email address');
+      setIsLoading(false);
+      return;
+    }
+
+    // Validate password
+    if (password.length < 6) {
+      setError('Password must be at least 6 characters long');
+      setIsLoading(false);
+      return;
+    }
+
+    // Validate confirm password
+    if (password !== confirmPassword) {
+      setError('Passwords do not match');
+      setIsLoading(false);
+      return;
+    }
+
+    const result = await authApis.adminRegister({
+      institutionName,
+      institutionType,
+      email,
+      password
+    });
     
-    // Optional: Show success message
-    alert("Registration successful! Please login.");
-  } else {
-    setError(result.error);
-  }
-  
-  setIsLoading(false);
-};
+    if (result.success) {
+      setIsLoginMode(true);
+      setError('');
+      setInstitutionName('');
+      setInstitutionType('');
+      setEmail('');
+      setPassword('');
+      setConfirmPassword('');
+      alert("✅ Registration successful! Please login with your credentials.");
+    } else {
+      setError(result.error || 'Registration failed. Please try again.');
+    }
+    
+    setIsLoading(false);
+  };
 
   const goToHome = () => {
     navigate('/');
@@ -173,7 +210,6 @@ const handleLogin = async (e) => {
         ))}
       </div>
 
-      {/* Glowing Orbs */}
       <motion.div 
         className="absolute top-1/4 -left-20 w-80 h-80 rounded-full bg-orange-600/20 filter blur-3xl z-0"
         animate={{
@@ -201,7 +237,6 @@ const handleLogin = async (e) => {
         }}
       />
 
-      {/* Back to Home Button */}
       <motion.button
         onClick={goToHome}
         className="absolute top-6 left-6 z-20 flex items-center gap-2 px-4 py-2 bg-gray-800/60 backdrop-blur-lg rounded-lg text-gray-300 hover:text-white hover:bg-gray-700/60 transition-all border border-gray-700/50"
@@ -239,7 +274,6 @@ const handleLogin = async (e) => {
         transition={{ delay: 0.4, duration: 0.8 }}
       >
         <div className="bg-gray-800/70 backdrop-blur-lg py-8 px-8 shadow-xl rounded-2xl border border-gray-700/50 relative overflow-hidden">
-          {/* Decorative elements */}
           <div className="absolute -top-20 -right-20 w-40 h-40 rounded-full bg-orange-500/10 filter blur-xl"></div>
           <div className="absolute -bottom-20 -left-20 w-40 h-40 rounded-full bg-amber-400/10 filter blur-xl"></div>
           
@@ -255,8 +289,8 @@ const handleLogin = async (e) => {
           )}
 
           {isLoginMode ? (
-            // Login Form
             <form className="space-y-6" onSubmit={handleLogin}>
+              {/* Email Field with Important Badge */}
               <motion.div
                 initial={{ opacity: 0, x: -10 }}
                 animate={{ opacity: 1, x: 0 }}
@@ -272,8 +306,8 @@ const handleLogin = async (e) => {
                     type="email"
                     autoComplete="email"
                     required
-                    className="block w-full pl-10 pr-3 py-3 bg-gray-700/50 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all"
-                    placeholder="Email address"
+                    className="block w-full pl-10 pr-24 py-3 bg-gray-700/50 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all"
+                    placeholder="Email address *"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                   />
@@ -332,18 +366,27 @@ const handleLogin = async (e) => {
                 </motion.button>
               </motion.div>
 
-               <div className="text-center">
+              <div className="text-center">
                 <button
                   type="button"
-                  onClick={() => setIsLoginMode(false)}
+                  onClick={() => {
+                    setIsLoginMode(false);
+                    setError('');
+                  }}
                   className="text-sm text-amber-400 hover:text-amber-300 transition-colors"
                 >
                   Don't have an account? Register here
                 </button>
-              </div> 
+              </div>
+              <div className="mt-2 p-3 bg-amber-500/5 border border-amber-500/10 rounded-lg">
+                <p className="text-xs text-gray-400 text-center">
+                  <FiInfo className="inline w-3 h-3 mr-1 text-amber-400" />
+                  <strong className="text-amber-400">Note:</strong> Remember this email address.
+                   It will be used throughout the application.
+                </p>
+              </div>
             </form>
           ) : (
-            // Registration Form
             <form className="space-y-5" onSubmit={handleRegister}>
               <motion.div
                 initial={{ opacity: 0, x: -10 }}
@@ -360,7 +403,7 @@ const handleLogin = async (e) => {
                     type="text"
                     required
                     className="block w-full pl-10 pr-3 py-3 bg-gray-700/50 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all"
-                    placeholder="Institution Name"
+                    placeholder="Institution Name *"
                     value={institutionName}
                     onChange={(e) => setInstitutionName(e.target.value)}
                   />
@@ -384,7 +427,7 @@ const handleLogin = async (e) => {
                     value={institutionType}
                     onChange={(e) => setInstitutionType(e.target.value)}
                   >
-                    <option value="" disabled>Select Institution Type</option>
+                    <option value="" disabled>Select Institution Type *</option>
                     {institutionTypes.map((type) => (
                       <option key={type} value={type}>{type}</option>
                     ))}
@@ -395,6 +438,7 @@ const handleLogin = async (e) => {
                 </div>
               </motion.div>
 
+              {/* Email Field with Important Badge - Registration */}
               <motion.div
                 initial={{ opacity: 0, x: -10 }}
                 animate={{ opacity: 1, x: 0 }}
@@ -410,8 +454,8 @@ const handleLogin = async (e) => {
                     type="email"
                     autoComplete="email"
                     required
-                    className="block w-full pl-10 pr-3 py-3 bg-gray-700/50 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all"
-                    placeholder="Email address"
+                    className="block w-full pl-10 pr-24 py-3 bg-gray-700/50 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all"
+                    placeholder="Email address *"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                   />
@@ -433,7 +477,7 @@ const handleLogin = async (e) => {
                     type="password"
                     required
                     className="block w-full pl-10 pr-3 py-3 bg-gray-700/50 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all"
-                    placeholder="Password (min. 6 characters)"
+                    placeholder="Password (min. 6 characters) *"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                   />
@@ -455,7 +499,7 @@ const handleLogin = async (e) => {
                     type="password"
                     required
                     className="block w-full pl-10 pr-3 py-3 bg-gray-700/50 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all"
-                    placeholder="Confirm Password"
+                    placeholder="Confirm Password *"
                     value={confirmPassword}
                     onChange={(e) => setConfirmPassword(e.target.value)}
                   />
@@ -494,11 +538,23 @@ const handleLogin = async (e) => {
               <div className="text-center">
                 <button
                   type="button"
-                  onClick={() => setIsLoginMode(true)}
+                  onClick={() => {
+                    setIsLoginMode(true);
+                    setError('');
+                  }}
                   className="text-sm text-amber-400 hover:text-amber-300 transition-colors"
                 >
                   Already have an account? Sign in
                 </button>
+              </div>
+
+              {/* Registration Note */}
+              <div className="mt-2 p-3 bg-amber-500/5 border border-amber-500/10 rounded-lg">
+                <p className="text-xs text-gray-400 text-center">
+                  <FiInfo className="inline w-3 h-3 mr-1 text-amber-400" />
+                  <strong className="text-amber-400">Note:</strong> Remember this email address.
+                   It will be used throughout the application.
+                </p>
               </div>
             </form>
           )}

@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import "tailwindcss";
 import { motion } from 'framer-motion';
-import { 
-  FaSchool, FaChalkboardTeacher, FaMapMarkerAlt, FaPhone, FaEnvelope, 
-  FaUserTie, FaBookOpen, FaCheck, FaHome, FaUniversity, FaGraduationCap, 
-  FaUserGraduate, FaChalkboard, FaRupeeSign, FaFlask, FaBook, 
-  FaRunning, FaTheaterMasks, FaVideo, FaFirstAid, FaWifi, FaLink, 
+import {
+  FaSchool, FaChalkboardTeacher, FaMapMarkerAlt, FaPhone, FaEnvelope,
+  FaUserTie, FaBookOpen, FaCheck, FaHome, FaUniversity, FaGraduationCap,
+  FaUserGraduate, FaChalkboard, FaRupeeSign, FaFlask, FaBook,
+  FaRunning, FaTheaterMasks, FaVideo, FaFirstAid, FaWifi, FaLink,
   FaClipboardList, FaStar, FaCalendarAlt, FaUsers, FaBus, FaUtensils,
   FaSwimmingPool, FaLaptop, FaMicroscope, FaMusic, FaPaintBrush,
   FaUser, FaCertificate, FaAward, FaGlobe, FaFacebook, FaTwitter, FaInstagram, FaLinkedin
@@ -14,6 +14,7 @@ import { GiMoneyStack, GiTeacher } from 'react-icons/gi';
 import { IoMdTime } from 'react-icons/io';
 import { useNavigate } from 'react-router-dom';
 import { registerApi } from '../services/RegisterApi';
+import { FiInfo } from 'react-icons/fi';
 
 const RegisterForm = () => {
   const navigate = useNavigate();
@@ -149,9 +150,9 @@ const RegisterForm = () => {
   const boards = ['State Board', 'CBSE', 'ICSE', 'International Baccalaureate'];
 
   const facilities = [
-    'Smart Classes', 'Library', 'Science Lab', 'Computer Lab', 'Playground', 
+    'Smart Classes', 'Library', 'Science Lab', 'Computer Lab', 'Playground',
     'Swimming Pool', 'Auditorium', 'Cafeteria', 'Transportation', 'Medical Facility',
-    'Sports Complex', 'Hostel', 'Music Room', 'Art Room', 'Dance Studio', 
+    'Sports Complex', 'Hostel', 'Music Room', 'Art Room', 'Dance Studio',
     'STEM Lab', 'Wi-Fi Campus', 'Individual Attention', 'Mock Tests', 'Online Classes',
     'Study Material', 'Counseling', 'Personalized Lessons', 'Progress Tracking'
   ];
@@ -236,12 +237,12 @@ const RegisterForm = () => {
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
-    
+
     if (type === 'checkbox') {
       if (name === 'facilities') {
         setFormData(prev => ({
           ...prev,
-          [name]: checked 
+          [name]: checked
             ? [...prev[name], value]
             : prev[name].filter(item => item !== value)
         }));
@@ -399,51 +400,51 @@ const RegisterForm = () => {
   };
 
   // In RegisterForm.jsx, update the handleSubmit function
-const handleSubmit = async (e) => {
-  e.preventDefault();
-  setLoading(true);
-  setError(null);
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+    setError(null);
 
-  const completeFormData = { ...formData, ...dynamicFields };
-  const formDataToSend = new FormData();
+    const completeFormData = { ...formData, ...dynamicFields };
+    const formDataToSend = new FormData();
 
-  Object.keys(completeFormData).forEach(key => {
-    if (key === 'facilities' || key === 'socialMedia' || key === 'languages' || key === 'streams' || key === 'subjects' || key === 'coursesOffered') {
-      formDataToSend.append(key, JSON.stringify(completeFormData[key]));
-    } else if (completeFormData[key] instanceof File) {
-      formDataToSend.append(key, completeFormData[key]);
-    } else if (Array.isArray(completeFormData[key]) && completeFormData[key][0] instanceof File) {
-      completeFormData[key].forEach(file => {
-        formDataToSend.append(key, file);
-      });
-    } else {
-      formDataToSend.append(key, completeFormData[key]);
+    Object.keys(completeFormData).forEach(key => {
+      if (key === 'facilities' || key === 'socialMedia' || key === 'languages' || key === 'streams' || key === 'subjects' || key === 'coursesOffered') {
+        formDataToSend.append(key, JSON.stringify(completeFormData[key]));
+      } else if (completeFormData[key] instanceof File) {
+        formDataToSend.append(key, completeFormData[key]);
+      } else if (Array.isArray(completeFormData[key]) && completeFormData[key][0] instanceof File) {
+        completeFormData[key].forEach(file => {
+          formDataToSend.append(key, file);
+        });
+      } else {
+        formDataToSend.append(key, completeFormData[key]);
+      }
+    });
+
+    try {
+      const response = await registerApi.submitRegistration(formDataToSend);
+
+      // Save the registration request ID
+      if (response.id) {
+        localStorage.setItem('registrationRequestId', response.id);
+        localStorage.setItem('institutionName', completeFormData.name);
+        localStorage.setItem('institutionType', completeFormData.institutionType);
+      }
+
+      setShowModal(true);
+
+      // Redirect to dashboard after 2 seconds
+      setTimeout(() => {
+        navigate('/dashboard');
+      }, 2000);
+
+    } catch (err) {
+      setError(err.message || 'An error occurred during submission');
+    } finally {
+      setLoading(false);
     }
-  });
-
-  try {
-    const response = await registerApi.submitRegistration(formDataToSend);
-    
-    // Save the registration request ID
-    if (response.id) {
-      localStorage.setItem('registrationRequestId', response.id);
-      localStorage.setItem('institutionName', completeFormData.name);
-      localStorage.setItem('institutionType', completeFormData.institutionType);
-    }
-    
-    setShowModal(true);
-    
-    // Redirect to dashboard after 2 seconds
-    setTimeout(() => {
-      navigate('/dashboard');
-    }, 2000);
-    
-  } catch (err) {
-    setError(err.message || 'An error occurred during submission');
-  } finally {
-    setLoading(false);
-  }
-};
+  };
 
   const nextStep = () => {
     setCurrentStep(prev => prev + 1);
@@ -459,9 +460,9 @@ const handleSubmit = async (e) => {
     <div className="flex justify-center mb-8">
       {[1, 2, 3, 4, 5].map((step) => (
         <div key={step} className="flex items-center">
-          <div 
+          <div
             className={`w-10 h-10 rounded-full flex items-center justify-center 
-              ${currentStep === step ? 'bg-orange-600 text-white' : 
+              ${currentStep === step ? 'bg-orange-600 text-white' :
                 currentStep > step ? 'bg-green-500 text-white' : 'bg-gray-200 text-gray-700'}`}
           >
             {currentStep > step ? <FaCheck /> : step}
@@ -482,11 +483,11 @@ const handleSubmit = async (e) => {
         <label className="block text-gray-700 mb-2">Teaching Profile Type*</label>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {teacherTypes.map(type => (
-            <label 
+            <label
               key={type.value}
               className={`flex flex-col p-4 border-2 rounded-lg cursor-pointer transition-all
-                ${formData.teacherType === type.value 
-                  ? 'border-orange-600 bg-orange-50' 
+                ${formData.teacherType === type.value
+                  ? 'border-orange-600 bg-orange-50'
                   : 'border-gray-200 hover:border-orange-300'}`}
             >
               <input
@@ -524,7 +525,7 @@ const handleSubmit = async (e) => {
             required
           />
         </div>
-        
+
         <div>
           <label className="block text-gray-700 mb-2">Position/Role*</label>
           <input
@@ -537,7 +538,7 @@ const handleSubmit = async (e) => {
             required
           />
         </div>
-        
+
         <div>
           <label className="block text-gray-700 mb-2">Experience at Institution</label>
           <input
@@ -554,7 +555,7 @@ const handleSubmit = async (e) => {
   };
 
   const renderInstitutionTypeFields = () => {
-    switch(formData.institutionType) {
+    switch (formData.institutionType) {
       case 'school':
         return (
           <>
@@ -573,7 +574,7 @@ const handleSubmit = async (e) => {
                 ))}
               </select>
             </div>
-            
+
             <div>
               <label className="block text-gray-700 mb-2">Affiliation*</label>
               <select
@@ -589,7 +590,7 @@ const handleSubmit = async (e) => {
                 ))}
               </select>
             </div>
-            
+
             <div>
               <label className="block text-gray-700 mb-2">Grades Offered*</label>
               <input
@@ -602,7 +603,7 @@ const handleSubmit = async (e) => {
                 required
               />
             </div>
-            
+
             <div>
               <label className="block text-gray-700 mb-2">Age for Admission</label>
               <input
@@ -614,7 +615,7 @@ const handleSubmit = async (e) => {
                 placeholder="e.g., 3 Years"
               />
             </div>
-            
+
             <div>
               <label className="block text-gray-700 mb-2">Language of Instruction</label>
               <input
@@ -628,7 +629,7 @@ const handleSubmit = async (e) => {
             </div>
           </>
         );
-      
+
       case 'college':
         return (
           <>
@@ -647,7 +648,7 @@ const handleSubmit = async (e) => {
                 ))}
               </select>
             </div>
-            
+
             <div>
               <label className="block text-gray-700 mb-2">University Affiliation*</label>
               <input
@@ -660,7 +661,7 @@ const handleSubmit = async (e) => {
                 required
               />
             </div>
-            
+
             <div>
               <label className="block text-gray-700 mb-2">Courses Offered*</label>
               <input
@@ -673,7 +674,7 @@ const handleSubmit = async (e) => {
                 required
               />
             </div>
-            
+
             <div>
               <label className="block text-gray-700 mb-2">Duration</label>
               <input
@@ -685,7 +686,7 @@ const handleSubmit = async (e) => {
                 placeholder="e.g., 4 Years for B.Tech"
               />
             </div>
-            
+
             <div>
               <label className="block text-gray-700 mb-2">Accreditation</label>
               <input
@@ -697,7 +698,7 @@ const handleSubmit = async (e) => {
                 placeholder="e.g., NAAC A+"
               />
             </div>
-            
+
             <div>
               <label className="block text-gray-700 mb-2">Placement Statistics</label>
               <input
@@ -711,7 +712,7 @@ const handleSubmit = async (e) => {
             </div>
           </>
         );
-      
+
       case 'pu_college':
         return (
           <>
@@ -730,7 +731,7 @@ const handleSubmit = async (e) => {
                 ))}
               </select>
             </div>
-            
+
             <div>
               <label className="block text-gray-700 mb-2">Streams Offered*</label>
               <input
@@ -743,7 +744,7 @@ const handleSubmit = async (e) => {
                 required
               />
             </div>
-            
+
             <div>
               <label className="block text-gray-700 mb-2">Subjects Offered*</label>
               <input
@@ -756,7 +757,7 @@ const handleSubmit = async (e) => {
                 required
               />
             </div>
-            
+
             <div>
               <label className="block text-gray-700 mb-2">Program Duration</label>
               <input
@@ -768,7 +769,7 @@ const handleSubmit = async (e) => {
                 placeholder="e.g., 2 Years"
               />
             </div>
-            
+
             <div>
               <label className="block text-gray-700 mb-2">Competitive Exam Prep</label>
               <input
@@ -782,7 +783,7 @@ const handleSubmit = async (e) => {
             </div>
           </>
         );
-      
+
       case 'coaching':
         return (
           <>
@@ -801,7 +802,7 @@ const handleSubmit = async (e) => {
                 ))}
               </select>
             </div>
-            
+
             <div>
               <label className="block text-gray-700 mb-2">Classes Covered*</label>
               <input
@@ -814,7 +815,7 @@ const handleSubmit = async (e) => {
                 required
               />
             </div>
-            
+
             <div>
               <label className="block text-gray-700 mb-2">Batch Size</label>
               <input
@@ -826,7 +827,7 @@ const handleSubmit = async (e) => {
                 placeholder="e.g., 5-8 students per batch"
               />
             </div>
-            
+
             <div>
               <label className="block text-gray-700 mb-2">Class Duration</label>
               <input
@@ -838,7 +839,7 @@ const handleSubmit = async (e) => {
                 placeholder="e.g., 1-2 hours per session"
               />
             </div>
-            
+
             <div>
               <label className="block text-gray-700 mb-2">Faculty</label>
               <input
@@ -858,7 +859,7 @@ const handleSubmit = async (e) => {
           <>
             {renderTeacherTypeFields()}
             {renderInstitutionalTeacherFields()}
-            
+
             <div>
               <label className="block text-gray-700 mb-2">Full Name*</label>
               <input
@@ -953,7 +954,7 @@ const handleSubmit = async (e) => {
             </div>
           </>
         );
-      
+
       default:
         return null;
     }
@@ -972,7 +973,7 @@ const handleSubmit = async (e) => {
           <span className="font-medium">Back to Home</span>
         </motion.button>
       </div> */}
-      
+
       <div className="max-w-4xl mx-auto bg-white rounded-2xl shadow-xl overflow-hidden">
         <div className="bg-gradient-to-r from-orange-600 to-amber-600 text-white py-6 px-8 text-center relative">
           <h1 className="text-3xl font-bold mb-2">Register Your {formData.institutionType === 'teacher' ? 'Teaching Profile' : 'Institution'}</h1>
@@ -1039,17 +1040,17 @@ const handleSubmit = async (e) => {
                 )}
                 {formData.institutionType === 'teacher' ? 'Teacher Information' : 'Basic Information'}
               </h2>
-              
+
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="md:col-span-2">
                   <label className="block text-gray-700 mb-2">Type*</label>
                   <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
                     {institutionTypes.map(type => (
-                      <label 
+                      <label
                         key={type.value}
                         className={`flex flex-col items-center p-4 border-2 rounded-lg cursor-pointer transition-all
-                          ${formData.institutionType === type.value 
-                            ? 'border-orange-600 bg-orange-50' 
+                          ${formData.institutionType === type.value
+                            ? 'border-orange-600 bg-orange-50'
                             : 'border-gray-200 hover:border-orange-300'}`}
                       >
                         <input
@@ -1069,7 +1070,7 @@ const handleSubmit = async (e) => {
                     ))}
                   </div>
                 </div>
-                
+
                 {formData.institutionType === 'teacher' ? (
                   <div className="md:col-span-2">
                     <label className="block text-gray-700 mb-2">Full Name*</label>
@@ -1086,9 +1087,9 @@ const handleSubmit = async (e) => {
                 ) : (
                   <div className="md:col-span-2">
                     <label className="block text-gray-700 mb-2">
-                      {formData.institutionType === 'school' ? 'School Name*' : 
-                       formData.institutionType === 'college' ? 'College Name*' :
-                       formData.institutionType === 'pu_college' ? 'PU College Name*' : 'Center Name*'}
+                      {formData.institutionType === 'school' ? 'School Name*' :
+                        formData.institutionType === 'college' ? 'College Name*' :
+                          formData.institutionType === 'pu_college' ? 'PU College Name*' : 'Center Name*'}
                     </label>
                     <input
                       type="text"
@@ -1096,9 +1097,9 @@ const handleSubmit = async (e) => {
                       value={formData.name}
                       onChange={handleChange}
                       className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
-                      placeholder={`e.g., ${formData.institutionType === 'school' ? 'New Horizon International School' : 
+                      placeholder={`e.g., ${formData.institutionType === 'school' ? 'New Horizon International School' :
                         formData.institutionType === 'college' ? 'ABC Engineering College' :
-                        formData.institutionType === 'pu_college' ? 'XYZ PU College' : 'Bright Future Coaching Center'}`}
+                          formData.institutionType === 'pu_college' ? 'XYZ PU College' : 'Bright Future Coaching Center'}`}
                       required
                     />
                   </div>
@@ -1117,7 +1118,7 @@ const handleSubmit = async (e) => {
                         placeholder="e.g., Excellence in Education"
                       />
                     </div>
-                    
+
                     <div>
                       <label className="block text-gray-700 mb-2">
                         {formData.institutionType === 'teacher' ? 'Teaching Since' : 'Year Established*'}
@@ -1134,9 +1135,9 @@ const handleSubmit = async (e) => {
                     </div>
                   </>
                 )}
-                
+
                 {formData.institutionType && renderInstitutionTypeFields()}
-                
+
                 <div className="md:col-span-2">
                   <label className="block text-gray-700 mb-2">
                     {formData.institutionType === 'teacher' ? 'About You' : 'About Institution'}
@@ -1147,12 +1148,12 @@ const handleSubmit = async (e) => {
                     onChange={handleChange}
                     className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
                     rows="3"
-                    placeholder={formData.institutionType === 'teacher' ? 
-                      "Brief description about your teaching experience and philosophy" : 
+                    placeholder={formData.institutionType === 'teacher' ?
+                      "Brief description about your teaching experience and philosophy" :
                       "Brief description about your institution"}
                   ></textarea>
                 </div>
-                
+
                 {formData.institutionType !== 'teacher' && (
                   <>
                     <div className="md:col-span-2">
@@ -1167,7 +1168,7 @@ const handleSubmit = async (e) => {
                         required
                       />
                     </div>
-                    
+
                     <div>
                       <label className="block text-gray-700 mb-2">City*</label>
                       <select
@@ -1183,7 +1184,7 @@ const handleSubmit = async (e) => {
                         ))}
                       </select>
                     </div>
-                    
+
                     <div>
                       <label className="block text-gray-700 mb-2">State*</label>
                       <input
@@ -1195,7 +1196,7 @@ const handleSubmit = async (e) => {
                         required
                       />
                     </div>
-                    
+
                     <div>
                       <label className="block text-gray-700 mb-2">Pincode*</label>
                       <input
@@ -1239,7 +1240,7 @@ const handleSubmit = async (e) => {
                 )}
                 {formData.institutionType === 'teacher' ? 'Teaching Details' : 'Additional Details'}
               </h2>
-              
+
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {formData.institutionType === 'teacher' ? (
                   <>
@@ -1376,7 +1377,7 @@ const handleSubmit = async (e) => {
                             placeholder="e.g., 1200"
                           />
                         </div>
-                        
+
                         <div>
                           <label className="block text-gray-700 mb-2">Approx. Teacher Strength</label>
                           <input
@@ -1416,7 +1417,7 @@ const handleSubmit = async (e) => {
                         />
                       </div>
                     )}
-                    
+
                     <div className="md:col-span-2">
                       <label className="block text-gray-700 mb-2">Facilities Available</label>
                       <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
@@ -1470,7 +1471,7 @@ const handleSubmit = async (e) => {
                 <GiMoneyStack className="mr-2 text-orange-600" />
                 Fee Structure
               </h2>
-              
+
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
                   <label className="block text-gray-700 mb-2">Total Annual Fee</label>
@@ -1610,7 +1611,7 @@ const handleSubmit = async (e) => {
                 <FaPhone className="mr-2 text-orange-600" />
                 Contact Information
               </h2>
-              
+
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {formData.institutionType === 'teacher' ? (
                   <>
@@ -1625,7 +1626,7 @@ const handleSubmit = async (e) => {
                         required
                       />
                     </div>
-                    
+
                     <div>
                       <label className="block text-gray-700 mb-2">Alternate Phone</label>
                       <input
@@ -1641,9 +1642,9 @@ const handleSubmit = async (e) => {
                   <>
                     <div>
                       <label className="block text-gray-700 mb-2">
-                        {formData.institutionType === 'college' ? 'Principal/Director Name*' : 
-                         formData.institutionType === 'coaching' ? 
-                         'Owner/Manager Name*' : 'Principal Name*'}
+                        {formData.institutionType === 'college' ? 'Principal/Director Name*' :
+                          formData.institutionType === 'coaching' ?
+                            'Owner/Manager Name*' : 'Principal Name*'}
                       </label>
                       <input
                         type="text"
@@ -1654,7 +1655,7 @@ const handleSubmit = async (e) => {
                         required
                       />
                     </div>
-                    
+
                     <div>
                       <label className="block text-gray-700 mb-2">Contact Person*</label>
                       <input
@@ -1668,7 +1669,7 @@ const handleSubmit = async (e) => {
                     </div>
                   </>
                 )}
-                
+
                 {formData.institutionType === 'teacher' ? null : (
                   <div>
                     <label className="block text-gray-700 mb-2">Email*</label>
@@ -1680,9 +1681,15 @@ const handleSubmit = async (e) => {
                       className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
                       required
                     />
+                    <div className="p-3">
+                      <p className="text-xs text-gray-600 text-center">
+                        <FiInfo className="inline w-3 h-3 mr-1 text-amber-600" />
+                        <strong className="text-amber-800">Note:</strong> Use the same email address you use to log in.
+                      </p>
+                    </div>
                   </div>
                 )}
-                
+
                 {formData.institutionType === 'teacher' ? null : (
                   <div>
                     <label className="block text-gray-700 mb-2">Phone*</label>
@@ -1696,7 +1703,7 @@ const handleSubmit = async (e) => {
                     />
                   </div>
                 )}
-                
+
                 <div>
                   <label className="block text-gray-700 mb-2">Website</label>
                   <input
@@ -1708,7 +1715,7 @@ const handleSubmit = async (e) => {
                     placeholder="https://www.example.com"
                   />
                 </div>
-                
+
                 {formData.institutionType === 'teacher' ? null : (
                   <div>
                     <label className="block text-gray-700 mb-2">Alternate Phone</label>
@@ -1779,7 +1786,7 @@ const handleSubmit = async (e) => {
                     </div>
                   </div>
                 </div>
-                
+
                 {formData.institutionType === 'coaching' ? (
                   <div className="md:col-span-2">
                     <label className="block text-gray-700 mb-2">Operating Hours</label>
@@ -1831,7 +1838,7 @@ const handleSubmit = async (e) => {
                 <FaClipboardList className="mr-2 text-orange-600" />
                 Required Documents
               </h2>
-              
+
               <div className="space-y-6">
                 {formData.institutionType === 'teacher' ? (
                   <>
@@ -1858,7 +1865,7 @@ const handleSubmit = async (e) => {
                       </div>
                       <p className="text-sm text-gray-500 mt-1">Upload scanned copies of your degrees/certificates</p>
                     </div>
-                    
+
                     <div>
                       <label className="block text-gray-700 mb-2">ID Proof*</label>
                       <div className="flex items-center">
@@ -1929,22 +1936,22 @@ const handleSubmit = async (e) => {
                       </div>
                       <p className="text-sm text-gray-500 mt-1">Upload scanned copy of your institution's registration certificate</p>
                     </div>
-                    
-                    {(formData.institutionType === 'school' || formData.institutionType === 'pu_college' || 
+
+                    {(formData.institutionType === 'school' || formData.institutionType === 'pu_college' ||
                       formData.institutionType === 'college') && (
-                      <div>
-                        <label className="block text-gray-700 mb-2">Affiliation Number</label>
-                        <input
-                          type="text"
-                          name="affiliationNumber"
-                          value={formData.affiliationNumber}
-                          onChange={handleChange}
-                          className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
-                          placeholder="e.g., CBSE/123456"
-                        />
-                      </div>
-                    )}
-                    
+                        <div>
+                          <label className="block text-gray-700 mb-2">Affiliation Number</label>
+                          <input
+                            type="text"
+                            name="affiliationNumber"
+                            value={formData.affiliationNumber}
+                            onChange={handleChange}
+                            className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
+                            placeholder="e.g., CBSE/123456"
+                          />
+                        </div>
+                      )}
+
                     <div>
                       <label className="block text-gray-700 mb-2">Institution Photos</label>
                       <div className="flex items-center">
@@ -1967,8 +1974,8 @@ const handleSubmit = async (e) => {
                       </div>
                       <p className="text-sm text-gray-500 mt-1">Upload photos of your institution (JPEG/PNG)</p>
                     </div>
-                    
-                    
+
+
                     {/* <div>
                       <label className="block text-gray-700 mb-2">Other Documents</label>
                       <div className="flex items-center">
@@ -2010,7 +2017,7 @@ const handleSubmit = async (e) => {
                 Back
               </motion.button>
             )}
-            
+
             {currentStep < (formData.institutionType === 'teacher' ? 4 : 5) ? (
               <motion.button
                 type="button"
@@ -2033,6 +2040,7 @@ const handleSubmit = async (e) => {
                 Submit
               </motion.button>
             )}
+
           </div>
         </form>
       </div>

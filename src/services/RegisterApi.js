@@ -27,15 +27,20 @@ api.interceptors.response.use(
   (response) => response,
   (error) => {
     if (error.response?.status === 401) {
-      // Token expired or invalid
-      localStorage.removeItem('adminToken');
-      localStorage.removeItem('userEmail');
-      localStorage.removeItem('institutionName');
-      localStorage.removeItem('institutionType');
-      localStorage.removeItem('userRole');
-      localStorage.removeItem('registrationId');
+      // Clear all user data on token expiry
+      const keysToRemove = [
+        'adminToken',
+        'userEmail',
+        'institutionName',
+        'institutionType',
+        'userRole',
+        'registrationId',
+        'schoolId',
+        'schoolData',
+        'registrationData'
+      ];
+      keysToRemove.forEach(key => localStorage.removeItem(key));
       
-      // Redirect to login page (not admin login)
       window.location.href = '/login';
     }
     return Promise.reject(error);
@@ -43,7 +48,6 @@ api.interceptors.response.use(
 );
 
 export const registerApi = {
-  // Submit a new registration (public endpoint, no auth required)
   submitRegistration: async (formData) => {
     try {
       const response = await api.post('/submit', formData, {
@@ -58,7 +62,6 @@ export const registerApi = {
     }
   },
 
-  // Check registration status by ID (public endpoint)
   getRegistrationStatus: async (id) => {
     try {
       const response = await api.get(`/status/${id}`);
@@ -69,11 +72,23 @@ export const registerApi = {
     }
   },
 
-  // Check if registration exists for an email (requires auth)
   checkRegistrationByEmail: async (email) => {
     try {
       if (!email) {
         throw new Error('Email is required');
+      }
+      
+      // Get the current user's email from localStorage
+      const currentUserEmail = localStorage.getItem('userEmail');
+      
+      // Only check registration for the logged-in user
+      if (currentUserEmail && currentUserEmail !== email) {
+        console.log('⚠️ Email mismatch - clearing old data');
+        // Clear old registration data if different user
+        localStorage.removeItem('registrationId');
+        localStorage.removeItem('schoolId');
+        localStorage.removeItem('schoolData');
+        localStorage.removeItem('registrationData');
       }
       
       const response = await api.get(`/registration/check?email=${encodeURIComponent(email)}`);
@@ -81,7 +96,6 @@ export const registerApi = {
     } catch (error) {
       console.error('Check registration by email error:', error);
       
-      // If 401, the interceptor will handle it
       if (error.response?.status === 401) {
         throw new Error('Session expired. Please login again.');
       }
@@ -90,7 +104,6 @@ export const registerApi = {
     }
   },
 
-  // Get full registration details by ID (requires auth)
   getRegistrationById: async (id) => {
     try {
       const response = await api.get(`/admin/registrations/${id}`);
@@ -101,7 +114,6 @@ export const registerApi = {
     }
   },
 
-  // Get all pending registrations (admin only)
   getPendingRegistrations: async () => {
     try {
       const response = await api.get('/admin/pending');
@@ -112,7 +124,6 @@ export const registerApi = {
     }
   },
 
-  // Get all registrations (admin only)
   getAllRegistrations: async () => {
     try {
       const response = await api.get('/admin/all');
@@ -123,7 +134,6 @@ export const registerApi = {
     }
   },
 
-  // Approve a registration (admin only)
   approveRegistration: async (id, adminNotes) => {
     try {
       const response = await api.put(`/admin/approve/${id}`, { adminNotes });
@@ -134,7 +144,6 @@ export const registerApi = {
     }
   },
 
-  // Reject a registration (admin only)
   rejectRegistration: async (id, rejectionReason, adminNotes) => {
     try {
       const response = await api.put(`/admin/reject/${id}`, { rejectionReason, adminNotes });
@@ -145,7 +154,6 @@ export const registerApi = {
     }
   },
 
-  // Refresh token (if you have a refresh endpoint)
   refreshToken: async () => {
     try {
       const refreshToken = localStorage.getItem('refreshToken');
@@ -161,7 +169,6 @@ export const registerApi = {
     }
   },
 
-  // Check if token is valid
   verifyToken: async () => {
     try {
       const response = await api.get('/verify-auth');
