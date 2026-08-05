@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
-import { teacherApi } from '../services/teacherApi';
+import { teacherApi } from '../services/TeacherApi';
 import { 
   FiMapPin, FiPhone, FiMail, FiGlobe, FiCalendar, 
   FiBookOpen, FiAward, FiUsers, FiClock, FiInfo,

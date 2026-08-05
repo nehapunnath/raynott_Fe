@@ -7,9 +7,9 @@ import { authApis } from '../services/allApis';
 import registerApi from '../services/RegisterApi';
 import { schoolApi } from '../services/schoolApi';
 import { collegeApi } from '../services/collegeApi';
-import { puCollegeApi } from '../services/puCollegeApi';
+import { puCollegeApi } from '../services/pucollegeApi';
 import { TuitionCoachingApi } from '../services/TuitionCoachingApi';
-import { teacherApi } from '../services/teacherApi';
+import { teacherApi } from '../services/TeacherApi';
 import { toast } from 'react-toastify';
 
 const Dashboard = () => {
