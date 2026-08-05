@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
-import { schoolApi } from '../services/schoolApi';
+import { collegeApi } from '../services/collegeApi';
 import { 
   FiMapPin, FiPhone, FiMail, FiGlobe, FiCalendar, 
   FiBookOpen, FiAward, FiUsers, FiClock, FiInfo,
@@ -15,7 +15,7 @@ import {
 import { toast } from 'react-toastify';
 import "tailwindcss";
 
-const SchoolProfile = () => {
+const CollegeProfile = () => {
     const navigate = useNavigate();
     const [institution, setInstitution] = useState(null);
     const [isLoading, setIsLoading] = useState(true);
@@ -25,20 +25,23 @@ const SchoolProfile = () => {
     const [retryCount, setRetryCount] = useState(0);
 
     useEffect(() => {
-        const fetchSchoolData = async () => {
+        const fetchCollegeData = async () => {
             try {
                 setIsLoading(true);
                 setError('');
                 
                 const userEmail = localStorage.getItem('userEmail');
-                console.log('🔍 Fetching school profile for:', userEmail);
+                const userData = JSON.parse(localStorage.getItem('userData') || '{}');
                 
-                const storedData = localStorage.getItem('schoolData');
+                console.log('🔍 Fetching college profile for:', userEmail);
+                
+                // Check if we have stored data
+                const storedData = localStorage.getItem('collegeData');
                 if (storedData) {
                     try {
                         const parsedData = JSON.parse(storedData);
                         if (parsedData && parsedData.email === userEmail) {
-                            console.log('📦 Using stored school data');
+                            console.log('📦 Using stored college data');
                             setInstitution(parsedData);
                             setIsLoading(false);
                             return;
@@ -48,58 +51,66 @@ const SchoolProfile = () => {
                     }
                 }
                 
+                // Try to find by email
                 if (userEmail) {
-                    console.log('📡 Searching schools by email:', userEmail);
-                    const response = await schoolApi.getSchools();
-                    console.log('📡 All schools response:', response);
+                    console.log('📡 Searching colleges by email:', userEmail);
+                    const response = await collegeApi.getColleges();
+                    console.log('📡 All colleges response:', response);
                     
                     if (response && response.success && response.data) {
-                        let schools = [];
+                        let colleges = [];
                         if (Array.isArray(response.data)) {
-                            schools = response.data;
+                            colleges = response.data;
                         } else if (typeof response.data === 'object') {
-                            schools = Object.keys(response.data).map(key => ({
+                            colleges = Object.keys(response.data).map(key => ({
                                 id: key,
                                 ...response.data[key]
                             }));
                         }
                         
-                        const foundSchool = schools.find(s => 
-                            s.email === userEmail || 
-                            s.email?.toLowerCase() === userEmail.toLowerCase()
+                        const foundCollege = colleges.find(c => 
+                            c.email === userEmail || 
+                            c.email?.toLowerCase() === userEmail.toLowerCase()
                         );
                         
-                        if (foundSchool) {
-                            console.log('✅ Found school by email:', foundSchool);
-                            foundSchool.institutionType = 'school';
-                            localStorage.setItem('schoolData', JSON.stringify(foundSchool));
-                            setInstitution(foundSchool);
+                        if (foundCollege) {
+                            console.log('✅ Found college by email:', foundCollege);
+                            foundCollege.institutionType = 'college';
+                            localStorage.setItem('collegeData', JSON.stringify(foundCollege));
+                            if (foundCollege.id) {
+                                localStorage.setItem('collegeId', foundCollege.id);
+                            }
+                            setInstitution(foundCollege);
                             setIsLoading(false);
                             return;
                         }
                     }
                 }
                 
-                console.log('❌ No school found');
-                setError('School profile not found. Please contact support.');
-                toast.error('School profile not found. Please contact support.');
+                // If all fails, show error
+                console.log('❌ No college found');
+                setError('College profile not found. Please contact support.');
+                toast.error('College profile not found. Please contact support.');
                 setIsLoading(false);
                 
             } catch (error) {
-                console.error('❌ Error fetching school:', error);
+                console.error('❌ Error fetching college:', error);
                 setError('Failed to load profile');
                 setIsLoading(false);
                 toast.error('Failed to load profile. Please try again.');
             }
         };
         
-        fetchSchoolData();
+        fetchCollegeData();
     }, [retryCount]);
 
-    const goToDashboard = () => navigate('/dashboard');
+    const goToDashboard = () => {
+        navigate('/dashboard');
+    };
+
     const retryFetch = () => {
         setRetryCount(prev => prev + 1);
-        localStorage.removeItem('schoolData');
+        localStorage.removeItem('collegeData');
     };
 
     if (isLoading) {
@@ -107,7 +118,7 @@ const SchoolProfile = () => {
             <div className="min-h-screen flex justify-center items-center bg-gray-50">
                 <div className="text-center">
                     <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-orange-600 mx-auto"></div>
-                    <p className="mt-4 text-gray-600">Loading school profile...</p>
+                    <p className="mt-4 text-gray-600">Loading college profile...</p>
                 </div>
             </div>
         );
@@ -120,14 +131,21 @@ const SchoolProfile = () => {
                     <div className="text-6xl mb-4 flex justify-center">
                         <FiAlertCircle className="text-red-500" />
                     </div>
-                    <h2 className="text-2xl font-bold text-gray-800 mb-2">School Profile Not Found</h2>
-                    <p className="text-gray-600 mb-2">{error || 'Your school profile could not be found.'}</p>
+                    <h2 className="text-2xl font-bold text-gray-800 mb-2">College Profile Not Found</h2>
+                    <p className="text-gray-600 mb-2">{error || 'Your college profile could not be found.'}</p>
                     
                     <div className="space-y-3">
-                        <button onClick={goToDashboard} className="w-full bg-orange-500 text-white px-6 py-3 rounded-lg hover:bg-orange-600 transition-colors flex items-center justify-center gap-2">
+                        <button
+                            onClick={goToDashboard}
+                            className="w-full bg-orange-500 text-white px-6 py-3 rounded-lg hover:bg-orange-600 transition-colors flex items-center justify-center gap-2"
+                        >
                             <FiChevronLeft /> Go to Dashboard
                         </button>
-                        <button onClick={retryFetch} className="w-full border border-gray-300 text-gray-700 px-6 py-3 rounded-lg hover:bg-gray-50 transition-colors flex items-center justify-center gap-2">
+                        
+                        <button
+                            onClick={retryFetch}
+                            className="w-full border border-gray-300 text-gray-700 px-6 py-3 rounded-lg hover:bg-gray-50 transition-colors flex items-center justify-center gap-2"
+                        >
                             <FiRefreshCw /> Try Again
                         </button>
                     </div>
@@ -135,7 +153,9 @@ const SchoolProfile = () => {
                     <div className="mt-6 p-4 bg-yellow-50 rounded-lg border border-yellow-200 text-left">
                         <p className="text-sm text-yellow-800">
                             <strong>Need help?</strong> Please contact admin at{' '}
-                            <a href="mailto:support@raynott.com" className="text-blue-600 hover:underline">support@raynott.com</a>
+                            <a href="mailto:support@raynott.com" className="text-blue-600 hover:underline">
+                                support@raynott.com
+                            </a>
                         </p>
                     </div>
                 </div>
@@ -143,8 +163,8 @@ const SchoolProfile = () => {
         );
     }
 
-    const typeLabel = 'School';
-    const icon = '🏫';
+    const typeLabel = 'College';
+    const icon = '🎓';
 
     const tabs = [
         { id: 'overview', label: 'Overview', icon: FiInfo },
@@ -165,7 +185,9 @@ const SchoolProfile = () => {
                         </p>
                         <div className="mt-2 flex items-center gap-2">
                             <FiMailIcon className="text-blue-500" />
-                            <a href="mailto:support@raynott.com" className="text-sm text-blue-600 hover:underline">support@raynott.com</a>
+                            <a href="mailto:support@raynott.com" className="text-sm text-blue-600 hover:underline">
+                                support@raynott.com
+                            </a>
                         </div>
                     </div>
                 </div>
@@ -177,7 +199,7 @@ const SchoolProfile = () => {
                     About {institution.name}
                 </h3>
                 <p className="text-gray-600 leading-relaxed">
-                    {institution.about || `${institution.name} is a premier school established in ${institution.establishmentYear}.`}
+                    {institution.about || `${institution.name} is a premier college established in ${institution.establishmentYear}.`}
                 </p>
             </div>
 
@@ -270,7 +292,7 @@ const SchoolProfile = () => {
                             <div>
                                 <p className="text-sm text-gray-500">Contact Person</p>
                                 <p className="text-gray-800">{institution.contactPerson}</p>
-                            </div>
+                             </div>
                         </div>
                     )}
                     {institution.officeHours && (
@@ -344,40 +366,52 @@ const SchoolProfile = () => {
                     Academic Details
                 </h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {institution.typeOfSchool && (
+                    {institution.typeOfCollege && (
                         <div className="p-4 bg-gray-50 rounded-lg">
-                            <p className="text-sm text-gray-500">School Type</p>
-                            <p className="text-gray-800 font-medium">{institution.typeOfSchool}</p>
+                            <p className="text-sm text-gray-500">College Type</p>
+                            <p className="text-gray-800 font-medium">{institution.typeOfCollege}</p>
                         </div>
                     )}
-                    {institution.affiliation && (
+                    {institution.universityAffiliation && (
                         <div className="p-4 bg-gray-50 rounded-lg">
-                            <p className="text-sm text-gray-500">Affiliation</p>
-                            <p className="text-gray-800 font-medium">{institution.affiliation}</p>
+                            <p className="text-sm text-gray-500">University Affiliation</p>
+                            <p className="text-gray-800 font-medium">{institution.universityAffiliation}</p>
                         </div>
                     )}
-                    {institution.grade && (
+                    {institution.coursesOffered && (
                         <div className="p-4 bg-gray-50 rounded-lg">
-                            <p className="text-sm text-gray-500">Grades Offered</p>
-                            <p className="text-gray-800 font-medium">{institution.grade}</p>
+                            <p className="text-sm text-gray-500">Courses Offered</p>
+                            <p className="text-gray-800 font-medium">{institution.coursesOffered}</p>
                         </div>
                     )}
-                    {institution.ageForAdmission && (
+                    {institution.duration && (
                         <div className="p-4 bg-gray-50 rounded-lg">
-                            <p className="text-sm text-gray-500">Age for Admission</p>
-                            <p className="text-gray-800 font-medium">{institution.ageForAdmission}</p>
+                            <p className="text-sm text-gray-500">Duration</p>
+                            <p className="text-gray-800 font-medium">{institution.duration}</p>
+                        </div>
+                    )}
+                    {institution.accreditation && (
+                        <div className="p-4 bg-gray-50 rounded-lg">
+                            <p className="text-sm text-gray-500">Accreditation</p>
+                            <p className="text-gray-800 font-medium">{institution.accreditation}</p>
+                        </div>
+                    )}
+                    {institution.placementStatistics && (
+                        <div className="p-4 bg-gray-50 rounded-lg">
+                            <p className="text-sm text-gray-500">Placement Statistics</p>
+                            <p className="text-gray-800 font-medium">{institution.placementStatistics}</p>
+                        </div>
+                    )}
+                    {institution.departments && (
+                        <div className="p-4 bg-gray-50 rounded-lg">
+                            <p className="text-sm text-gray-500">Departments</p>
+                            <p className="text-gray-800 font-medium">{institution.departments}</p>
                         </div>
                     )}
                     {institution.language && (
                         <div className="p-4 bg-gray-50 rounded-lg">
                             <p className="text-sm text-gray-500">Medium of Instruction</p>
                             <p className="text-gray-800 font-medium">{institution.language}</p>
-                        </div>
-                    )}
-                    {institution.studentTeacherRatio && (
-                        <div className="p-4 bg-gray-50 rounded-lg">
-                            <p className="text-sm text-gray-500">Student-Teacher Ratio</p>
-                            <p className="text-gray-800 font-medium">{institution.studentTeacherRatio}</p>
                         </div>
                     )}
                 </div>
@@ -665,16 +699,16 @@ const SchoolProfile = () => {
                                         Est. {institution.establishmentYear}
                                     </span>
                                 )}
-                                {institution.typeOfSchool && (
+                                {institution.typeOfCollege && (
                                     <span className="flex items-center gap-1">
                                         <FiBook className="text-orange-300" />
-                                        {institution.typeOfSchool}
+                                        {institution.typeOfCollege}
                                     </span>
                                 )}
-                                {institution.affiliation && (
+                                {institution.accreditation && (
                                     <span className="flex items-center gap-1">
                                         <FiAward className="text-orange-300" />
-                                        {institution.affiliation}
+                                        {institution.accreditation}
                                     </span>
                                 )}
                             </div>
@@ -724,28 +758,28 @@ const SchoolProfile = () => {
                                 Quick Info
                             </h4>
                             <div className="space-y-3">
-                                {institution.typeOfSchool && (
+                                {institution.typeOfCollege && (
                                     <div className="flex justify-between text-sm">
                                         <span className="text-gray-500">Type</span>
-                                        <span className="text-gray-800 font-medium">{institution.typeOfSchool}</span>
+                                        <span className="text-gray-800 font-medium">{institution.typeOfCollege}</span>
                                     </div>
                                 )}
-                                {institution.affiliation && (
+                                {institution.universityAffiliation && (
                                     <div className="flex justify-between text-sm">
-                                        <span className="text-gray-500">Affiliation</span>
-                                        <span className="text-gray-800 font-medium">{institution.affiliation}</span>
+                                        <span className="text-gray-500">University</span>
+                                        <span className="text-gray-800 font-medium">{institution.universityAffiliation}</span>
                                     </div>
                                 )}
-                                {institution.grade && (
+                                {institution.accreditation && (
                                     <div className="flex justify-between text-sm">
-                                        <span className="text-gray-500">Grades</span>
-                                        <span className="text-gray-800 font-medium">{institution.grade}</span>
+                                        <span className="text-gray-500">Accreditation</span>
+                                        <span className="text-gray-800 font-medium">{institution.accreditation}</span>
                                     </div>
                                 )}
-                                {institution.language && (
+                                {institution.coursesOffered && (
                                     <div className="flex justify-between text-sm">
-                                        <span className="text-gray-500">Medium</span>
-                                        <span className="text-gray-800 font-medium">{institution.language}</span>
+                                        <span className="text-gray-500">Courses</span>
+                                        <span className="text-gray-800 font-medium">{institution.coursesOffered}</span>
                                     </div>
                                 )}
                                 {institution.studentStrength && (
@@ -798,4 +832,4 @@ const SchoolProfile = () => {
     );
 };
 
-export default SchoolProfile;
+export default CollegeProfile;

@@ -36,14 +36,14 @@ function Footer() {
             </p>
             <p className="flex items-center text-sm">
               <FaPhone className="mr-3 text-orange-500" /> 
-              +91 981 124 7700
+              +91 9876543210
             </p>
           </div>
           
           <div>
             <h3 className="font-semibold text-lg mb-3">Follow Us</h3>
             <div className="flex space-x-4">
-              <a href="#" className="bg-slate-700 p-2 rounded-lg hover:bg-blue-600 transition-colors">
+              <a href="http" className="bg-slate-700 p-2 rounded-lg hover:bg-blue-600 transition-colors">
                 <FaFacebook className="text-xl" />
               </a>
               <a href="#" className="bg-slate-700 p-2 rounded-lg hover:bg-pink-600 transition-colors">

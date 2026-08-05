@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
-import { schoolApi } from '../services/schoolApi';
+import { teacherApi } from '../services/teacherApi';
 import { 
   FiMapPin, FiPhone, FiMail, FiGlobe, FiCalendar, 
   FiBookOpen, FiAward, FiUsers, FiClock, FiInfo,
@@ -10,12 +10,12 @@ import {
   FiFacebook, FiTwitter, FiInstagram, FiYoutube, FiLinkedin,
   FiAlertCircle, FiEdit, FiMail as FiMailIcon,
   FiUser, FiUserPlus, FiUserCheck, FiBook, FiFileText,
-  FiRefreshCw
+  FiRefreshCw, FiBriefcase, FiDollarSign
 } from 'react-icons/fi';
 import { toast } from 'react-toastify';
 import "tailwindcss";
 
-const SchoolProfile = () => {
+const TeacherProfile = () => {
     const navigate = useNavigate();
     const [institution, setInstitution] = useState(null);
     const [isLoading, setIsLoading] = useState(true);
@@ -25,20 +25,20 @@ const SchoolProfile = () => {
     const [retryCount, setRetryCount] = useState(0);
 
     useEffect(() => {
-        const fetchSchoolData = async () => {
+        const fetchTeacherData = async () => {
             try {
                 setIsLoading(true);
                 setError('');
                 
                 const userEmail = localStorage.getItem('userEmail');
-                console.log('🔍 Fetching school profile for:', userEmail);
+                console.log('🔍 Fetching teacher profile for:', userEmail);
                 
-                const storedData = localStorage.getItem('schoolData');
+                const storedData = localStorage.getItem('teacherData');
                 if (storedData) {
                     try {
                         const parsedData = JSON.parse(storedData);
                         if (parsedData && parsedData.email === userEmail) {
-                            console.log('📦 Using stored school data');
+                            console.log('📦 Using stored teacher data');
                             setInstitution(parsedData);
                             setIsLoading(false);
                             return;
@@ -49,57 +49,57 @@ const SchoolProfile = () => {
                 }
                 
                 if (userEmail) {
-                    console.log('📡 Searching schools by email:', userEmail);
-                    const response = await schoolApi.getSchools();
-                    console.log('📡 All schools response:', response);
+                    console.log('📡 Searching teachers by email:', userEmail);
+                    const response = await teacherApi.getTeachers();
+                    console.log('📡 All teachers response:', response);
                     
                     if (response && response.success && response.data) {
-                        let schools = [];
+                        let teachers = [];
                         if (Array.isArray(response.data)) {
-                            schools = response.data;
+                            teachers = response.data;
                         } else if (typeof response.data === 'object') {
-                            schools = Object.keys(response.data).map(key => ({
+                            teachers = Object.keys(response.data).map(key => ({
                                 id: key,
                                 ...response.data[key]
                             }));
                         }
                         
-                        const foundSchool = schools.find(s => 
-                            s.email === userEmail || 
-                            s.email?.toLowerCase() === userEmail.toLowerCase()
+                        const foundTeacher = teachers.find(t => 
+                            t.email === userEmail || 
+                            t.email?.toLowerCase() === userEmail.toLowerCase()
                         );
                         
-                        if (foundSchool) {
-                            console.log('✅ Found school by email:', foundSchool);
-                            foundSchool.institutionType = 'school';
-                            localStorage.setItem('schoolData', JSON.stringify(foundSchool));
-                            setInstitution(foundSchool);
+                        if (foundTeacher) {
+                            console.log('✅ Found teacher by email:', foundTeacher);
+                            foundTeacher.institutionType = 'teacher';
+                            localStorage.setItem('teacherData', JSON.stringify(foundTeacher));
+                            setInstitution(foundTeacher);
                             setIsLoading(false);
                             return;
                         }
                     }
                 }
                 
-                console.log('❌ No school found');
-                setError('School profile not found. Please contact support.');
-                toast.error('School profile not found. Please contact support.');
+                console.log('❌ No teacher found');
+                setError('Teacher profile not found. Please contact support.');
+                toast.error('Teacher profile not found. Please contact support.');
                 setIsLoading(false);
                 
             } catch (error) {
-                console.error('❌ Error fetching school:', error);
+                console.error('❌ Error fetching teacher:', error);
                 setError('Failed to load profile');
                 setIsLoading(false);
                 toast.error('Failed to load profile. Please try again.');
             }
         };
         
-        fetchSchoolData();
+        fetchTeacherData();
     }, [retryCount]);
 
     const goToDashboard = () => navigate('/dashboard');
     const retryFetch = () => {
         setRetryCount(prev => prev + 1);
-        localStorage.removeItem('schoolData');
+        localStorage.removeItem('teacherData');
     };
 
     if (isLoading) {
@@ -107,7 +107,7 @@ const SchoolProfile = () => {
             <div className="min-h-screen flex justify-center items-center bg-gray-50">
                 <div className="text-center">
                     <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-orange-600 mx-auto"></div>
-                    <p className="mt-4 text-gray-600">Loading school profile...</p>
+                    <p className="mt-4 text-gray-600">Loading teacher profile...</p>
                 </div>
             </div>
         );
@@ -120,8 +120,8 @@ const SchoolProfile = () => {
                     <div className="text-6xl mb-4 flex justify-center">
                         <FiAlertCircle className="text-red-500" />
                     </div>
-                    <h2 className="text-2xl font-bold text-gray-800 mb-2">School Profile Not Found</h2>
-                    <p className="text-gray-600 mb-2">{error || 'Your school profile could not be found.'}</p>
+                    <h2 className="text-2xl font-bold text-gray-800 mb-2">Teacher Profile Not Found</h2>
+                    <p className="text-gray-600 mb-2">{error || 'Your teacher profile could not be found.'}</p>
                     
                     <div className="space-y-3">
                         <button onClick={goToDashboard} className="w-full bg-orange-500 text-white px-6 py-3 rounded-lg hover:bg-orange-600 transition-colors flex items-center justify-center gap-2">
@@ -143,15 +143,13 @@ const SchoolProfile = () => {
         );
     }
 
-    const typeLabel = 'School';
-    const icon = '🏫';
+    const typeLabel = 'Teacher';
+    const icon = '👨‍🏫';
 
     const tabs = [
         { id: 'overview', label: 'Overview', icon: FiInfo },
         { id: 'academics', label: 'Academics', icon: FiBookOpen },
-        { id: 'infrastructure', label: 'Infrastructure', icon: FiHome },
         { id: 'gallery', label: 'Gallery', icon: FiImage },
-        { id: 'admission', label: 'Admission', icon: FiCheckCircle },
     ];
 
     const renderOverview = () => (
@@ -174,36 +172,36 @@ const SchoolProfile = () => {
             <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
                 <h3 className="text-lg font-semibold text-gray-800 mb-3 flex items-center gap-2">
                     <FiInfo className="text-orange-500" />
-                    About {institution.name}
+                    About {institution.teacherName || institution.name}
                 </h3>
                 <p className="text-gray-600 leading-relaxed">
-                    {institution.about || `${institution.name} is a premier school established in ${institution.establishmentYear}.`}
+                    {institution.about || `${institution.teacherName || institution.name} is a dedicated teacher with ${institution.experience || 'years of'} experience.`}
                 </p>
             </div>
 
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                {institution.establishmentYear && (
+                {institution.experience && (
                     <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-100 text-center">
-                        <div className="text-2xl font-bold text-orange-600">{institution.establishmentYear}</div>
-                        <div className="text-sm text-gray-500">Established</div>
+                        <div className="text-2xl font-bold text-orange-600">{institution.experience}</div>
+                        <div className="text-sm text-gray-500">Experience</div>
                     </div>
                 )}
-                {institution.studentStrength && (
+                {institution.qualifications && (
                     <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-100 text-center">
-                        <div className="text-2xl font-bold text-orange-600">{institution.studentStrength}</div>
-                        <div className="text-sm text-gray-500">Students</div>
+                        <div className="text-2xl font-bold text-orange-600">✓</div>
+                        <div className="text-sm text-gray-500">Qualified</div>
                     </div>
                 )}
-                {institution.teacherStrength && (
+                {institution.hourlyRate && (
                     <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-100 text-center">
-                        <div className="text-2xl font-bold text-orange-600">{institution.teacherStrength}</div>
-                        <div className="text-sm text-gray-500">Teachers</div>
+                        <div className="text-2xl font-bold text-orange-600">{institution.hourlyRate}</div>
+                        <div className="text-sm text-gray-500">Hourly Rate</div>
                     </div>
                 )}
-                {institution.studentTeacherRatio && (
+                {institution.monthlyPackage && (
                     <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-100 text-center">
-                        <div className="text-2xl font-bold text-orange-600">{institution.studentTeacherRatio}</div>
-                        <div className="text-sm text-gray-500">Student-Teacher Ratio</div>
+                        <div className="text-2xl font-bold text-orange-600">{institution.monthlyPackage}</div>
+                        <div className="text-sm text-gray-500">Monthly Package</div>
                     </div>
                 )}
             </div>
@@ -228,9 +226,6 @@ const SchoolProfile = () => {
                             <div>
                                 <p className="text-sm text-gray-500">Phone</p>
                                 <p className="text-gray-800">{institution.phone}</p>
-                                {institution.alternatePhone && (
-                                    <p className="text-gray-600 text-sm">{institution.alternatePhone} (Alternate)</p>
-                                )}
                             </div>
                         </div>
                     )}
@@ -243,49 +238,55 @@ const SchoolProfile = () => {
                             </div>
                         </div>
                     )}
-                    {institution.website && (
-                        <div className="flex items-start space-x-3">
-                            <FiGlobe className="text-orange-500 mt-1 flex-shrink-0" />
-                            <div>
-                                <p className="text-sm text-gray-500">Website</p>
-                                <a href={institution.website} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline flex items-center gap-1">
-                                    {institution.website}
-                                    <FiExternalLink className="text-xs" />
-                                </a>
-                            </div>
-                        </div>
-                    )}
-                    {institution.principalName && (
-                        <div className="flex items-start space-x-3">
-                            <FiUser className="text-orange-500 mt-1 flex-shrink-0" />
-                            <div>
-                                <p className="text-sm text-gray-500">Principal</p>
-                                <p className="text-gray-800">{institution.principalName}</p>
-                            </div>
-                        </div>
-                    )}
-                    {institution.contactPerson && (
-                        <div className="flex items-start space-x-3">
-                            <FiUserPlus className="text-orange-500 mt-1 flex-shrink-0" />
-                            <div>
-                                <p className="text-sm text-gray-500">Contact Person</p>
-                                <p className="text-gray-800">{institution.contactPerson}</p>
-                            </div>
-                        </div>
-                    )}
-                    {institution.officeHours && (
+                    {institution.availability && (
                         <div className="flex items-start space-x-3">
                             <FiClock className="text-orange-500 mt-1 flex-shrink-0" />
                             <div>
-                                <p className="text-sm text-gray-500">Office Hours</p>
-                                <p className="text-gray-800">{institution.officeHours}</p>
+                                <p className="text-sm text-gray-500">Availability</p>
+                                <p className="text-gray-800">{institution.availability}</p>
+                            </div>
+                        </div>
+                    )}
+                    {institution.teachingMode && (
+                        <div className="flex items-start space-x-3">
+                            <FiBookOpen className="text-orange-500 mt-1 flex-shrink-0" />
+                            <div>
+                                <p className="text-sm text-gray-500">Teaching Mode</p>
+                                <p className="text-gray-800">{institution.teachingMode}</p>
+                            </div>
+                        </div>
+                    )}
+                    {institution.institutionName && (
+                        <div className="flex items-start space-x-3">
+                            <FiBriefcase className="text-orange-500 mt-1 flex-shrink-0" />
+                            <div>
+                                <p className="text-sm text-gray-500">Institution</p>
+                                <p className="text-gray-800">{institution.institutionName}</p>
+                            </div>
+                        </div>
+                    )}
+                    {institution.institutionPosition && (
+                        <div className="flex items-start space-x-3">
+                            <FiUserPlus className="text-orange-500 mt-1 flex-shrink-0" />
+                            <div>
+                                <p className="text-sm text-gray-500">Position</p>
+                                <p className="text-gray-800">{institution.institutionPosition}</p>
+                            </div>
+                        </div>
+                    )}
+                    {institution.institutionExperience && (
+                        <div className="flex items-start space-x-3">
+                            <FiClock className="text-orange-500 mt-1 flex-shrink-0" />
+                            <div>
+                                <p className="text-sm text-gray-500">Institution Experience</p>
+                                <p className="text-gray-800">{institution.institutionExperience}</p>
                             </div>
                         </div>
                     )}
                 </div>
             </div>
 
-            {Object.values(institution.socialMedia || {}).some(v => v) && (
+            {institution.socialMedia && Object.values(institution.socialMedia).some(v => v) && (
                 <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
                     <h3 className="text-lg font-semibold text-gray-800 mb-4">Social Media</h3>
                     <div className="flex flex-wrap gap-3">
@@ -317,22 +318,6 @@ const SchoolProfile = () => {
                     </div>
                 </div>
             )}
-
-            {institution.googleMapsEmbedUrl && (
-                <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
-                    <h3 className="text-lg font-semibold text-gray-800 mb-4">Location</h3>
-                    <iframe
-                        src={institution.googleMapsEmbedUrl}
-                        width="100%"
-                        height="350"
-                        style={{ border: 0 }}
-                        allowFullScreen=""
-                        loading="lazy"
-                        className="rounded-lg"
-                        title="Location"
-                    ></iframe>
-                </div>
-            )}
         </motion.div>
     );
 
@@ -341,97 +326,127 @@ const SchoolProfile = () => {
             <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
                 <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
                     <FiBookOpen className="text-orange-500" />
-                    Academic Details
+                    Academic & Professional Details
                 </h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {institution.typeOfSchool && (
+                    {institution.teacherName && (
                         <div className="p-4 bg-gray-50 rounded-lg">
-                            <p className="text-sm text-gray-500">School Type</p>
-                            <p className="text-gray-800 font-medium">{institution.typeOfSchool}</p>
+                            <p className="text-sm text-gray-500">Teacher Name</p>
+                            <p className="text-gray-800 font-medium">{institution.teacherName}</p>
                         </div>
                     )}
-                    {institution.affiliation && (
+                    {institution.qualifications && (
                         <div className="p-4 bg-gray-50 rounded-lg">
-                            <p className="text-sm text-gray-500">Affiliation</p>
-                            <p className="text-gray-800 font-medium">{institution.affiliation}</p>
+                            <p className="text-sm text-gray-500">Qualifications</p>
+                            <p className="text-gray-800 font-medium">{institution.qualifications}</p>
                         </div>
                     )}
-                    {institution.grade && (
+                    {institution.experience && (
                         <div className="p-4 bg-gray-50 rounded-lg">
-                            <p className="text-sm text-gray-500">Grades Offered</p>
-                            <p className="text-gray-800 font-medium">{institution.grade}</p>
+                            <p className="text-sm text-gray-500">Experience</p>
+                            <p className="text-gray-800 font-medium">{institution.experience}</p>
                         </div>
                     )}
-                    {institution.ageForAdmission && (
+                    {institution.specialization && (
                         <div className="p-4 bg-gray-50 rounded-lg">
-                            <p className="text-sm text-gray-500">Age for Admission</p>
-                            <p className="text-gray-800 font-medium">{institution.ageForAdmission}</p>
+                            <p className="text-sm text-gray-500">Specialization</p>
+                            <p className="text-gray-800 font-medium">{institution.specialization}</p>
                         </div>
                     )}
-                    {institution.language && (
+                    {institution.certifications && (
                         <div className="p-4 bg-gray-50 rounded-lg">
-                            <p className="text-sm text-gray-500">Medium of Instruction</p>
-                            <p className="text-gray-800 font-medium">{institution.language}</p>
+                            <p className="text-sm text-gray-500">Certifications</p>
+                            <p className="text-gray-800 font-medium">{institution.certifications}</p>
                         </div>
                     )}
-                    {institution.studentTeacherRatio && (
+                    {institution.languages && (
                         <div className="p-4 bg-gray-50 rounded-lg">
-                            <p className="text-sm text-gray-500">Student-Teacher Ratio</p>
-                            <p className="text-gray-800 font-medium">{institution.studentTeacherRatio}</p>
+                            <p className="text-sm text-gray-500">Languages</p>
+                            <p className="text-gray-800 font-medium">{institution.languages}</p>
+                        </div>
+                    )}
+                    {institution.hourlyRate && (
+                        <div className="p-4 bg-gray-50 rounded-lg">
+                            <p className="text-sm text-gray-500">Hourly Rate</p>
+                            <p className="text-gray-800 font-medium text-orange-600">{institution.hourlyRate}</p>
+                        </div>
+                    )}
+                    {institution.monthlyPackage && (
+                        <div className="p-4 bg-gray-50 rounded-lg">
+                            <p className="text-sm text-gray-500">Monthly Package</p>
+                            <p className="text-gray-800 font-medium text-orange-600">{institution.monthlyPackage}</p>
                         </div>
                     )}
                 </div>
             </div>
 
-            {institution.facilities && institution.facilities.length > 0 && (
+            {institution.teachingApproach && (
                 <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
-                    <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
-                        <FiAward className="text-orange-500" />
-                        Facilities
-                    </h3>
-                    <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-                        {institution.facilities.map((facility, index) => (
-                            <div key={index} className="flex items-center gap-2 p-3 bg-green-50 rounded-lg">
-                                <FiCheckCircle className="text-green-500 flex-shrink-0" />
-                                <span className="text-gray-700">{facility}</span>
+                    <h3 className="text-lg font-semibold text-gray-800 mb-4">Teaching Approach</h3>
+                    <p className="text-gray-700">{institution.teachingApproach}</p>
+                </div>
+            )}
+
+            {institution.teachingProcess && (
+                <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
+                    <h3 className="text-lg font-semibold text-gray-800 mb-4">Teaching Process</h3>
+                    <p className="text-gray-700 whitespace-pre-wrap">{institution.teachingProcess}</p>
+                </div>
+            )}
+
+            {institution.studyMaterials && (
+                <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
+                    <h3 className="text-lg font-semibold text-gray-800 mb-4">Study Materials</h3>
+                    <p className="text-gray-700">{institution.studyMaterials}</p>
+                </div>
+            )}
+
+            {(institution.sessionDuration || institution.studentLevel || institution.classSize || institution.onlinePlatform) && (
+                <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
+                    <h3 className="text-lg font-semibold text-gray-800 mb-4">Session Details</h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        {institution.sessionDuration && (
+                            <div className="p-4 bg-gray-50 rounded-lg">
+                                <p className="text-sm text-gray-500">Session Duration</p>
+                                <p className="text-gray-800 font-medium">{institution.sessionDuration}</p>
                             </div>
-                        ))}
+                        )}
+                        {institution.studentLevel && (
+                            <div className="p-4 bg-gray-50 rounded-lg">
+                                <p className="text-sm text-gray-500">Student Level</p>
+                                <p className="text-gray-800 font-medium">{institution.studentLevel}</p>
+                            </div>
+                        )}
+                        {institution.classSize && (
+                            <div className="p-4 bg-gray-50 rounded-lg">
+                                <p className="text-sm text-gray-500">Class Size</p>
+                                <p className="text-gray-800 font-medium">{institution.classSize}</p>
+                            </div>
+                        )}
+                        {institution.onlinePlatform && (
+                            <div className="p-4 bg-gray-50 rounded-lg">
+                                <p className="text-sm text-gray-500">Online Platform</p>
+                                <p className="text-gray-800 font-medium">{institution.onlinePlatform}</p>
+                            </div>
+                        )}
                     </div>
                 </div>
             )}
 
-            {(institution.totalAnnualFee || institution.admissionFee || institution.tuitionFee || institution.transportFee || institution.booksUniformsFee) && (
+            {(institution.progressReports || institution.performanceTracking) && (
                 <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
-                    <h3 className="text-lg font-semibold text-gray-800 mb-4">Fee Structure</h3>
+                    <h3 className="text-lg font-semibold text-gray-800 mb-4">Student Support</h3>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        {institution.totalAnnualFee && (
+                        {institution.progressReports && (
                             <div className="p-4 bg-gray-50 rounded-lg">
-                                <p className="text-sm text-gray-500">Total Annual Fee</p>
-                                <p className="text-gray-800 font-medium text-lg text-orange-600">{institution.totalAnnualFee}</p>
+                                <p className="text-sm text-gray-500">Progress Reports</p>
+                                <p className="text-gray-800 font-medium">{institution.progressReports}</p>
                             </div>
                         )}
-                        {institution.admissionFee && (
+                        {institution.performanceTracking && (
                             <div className="p-4 bg-gray-50 rounded-lg">
-                                <p className="text-sm text-gray-500">Admission Fee</p>
-                                <p className="text-gray-800 font-medium">{institution.admissionFee}</p>
-                            </div>
-                        )}
-                        {institution.tuitionFee && (
-                            <div className="p-4 bg-gray-50 rounded-lg">
-                                <p className="text-sm text-gray-500">Tuition Fee</p>
-                                <p className="text-gray-800 font-medium">{institution.tuitionFee}</p>
-                            </div>
-                        )}
-                        {institution.transportFee && (
-                            <div className="p-4 bg-gray-50 rounded-lg">
-                                <p className="text-sm text-gray-500">Transport Fee</p>
-                                <p className="text-gray-800 font-medium">{institution.transportFee}</p>
-                            </div>
-                        )}
-                        {institution.booksUniformsFee && (
-                            <div className="p-4 bg-gray-50 rounded-lg col-span-1 md:col-span-2">
-                                <p className="text-sm text-gray-500">Books & Uniforms Fee</p>
-                                <p className="text-gray-800 font-medium">{institution.booksUniformsFee}</p>
+                                <p className="text-sm text-gray-500">Performance Tracking</p>
+                                <p className="text-gray-800 font-medium">{institution.performanceTracking}</p>
                             </div>
                         )}
                     </div>
@@ -440,69 +455,35 @@ const SchoolProfile = () => {
         </motion.div>
     );
 
-    const renderInfrastructure = () => {
-        const infrastructureItems = [
-            { key: 'campusSize', label: 'Campus Size' },
-            { key: 'classrooms', label: 'Classrooms' },
-            { key: 'laboratories', label: 'Laboratories' },
-            { key: 'library', label: 'Library' },
-            { key: 'playground', label: 'Playground' },
-            { key: 'auditorium', label: 'Auditorium' },
-            { key: 'smartBoards', label: 'Smart Boards' },
-            { key: 'cctv', label: 'CCTV' },
-            { key: 'medicalRoom', label: 'Medical Room' },
-            { key: 'wifi', label: 'WiFi' },
-            { key: 'hostel', label: 'Hostel' },
-            { key: 'sports', label: 'Sports' },
-        ];
-
-        const hasInfrastructure = infrastructureItems.some(item => institution[item.key]);
-
-        if (!hasInfrastructure) {
-            return (
-                <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="bg-white rounded-xl p-6 shadow-sm border border-gray-100 text-center">
-                    <p className="text-gray-500">No infrastructure details available</p>
-                </motion.div>
-            );
-        }
-
-        return (
-            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="space-y-6">
-                <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
-                    <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
-                        <FiHome className="text-orange-500" />
-                        Infrastructure
-                    </h3>
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                        {infrastructureItems.map((item) => {
-                            if (!institution[item.key]) return null;
-                            const value = institution[item.key];
-                            const displayValue = typeof value === 'boolean' ? (value ? '✓ Available' : '✗ Not Available') : value;
-                            return (
-                                <div key={item.key} className="p-4 bg-gray-50 rounded-lg">
-                                    <p className="text-sm text-gray-500">{item.label}</p>
-                                    <p className="text-gray-800 font-medium mt-1">{displayValue}</p>
-                                </div>
-                            );
-                        })}
-                    </div>
-                </div>
-            </motion.div>
-        );
-    };
-
     const renderGallery = () => (
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="space-y-6">
-            {institution.schoolImage && (
+            {institution.profileImage && (
                 <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
                     <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
                         <FiCamera className="text-orange-500" />
-                        Main Image
+                        Profile Photo
+                    </h3>
+                    <div className="relative overflow-hidden rounded-lg max-w-xs mx-auto">
+                        <img
+                            src={institution.profileImage}
+                            alt={institution.teacherName || institution.name}
+                            className="w-full h-auto object-cover rounded-lg cursor-pointer hover:scale-105 transition-transform duration-300"
+                            onClick={() => setSelectedPhoto(institution.profileImage)}
+                        />
+                    </div>
+                </div>
+            )}
+
+            {institution.schoolImage && (
+                <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
+                    <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
+                        <FiImage className="text-orange-500" />
+                        Institution Image
                     </h3>
                     <div className="relative overflow-hidden rounded-lg max-w-2xl mx-auto">
                         <img
                             src={institution.schoolImage}
-                            alt={institution.name}
+                            alt={institution.institutionName || 'Institution'}
                             className="w-full h-auto object-cover rounded-lg cursor-pointer hover:scale-105 transition-transform duration-300"
                             onClick={() => setSelectedPhoto(institution.schoolImage)}
                         />
@@ -510,27 +491,44 @@ const SchoolProfile = () => {
                 </div>
             )}
 
-            {institution.photos && institution.photos.length > 0 && (
+            {institution.qualificationCertificates && institution.qualificationCertificates.length > 0 && (
                 <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
                     <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
-                        <FiImage className="text-orange-500" />
-                        Gallery ({institution.photos.length} photos)
+                        <FiAward className="text-orange-500" />
+                        Certificates & Documents
                     </h3>
-                    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-                        {institution.photos.map((photo, index) => (
-                            <motion.div
+                    <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                        {institution.qualificationCertificates.map((doc, index) => (
+                            <a
                                 key={index}
-                                className="relative aspect-square overflow-hidden rounded-lg cursor-pointer group"
-                                whileHover={{ scale: 1.05 }}
-                                onClick={() => setSelectedPhoto(photo)}
+                                href={doc}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="flex items-center gap-2 p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition"
                             >
-                                <img src={photo} alt={`Gallery ${index + 1}`} className="w-full h-full object-cover" />
-                                <div className="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                                    <FiCamera className="text-white text-2xl" />
-                                </div>
-                            </motion.div>
+                                <FiFileText className="text-orange-500" />
+                                <span className="text-sm text-gray-700 truncate">Document {index + 1}</span>
+                            </a>
                         ))}
                     </div>
+                </div>
+            )}
+
+            {institution.idProof && (
+                <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
+                    <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
+                        <FiUserCheck className="text-orange-500" />
+                        ID Proof
+                    </h3>
+                    <a
+                        href={institution.idProof}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex items-center gap-2 p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition"
+                    >
+                        <FiFileText className="text-orange-500" />
+                        <span className="text-sm text-gray-700">View ID Proof</span>
+                    </a>
                 </div>
             )}
 
@@ -540,72 +538,6 @@ const SchoolProfile = () => {
                     <button className="absolute top-4 right-4 text-white text-4xl hover:text-gray-300 transition-colors" onClick={() => setSelectedPhoto(null)}>×</button>
                 </div>
             )}
-        </motion.div>
-    );
-
-    const renderAdmission = () => (
-        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="space-y-6">
-            <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
-                <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
-                    <FiCheckCircle className="text-orange-500" />
-                    Admission Information
-                </h3>
-                
-                {institution.admissionLink && (
-                    <div className="mb-6">
-                        <p className="text-sm text-gray-500">Application Link</p>
-                        <p className="text-gray-800 break-all">{institution.admissionLink}</p>
-                    </div>
-                )}
-
-                {institution.admissionProcess && (
-                    <div>
-                        <p className="text-sm text-gray-500 mb-2">Admission Process</p>
-                        <p className="text-gray-700 whitespace-pre-wrap leading-relaxed">{institution.admissionProcess}</p>
-                    </div>
-                )}
-
-                {(institution.phone || institution.email || institution.principalName || institution.contactPerson || institution.officeHours) && (
-                    <div className="mt-6 p-4 bg-gray-50 rounded-lg border border-gray-200">
-                        <h4 className="font-semibold text-gray-800 mb-3">Admission Contact</h4>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            {institution.principalName && (
-                                <div>
-                                    <p className="text-sm text-gray-500">Principal</p>
-                                    <p className="text-gray-800 font-medium">{institution.principalName}</p>
-                                </div>
-                            )}
-                            {institution.contactPerson && (
-                                <div>
-                                    <p className="text-sm text-gray-500">Contact Person</p>
-                                    <p className="text-gray-800 font-medium">{institution.contactPerson}</p>
-                                </div>
-                            )}
-                            {institution.phone && (
-                                <div>
-                                    <p className="text-sm text-gray-500">Contact Number</p>
-                                    <p className="text-gray-800 font-medium">{institution.phone}</p>
-                                    {institution.alternatePhone && (
-                                        <p className="text-gray-600 text-sm">{institution.alternatePhone} (Alternate)</p>
-                                    )}
-                                </div>
-                            )}
-                            {institution.email && (
-                                <div>
-                                    <p className="text-sm text-gray-500">Email</p>
-                                    <p className="text-gray-800 font-medium">{institution.email}</p>
-                                </div>
-                            )}
-                            {institution.officeHours && (
-                                <div>
-                                    <p className="text-sm text-gray-500">Office Hours</p>
-                                    <p className="text-gray-800 font-medium">{institution.officeHours}</p>
-                                </div>
-                            )}
-                        </div>
-                    </div>
-                )}
-            </div>
         </motion.div>
     );
 
@@ -632,9 +564,14 @@ const SchoolProfile = () => {
 
             <div className="relative">
                 <div className="relative h-[250px] md:h-[350px] w-full overflow-hidden">
-                    {institution.schoolImage ? (
+                    {institution.profileImage ? (
                         <>
-                            <img src={institution.schoolImage} alt={institution.name} className="w-full h-full object-cover" />
+                            <img src={institution.profileImage} alt={institution.teacherName || institution.name} className="w-full h-full object-cover" />
+                            <div className="absolute inset-0 bg-gradient-to-t from-gray-900/80 via-gray-900/40 to-transparent"></div>
+                        </>
+                    ) : institution.schoolImage ? (
+                        <>
+                            <img src={institution.schoolImage} alt={institution.institutionName || 'Institution'} className="w-full h-full object-cover" />
                             <div className="absolute inset-0 bg-gradient-to-t from-gray-900/80 via-gray-900/40 to-transparent"></div>
                         </>
                     ) : (
@@ -644,13 +581,15 @@ const SchoolProfile = () => {
                     <div className="absolute bottom-0 left-0 right-0 p-6 md:p-10 text-white">
                         <motion.div initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6 }} className="max-w-7xl mx-auto">
                             <div className="flex items-center gap-3">
-                                {/* <span className="text-4xl">{icon}</span> */}
-                                <h1 className="text-3xl md:text-5xl font-bold">{institution.name}</h1>
+                                <span className="text-4xl">{icon}</span>
+                                <h1 className="text-3xl md:text-5xl font-bold">
+                                    {institution.teacherName || institution.name}
+                                </h1>
                             </div>
                             {institution.tagline && <p className="text-lg text-white/80 mb-3">{institution.tagline}</p>}
                             <div className="flex flex-wrap items-center gap-4 text-sm md:text-base text-white/80">
                                 <span className="flex items-center gap-1">
-                                    <FiBookOpen className="text-orange-300" />
+                                    {/* <FiBookOpen className="text-orange-300" /> */}
                                     {typeLabel}
                                 </span>
                                 {institution.city && (
@@ -659,22 +598,22 @@ const SchoolProfile = () => {
                                         {institution.city}{institution.state ? `, ${institution.state}` : ''}
                                     </span>
                                 )}
-                                {institution.establishmentYear && (
+                                {institution.experience && (
                                     <span className="flex items-center gap-1">
-                                        <FiCalendar className="text-orange-300" />
-                                        Est. {institution.establishmentYear}
+                                        <FiBriefcase className="text-orange-300" />
+                                        {institution.experience} experience
                                     </span>
                                 )}
-                                {institution.typeOfSchool && (
+                                {institution.specialization && (
+                                    <span className="flex items-center gap-1">
+                                        <FiStar className="text-orange-300" />
+                                        {institution.specialization}
+                                    </span>
+                                )}
+                                {institution.teachingMode && (
                                     <span className="flex items-center gap-1">
                                         <FiBook className="text-orange-300" />
-                                        {institution.typeOfSchool}
-                                    </span>
-                                )}
-                                {institution.affiliation && (
-                                    <span className="flex items-center gap-1">
-                                        <FiAward className="text-orange-300" />
-                                        {institution.affiliation}
+                                        {institution.teachingMode}
                                     </span>
                                 )}
                             </div>
@@ -712,9 +651,7 @@ const SchoolProfile = () => {
                     <div className="lg:col-span-2">
                         {activeTab === 'overview' && renderOverview()}
                         {activeTab === 'academics' && renderAcademics()}
-                        {activeTab === 'infrastructure' && renderInfrastructure()}
                         {activeTab === 'gallery' && renderGallery()}
-                        {activeTab === 'admission' && renderAdmission()}
                     </div>
 
                     <div className="lg:col-span-1 space-y-6">
@@ -724,46 +661,46 @@ const SchoolProfile = () => {
                                 Quick Info
                             </h4>
                             <div className="space-y-3">
-                                {institution.typeOfSchool && (
+                                {institution.qualifications && (
                                     <div className="flex justify-between text-sm">
-                                        <span className="text-gray-500">Type</span>
-                                        <span className="text-gray-800 font-medium">{institution.typeOfSchool}</span>
+                                        <span className="text-gray-500">Qualifications</span>
+                                        <span className="text-gray-800 font-medium">{institution.qualifications}</span>
                                     </div>
                                 )}
-                                {institution.affiliation && (
+                                {institution.experience && (
                                     <div className="flex justify-between text-sm">
-                                        <span className="text-gray-500">Affiliation</span>
-                                        <span className="text-gray-800 font-medium">{institution.affiliation}</span>
+                                        <span className="text-gray-500">Experience</span>
+                                        <span className="text-gray-800 font-medium">{institution.experience}</span>
                                     </div>
                                 )}
-                                {institution.grade && (
+                                {institution.specialization && (
                                     <div className="flex justify-between text-sm">
-                                        <span className="text-gray-500">Grades</span>
-                                        <span className="text-gray-800 font-medium">{institution.grade}</span>
+                                        <span className="text-gray-500">Specialization</span>
+                                        <span className="text-gray-800 font-medium">{institution.specialization}</span>
                                     </div>
                                 )}
-                                {institution.language && (
+                                {institution.teachingMode && (
                                     <div className="flex justify-between text-sm">
-                                        <span className="text-gray-500">Medium</span>
-                                        <span className="text-gray-800 font-medium">{institution.language}</span>
+                                        <span className="text-gray-500">Teaching Mode</span>
+                                        <span className="text-gray-800 font-medium">{institution.teachingMode}</span>
                                     </div>
                                 )}
-                                {institution.studentStrength && (
+                                {institution.languages && (
                                     <div className="flex justify-between text-sm">
-                                        <span className="text-gray-500">Students</span>
-                                        <span className="text-gray-800 font-medium">{institution.studentStrength}</span>
+                                        <span className="text-gray-500">Languages</span>
+                                        <span className="text-gray-800 font-medium">{institution.languages}</span>
                                     </div>
                                 )}
-                                {institution.teacherStrength && (
+                                {institution.hourlyRate && (
                                     <div className="flex justify-between text-sm">
-                                        <span className="text-gray-500">Teachers</span>
-                                        <span className="text-gray-800 font-medium">{institution.teacherStrength}</span>
+                                        <span className="text-gray-500">Hourly Rate</span>
+                                        <span className="text-gray-800 font-medium text-orange-600">{institution.hourlyRate}</span>
                                     </div>
                                 )}
-                                {institution.totalAnnualFee && (
+                                {institution.monthlyPackage && (
                                     <div className="flex justify-between text-sm">
-                                        <span className="text-gray-500">Annual Fee</span>
-                                        <span className="text-gray-800 font-medium text-orange-600">{institution.totalAnnualFee}</span>
+                                        <span className="text-gray-500">Monthly Package</span>
+                                        <span className="text-gray-800 font-medium text-orange-600">{institution.monthlyPackage}</span>
                                     </div>
                                 )}
                             </div>
@@ -785,7 +722,7 @@ const SchoolProfile = () => {
 
             <div className="bg-white border-t border-gray-200 mt-12 py-6">
                 <div className="max-w-7xl mx-auto px-4 text-center text-sm text-gray-500">
-                    <p>© {new Date().getFullYear()} {institution.name}. All rights reserved.</p>
+                    <p>© {new Date().getFullYear()} {institution.teacherName || institution.name}. All rights reserved.</p>
                     <p className="mt-1">This is a view-only profile. For updates, contact admin.</p>
                 </div>
             </div>
@@ -798,4 +735,4 @@ const SchoolProfile = () => {
     );
 };
 
-export default SchoolProfile;
+export default TeacherProfile;

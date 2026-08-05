@@ -1,15 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import "tailwindcss";
 import { motion } from 'framer-motion';
-import {
-  FaSchool, FaChalkboardTeacher, FaMapMarkerAlt, FaPhone, FaEnvelope,
-  FaUserTie, FaBookOpen, FaCheck, FaHome, FaUniversity, FaGraduationCap,
-  FaUserGraduate, FaChalkboard, FaRupeeSign, FaFlask, FaBook,
-  FaRunning, FaTheaterMasks, FaVideo, FaFirstAid, FaWifi, FaLink,
-  FaClipboardList, FaStar, FaCalendarAlt, FaUsers, FaBus, FaUtensils,
-  FaSwimmingPool, FaLaptop, FaMicroscope, FaMusic, FaPaintBrush,
-  FaUser, FaCertificate, FaAward, FaGlobe, FaFacebook, FaTwitter, FaInstagram, FaLinkedin
-} from 'react-icons/fa';
+import {FaSchool, FaChalkboardTeacher, FaMapMarkerAlt, FaPhone, FaEnvelope,FaUserTie, FaBookOpen, FaCheck, FaHome, FaUniversity, FaGraduationCap,FaUserGraduate, FaChalkboard, FaRupeeSign, FaFlask, FaBook,FaRunning, FaTheaterMasks, FaVideo, FaFirstAid, FaWifi, FaLink,FaClipboardList, FaStar, FaCalendarAlt, FaUsers, FaBus, FaUtensils,FaSwimmingPool, FaLaptop, FaMicroscope, FaMusic, FaPaintBrush,FaUser, FaCertificate, FaAward, FaGlobe, FaFacebook, FaTwitter, FaInstagram, FaLinkedin} from 'react-icons/fa';
 import { GiMoneyStack, GiTeacher } from 'react-icons/gi';
 import { IoMdTime } from 'react-icons/io';
 import { useNavigate } from 'react-router-dom';
@@ -962,18 +954,6 @@ const RegisterForm = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-orange-50 to-white py-8">
-      {/* <div className="max-w-4xl mx-auto px-4 mb-6">
-        <motion.button
-          onClick={() => navigate('/')}
-          whileHover={{ scale: 1.05 }}
-          whileTap={{ scale: 0.95 }}
-          className="flex items-center space-x-2 text-orange-600 hover:text-orange-700 transition"
-        >
-          <FaHome className="text-xl" />
-          <span className="font-medium">Back to Home</span>
-        </motion.button>
-      </div> */}
-
       <div className="max-w-4xl mx-auto bg-white rounded-2xl shadow-xl overflow-hidden">
         <div className="bg-gradient-to-r from-orange-600 to-amber-600 text-white py-6 px-8 text-center relative">
           <h1 className="text-3xl font-bold mb-2">Register Your {formData.institutionType === 'teacher' ? 'Teaching Profile' : 'Institution'}</h1>
@@ -1477,7 +1457,6 @@ const RegisterForm = () => {
                   <label className="block text-gray-700 mb-2">Total Annual Fee</label>
                   <div className="relative">
                     <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                      {/* <FaRupeeSign className="text-gray-500" /> */}
                     </div>
                     <input
                       type="text"
@@ -1494,7 +1473,6 @@ const RegisterForm = () => {
                   <label className="block text-gray-700 mb-2">Admission Fee</label>
                   <div className="relative">
                     <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                      {/* <FaRupeeSign className="text-gray-500" /> */}
                     </div>
                     <input
                       type="text"
@@ -1511,7 +1489,6 @@ const RegisterForm = () => {
                   <label className="block text-gray-700 mb-2">Tuition Fee</label>
                   <div className="relative">
                     <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                      {/* <FaRupeeSign className="text-gray-500" /> */}
                     </div>
                     <input
                       type="text"
@@ -1528,7 +1505,6 @@ const RegisterForm = () => {
                   <label className="block text-gray-700 mb-2">Transport Fee</label>
                   <div className="relative">
                     <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                      {/* <FaRupeeSign className="text-gray-500" /> */}
                     </div>
                     <input
                       type="text"
@@ -1545,7 +1521,6 @@ const RegisterForm = () => {
                   <label className="block text-gray-700 mb-2">Books & Uniforms/Materials Fee</label>
                   <div className="relative">
                     <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                      {/* <FaRupeeSign className="text-gray-500" /> */}
                     </div>
                     <input
                       type="text"
@@ -1578,7 +1553,6 @@ const RegisterForm = () => {
                       <label className="block text-gray-700 mb-2">Admission Link</label>
                       <div className="relative">
                         <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                          {/* <FaLink className="text-gray-500" /> */}
                         </div>
                         <input
                           type="url"
@@ -1974,30 +1948,6 @@ const RegisterForm = () => {
                       </div>
                       <p className="text-sm text-gray-500 mt-1">Upload photos of your institution (JPEG/PNG)</p>
                     </div>
-
-
-                    {/* <div>
-                      <label className="block text-gray-700 mb-2">Other Documents</label>
-                      <div className="flex items-center">
-                        <label className="cursor-pointer bg-orange-100 text-orange-700 px-4 py-2 rounded-lg hover:bg-orange-200 transition">
-                          <input
-                            type="file"
-                            name="otherDocuments"
-                            onChange={handleMultiFileChange}
-                            className="hidden"
-                            accept=".pdf,.jpg,.jpeg,.png"
-                            multiple
-                          />
-                          Choose Files
-                        </label>
-                        {formData.otherDocuments.length > 0 && (
-                          <span className="ml-3 text-gray-700">
-                            {formData.otherDocuments.length} files selected
-                          </span>
-                        )}
-                      </div>
-                      <p className="text-sm text-gray-500 mt-1">Upload any additional relevant documents</p>
-                    </div> */}
                   </>
                 )}
               </div>

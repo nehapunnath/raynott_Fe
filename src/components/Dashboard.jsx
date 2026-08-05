@@ -6,6 +6,10 @@ import { FiLogOut, FiUser, FiHome, FiPlus, FiUsers, FiCalendar, FiClock, FiBarCh
 import { authApis } from '../services/allApis';
 import registerApi from '../services/RegisterApi';
 import { schoolApi } from '../services/schoolApi';
+import { collegeApi } from '../services/collegeApi';
+import { puCollegeApi } from '../services/puCollegeApi';
+import { TuitionCoachingApi } from '../services/TuitionCoachingApi';
+import { teacherApi } from '../services/teacherApi';
 import { toast } from 'react-toastify';
 
 const Dashboard = () => {
@@ -16,191 +20,231 @@ const Dashboard = () => {
   const [registrationData, setRegistrationData] = useState(null);
   const [registrationStatus, setRegistrationStatus] = useState(null);
   const [registrationId, setRegistrationId] = useState(null);
-  const [schoolId, setSchoolId] = useState(null);
+  const [institutionId, setInstitutionId] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState('');
   const [pollingInterval, setPollingInterval] = useState(null);
   const navigate = useNavigate();
 
+  // Function to find institution by email across all types
+  const findInstitutionByEmail = async (email) => {
+    try {
+      console.log('🔍 Looking for institution with email:', email);
+      
+      const apis = [
+        { type: 'school', api: schoolApi, method: 'getSchools' },
+        { type: 'college', api: collegeApi, method: 'getColleges' },
+        { type: 'pu_college', api: puCollegeApi, method: 'getPUColleges' },
+        { type: 'coaching', api: TuitionCoachingApi, method: 'getTuitionCoachings' },
+        { type: 'teacher', api: teacherApi, method: 'getTeachers' }
+      ];
 
-useEffect(() => {
-  const token = authApis.getAdminToken();
-  console.log('🔍 Dashboard - Token:', token ? 'Present' : 'Missing');
-  
-  if (!token) {
-    console.log('🔍 No token found, redirecting to login');
-    navigate('/login', { replace: true });
-    return;
-  }
+      for (const item of apis) {
+        try {
+          console.log(`📡 Checking ${item.type}...`);
+          const response = await item.api[item.method]();
+          
+          if (response && response.success && response.data) {
+            let institutions = [];
+            if (Array.isArray(response.data)) {
+              institutions = response.data;
+            } else if (typeof response.data === 'object') {
+              institutions = Object.keys(response.data).map(key => ({
+                id: key,
+                ...response.data[key]
+              }));
+            }
+            
+            const found = institutions.find(item => 
+              item.email === email || 
+              item.email?.toLowerCase() === email?.toLowerCase()
+            );
+            
+            if (found) {
+              console.log(`✅ Found institution in ${item.type}:`, found);
+              return { ...found, institutionType: item.type };
+            }
+          }
+        } catch (e) {
+          console.log(`⚠️ Error fetching ${item.type}:`, e.message);
+        }
+      }
+      
+      console.log('❌ No institution found with email:', email);
+      return null;
+    } catch (error) {
+      console.error('Error finding institution by email:', error);
+      return null;
+    }
+  };
 
-  // Get user data from localStorage
-  const name = localStorage.getItem('institutionName');
-  const type = localStorage.getItem('institutionType');
-  const email = localStorage.getItem('userEmail');
-  const role = localStorage.getItem('userRole');
-  
-  // Use email-specific keys for registration data
-  const registrationKey = email ? `registrationId_${email}` : 'registrationId';
-  const schoolKey = email ? `schoolId_${email}` : 'schoolId';
-  
-  const regId = localStorage.getItem(registrationKey);
-  const storedSchoolId = localStorage.getItem(schoolKey);
+  useEffect(() => {
+    const token = authApis.getAdminToken();
+    console.log('🔍 Dashboard - Token:', token ? 'Present' : 'Missing');
+    
+    if (!token) {
+      console.log('🔍 No token found, redirecting to login');
+      navigate('/login', { replace: true });
+      return;
+    }
 
-  console.log('📋 Dashboard - User Data:', { 
-    name, type, email, role, regId, storedSchoolId 
-  });
+    // Get user data from localStorage
+    const name = localStorage.getItem('institutionName');
+    const type = localStorage.getItem('institutionType');
+    const email = localStorage.getItem('userEmail');
+    const role = localStorage.getItem('userRole');
+    
+    // Use email-specific keys for registration data
+    const registrationKey = email ? `registrationId_${email}` : 'registrationId';
+    const institutionKey = email ? `institutionId_${email}` : 'institutionId';
+    
+    const regId = localStorage.getItem(registrationKey);
+    const storedInstitutionId = localStorage.getItem(institutionKey);
 
-  // If user is admin, redirect to admin dashboard
-  if (role === 'admin') {
-    console.log('🔍 User is admin, redirecting to /admin/dashboard');
-    navigate('/admin/dashboard', { replace: true });
-    return;
-  }
+    console.log('📋 Dashboard - User Data:', { 
+      name, type, email, role, regId, storedInstitutionId 
+    });
 
-  if (name) setInstitutionName(name);
-  if (type) setInstitutionType(type);
-  if (email) {
-    setUserEmail(email);
-    // Check if there's registration data for this specific user
-    if (regId) {
-      setRegistrationId(regId);
-      fetchRegistrationStatus(regId);
-    } else if (email) {
-      checkExistingRegistration(email);
+    // If user is admin, redirect to admin dashboard
+    if (role === 'admin') {
+      console.log('🔍 User is admin, redirecting to /admin/dashboard');
+      navigate('/admin/dashboard', { replace: true });
+      return;
+    }
+
+    if (name) setInstitutionName(name);
+    if (type) {
+      setInstitutionType(type);
+    }
+    if (email) {
+      setUserEmail(email);
+      // Check if there's registration data for this specific user
+      if (regId) {
+        setRegistrationId(regId);
+        fetchRegistrationStatus(regId);
+      } else if (email) {
+        checkExistingRegistration(email);
+      } else {
+        setRegistrationStatus('not_started');
+        setIsLoading(false);
+      }
     } else {
       setRegistrationStatus('not_started');
       setIsLoading(false);
     }
-  } else {
-    setRegistrationStatus('not_started');
-    setIsLoading(false);
-  }
 
-  return () => {
-    if (pollingInterval) {
-      clearInterval(pollingInterval);
-    }
-  };
-}, [navigate]);
-
-const findSchoolByEmail = async (email) => {
-  try {
-    console.log('🔍 Looking for school with email:', email);
-    const response = await schoolApi.getSchools();
-    console.log('📡 All schools response:', response);
-    
-    if (response.success && response.data) {
-      // Get schools array
-      let schools = [];
-      if (Array.isArray(response.data)) {
-        schools = response.data;
-      } else if (typeof response.data === 'object') {
-        // If it's an object with keys, convert to array
-        schools = Object.keys(response.data).map(key => ({
-          id: key,
-          ...response.data[key]
-        }));
+    return () => {
+      if (pollingInterval) {
+        clearInterval(pollingInterval);
       }
-      
-      console.log('📚 Total schools found:', schools.length);
-      console.log('📚 Schools:', schools);
-      
-      // Search for school with matching email
-      const foundSchool = schools.find(s => 
-        s.email === email || 
-        s.email?.toLowerCase() === email?.toLowerCase()
-      );
-      
-      if (foundSchool) {
-        console.log('✅ Found school by email:', foundSchool);
-        const foundId = foundSchool.id || foundSchool._id;
-        setSchoolId(foundId);
-        localStorage.setItem('schoolId', foundId);
-        localStorage.setItem('schoolData', JSON.stringify(foundSchool));
-        return foundSchool;
-      } else {
-        console.log('❌ No school found with email:', email);
-        console.log('Available emails:', schools.map(s => s.email));
-      }
-    }
-    return null;
-  } catch (error) {
-    console.error('Error finding school by email:', error);
-    return null;
-  }
-};
+    };
+  }, [navigate]);
 
   // Check existing registration using registerApi
   const checkExistingRegistration = async (email) => {
-  if (!email) {
-    console.log('⚠️ No email provided for registration check');
-    setRegistrationStatus('not_started');
-    setIsLoading(false);
-    return;
-  }
+    if (!email) {
+      console.log('⚠️ No email provided for registration check');
+      setRegistrationStatus('not_started');
+      setIsLoading(false);
+      return;
+    }
 
-  setIsLoading(true);
-  setError('');
-  
-  try {
-    console.log('📡 Checking registration for email:', email);
+    setIsLoading(true);
+    setError('');
     
-    const result = await registerApi.checkRegistrationByEmail(email);
-    
-    console.log('📡 Registration check result:', result);
-
-    if (result && result.success && result.data) {
-      const regData = result.data;
-      setRegistrationId(regData.id);
-      localStorage.setItem('registrationId', regData.id);
-      setRegistrationData(regData);
-      setRegistrationStatus(regData.status);
+    try {
+      console.log('📡 Checking registration for email:', email);
       
-      // If registration is approved, get the school ID
-      if (regData.status === 'approved') {
-        if (regData.schoolId) {
-          // Use schoolId from registration
-          setSchoolId(regData.schoolId);
-          localStorage.setItem('schoolId', regData.schoolId);
-          console.log('✅ School ID found in registration:', regData.schoolId);
-        } else {
-          // Try to find school by email
-          console.log('⚠️ No schoolId in registration, trying to find by email');
-          const foundSchool = await findSchoolByEmail(email);
-          if (foundSchool) {
-            console.log('✅ Found school by email:', foundSchool);
+      const result = await registerApi.checkRegistrationByEmail(email);
+      
+      console.log('📡 Registration check result:', result);
+
+      if (result && result.success && result.data) {
+        const regData = result.data;
+        setRegistrationId(regData.id);
+        localStorage.setItem('registrationId', regData.id);
+        setRegistrationData(regData);
+        setRegistrationStatus(regData.status);
+        
+        // Store institution type from registration
+        if (regData.institutionType) {
+          localStorage.setItem('institutionType', regData.institutionType);
+          setInstitutionType(regData.institutionType);
+        } else if (regData.type) {
+          localStorage.setItem('institutionType', regData.type);
+          setInstitutionType(regData.type);
+        }
+        
+        // If registration is approved, get the institution ID
+        if (regData.status === 'approved') {
+          // First try to get ID from registration
+          let id = regData.schoolId || regData.institutionId || regData.id;
+          
+          if (id) {
+            setInstitutionId(id);
+            localStorage.setItem('institutionId', id);
+            console.log('✅ Institution ID found in registration:', id);
+            
+            // Try to find the full institution data
+            const type = regData.institutionType || regData.type || localStorage.getItem('institutionType');
+            if (type) {
+              const foundInstitution = await findInstitutionByEmail(email);
+              if (foundInstitution) {
+                console.log('✅ Found full institution data:', foundInstitution);
+                const foundId = foundInstitution.id || foundInstitution._id;
+                setInstitutionId(foundId);
+                localStorage.setItem('institutionId', foundId);
+                localStorage.setItem('institutionType', foundInstitution.institutionType);
+                const instType = foundInstitution.institutionType;
+                localStorage.setItem(`${instType}Data`, JSON.stringify(foundInstitution));
+                setInstitutionType(instType);
+              }
+            }
           } else {
-            console.log('❌ No school found with email:', email);
-            toast.warning('School profile not found. Please contact support.');
+            // Try to find institution by email
+            console.log('⚠️ No institutionId in registration, trying to find by email');
+            const foundInstitution = await findInstitutionByEmail(email);
+            if (foundInstitution) {
+              console.log('✅ Found institution by email:', foundInstitution);
+              const foundId = foundInstitution.id || foundInstitution._id;
+              setInstitutionId(foundId);
+              localStorage.setItem('institutionId', foundId);
+              localStorage.setItem('institutionType', foundInstitution.institutionType);
+              const type = foundInstitution.institutionType;
+              localStorage.setItem(`${type}Data`, JSON.stringify(foundInstitution));
+              setInstitutionType(type);
+            } else {
+              console.log('❌ No institution found with email:', email);
+              toast.warning('Institution profile not found. Please contact support.');
+            }
           }
         }
+        
+        console.log('📋 Found existing registration:', regData);
+        
+        // Start polling if pending
+        if (regData.status === 'pending') {
+          startStatusPolling(regData.id);
+        }
+      } else {
+        setRegistrationStatus('not_started');
+        console.log('📋 No existing registration found');
       }
+    } catch (error) {
+      console.error('❌ Error checking registration:', error);
       
-      console.log('📋 Found existing registration:', regData);
-      
-      // Start polling if pending
-      if (regData.status === 'pending') {
-        startStatusPolling(regData.id);
+      if (error.message.includes('Session expired')) {
+        toast.error('Session expired. Please login again.');
+        navigate('/login', { replace: true });
+      } else {
+        setError(error.message || 'Failed to check registration');
+        toast.error('Failed to check registration status');
       }
-    } else {
       setRegistrationStatus('not_started');
-      console.log('📋 No existing registration found');
+    } finally {
+      setIsLoading(false);
     }
-  } catch (error) {
-    console.error('❌ Error checking registration:', error);
-    
-    if (error.message.includes('Session expired')) {
-      toast.error('Session expired. Please login again.');
-      navigate('/login', { replace: true });
-    } else {
-      setError(error.message || 'Failed to check registration');
-      toast.error('Failed to check registration status');
-    }
-    setRegistrationStatus('not_started');
-  } finally {
-    setIsLoading(false);
-  }
-};
+  };
 
   // Fetch registration status using registerApi
   const fetchRegistrationStatus = async (id) => {
@@ -217,42 +261,82 @@ const findSchoolByEmail = async (email) => {
     try {
       console.log('🔍 Fetching registration status for ID:', id);
       
-      // Use registerApi to get registration status
       const result = await registerApi.getRegistrationStatus(id);
 
       console.log('📋 Registration Status Response:', result);
 
       if (result && result.success && result.data) {
-        setRegistrationData(result.data);
-        setRegistrationStatus(result.data.status);
+        const regData = result.data;
+        setRegistrationData(regData);
+        setRegistrationStatus(regData.status);
         
-        // If registration is approved, get the school ID
-        if (result.data.status === 'approved') {
-          if (result.data.schoolId) {
-            setSchoolId(result.data.schoolId);
-            localStorage.setItem('schoolId', result.data.schoolId);
-            console.log('✅ School ID found in registration:', result.data.schoolId);
+        // Store institution type
+        if (regData.institutionType) {
+          localStorage.setItem('institutionType', regData.institutionType);
+          setInstitutionType(regData.institutionType);
+        } else if (regData.type) {
+          localStorage.setItem('institutionType', regData.type);
+          setInstitutionType(regData.type);
+        }
+        
+        // If registration is approved, get the institution ID
+        if (regData.status === 'approved') {
+          let id = regData.schoolId || regData.institutionId || regData.id;
+          
+          if (id) {
+            setInstitutionId(id);
+            localStorage.setItem('institutionId', id);
+            console.log('✅ Institution ID found in registration:', id);
+            
+            // Try to get full data
+            const type = regData.institutionType || regData.type || localStorage.getItem('institutionType');
+            if (type) {
+              const email = regData.email || userEmail;
+              if (email) {
+                const foundInstitution = await findInstitutionByEmail(email);
+                if (foundInstitution) {
+                  console.log('✅ Found full institution data:', foundInstitution);
+                  const foundId = foundInstitution.id || foundInstitution._id;
+                  setInstitutionId(foundId);
+                  localStorage.setItem('institutionId', foundId);
+                  localStorage.setItem('institutionType', foundInstitution.institutionType);
+                  const instType = foundInstitution.institutionType;
+                  localStorage.setItem(`${instType}Data`, JSON.stringify(foundInstitution));
+                  setInstitutionType(instType);
+                }
+              }
+            }
           } else {
-            // Try to find school by email
-            const email = result.data.email || userEmail;
+            // Try to find institution by email
+            const email = regData.email || userEmail;
             if (email) {
-              console.log('⚠️ No schoolId in registration, trying to find by email');
-              await findSchoolByEmail(email);
+              console.log('⚠️ No institutionId in registration, trying to find by email');
+              const foundInstitution = await findInstitutionByEmail(email);
+              if (foundInstitution) {
+                console.log('✅ Found institution by email:', foundInstitution);
+                const foundId = foundInstitution.id || foundInstitution._id;
+                setInstitutionId(foundId);
+                localStorage.setItem('institutionId', foundId);
+                localStorage.setItem('institutionType', foundInstitution.institutionType);
+                const type = foundInstitution.institutionType;
+                localStorage.setItem(`${type}Data`, JSON.stringify(foundInstitution));
+                setInstitutionType(type);
+              }
             }
           }
         }
         
-        console.log('✅ Registration status set to:', result.data.status);
+        console.log('✅ Registration status set to:', regData.status);
         
         // Start polling if pending
-        if (result.data.status === 'pending') {
+        if (regData.status === 'pending') {
           startStatusPolling(id);
         }
       } else {
         console.log('❌ No registration data found');
         setRegistrationStatus('not_started');
         localStorage.removeItem('registrationId');
-        localStorage.removeItem('schoolId');
+        localStorage.removeItem('institutionId');
       }
     } catch (error) {
       console.error('Error fetching registration:', error);
@@ -271,12 +355,10 @@ const findSchoolByEmail = async (email) => {
 
   // Start polling for status updates
   const startStatusPolling = (id) => {
-    // Clear any existing interval
     if (pollingInterval) {
       clearInterval(pollingInterval);
     }
     
-    // Poll every 30 seconds
     const interval = setInterval(async () => {
       try {
         const result = await registerApi.getRegistrationStatus(id);
@@ -287,28 +369,34 @@ const findSchoolByEmail = async (email) => {
             setRegistrationStatus(newStatus);
             setRegistrationData(result.data);
             
-            // If registration is approved, get the school ID
             if (newStatus === 'approved') {
-              if (result.data.schoolId) {
-                setSchoolId(result.data.schoolId);
-                localStorage.setItem('schoolId', result.data.schoolId);
+              if (result.data.schoolId || result.data.institutionId) {
+                const id = result.data.schoolId || result.data.institutionId;
+                setInstitutionId(id);
+                localStorage.setItem('institutionId', id);
               } else {
-                // Try to find school by email
                 const email = result.data.email || userEmail;
                 if (email) {
-                  await findSchoolByEmail(email);
+                  const foundInstitution = await findInstitutionByEmail(email);
+                  if (foundInstitution) {
+                    const foundId = foundInstitution.id || foundInstitution._id;
+                    setInstitutionId(foundId);
+                    localStorage.setItem('institutionId', foundId);
+                    localStorage.setItem('institutionType', foundInstitution.institutionType);
+                    const type = foundInstitution.institutionType;
+                    localStorage.setItem(`${type}Data`, JSON.stringify(foundInstitution));
+                    setInstitutionType(type);
+                  }
                 }
               }
             }
             
-            // Show notification on status change
             if (newStatus === 'approved') {
               toast.success('🎉 Your registration has been approved!');
             } else if (newStatus === 'rejected') {
               toast.error('Your registration was rejected. Please check the reason.');
             }
             
-            // If status is no longer pending, stop polling
             if (newStatus === 'approved' || newStatus === 'rejected') {
               clearInterval(interval);
               setPollingInterval(null);
@@ -317,7 +405,6 @@ const findSchoolByEmail = async (email) => {
         }
       } catch (error) {
         console.error('Polling error:', error);
-        // If token expired during polling, stop polling
         if (error.message.includes('Session expired')) {
           clearInterval(interval);
           setPollingInterval(null);
@@ -325,12 +412,24 @@ const findSchoolByEmail = async (email) => {
           navigate('/login', { replace: true });
         }
       }
-    }, 30000); // 30 seconds
+    }, 30000);
     
     setPollingInterval(interval);
   };
 
-  // Refresh status handler
+  const handleLogout = () => {
+    if (pollingInterval) {
+      clearInterval(pollingInterval);
+      setPollingInterval(null);
+    }
+    authApis.adminLogout();
+    navigate('/login', { replace: true });
+  };
+
+  const handleRegisterForm = () => {
+    navigate('/register-form');
+  };
+
   const handleRefreshStatus = async () => {
     if (registrationId) {
       await fetchRegistrationStatus(registrationId);
@@ -345,30 +444,94 @@ const findSchoolByEmail = async (email) => {
     }
   };
 
-  const handleLogout = () => {
-    // Clear polling
-    if (pollingInterval) {
-      clearInterval(pollingInterval);
-      setPollingInterval(null);
-    }
-    authApis.adminLogout();
-    navigate('/login', { replace: true });
-  };
-
-  const handleRegisterForm = () => {
-    navigate('/register-form');
-  };
-
-  // Handle view profile navigation
+  // Handle view profile navigation based on institution type
   const handleViewProfile = () => {
-    // Navigate to school profile with the school ID
-    if (schoolId) {
-      navigate(`/school-profile/${schoolId}`);
-    } else if (registrationId) {
-      // Fallback: use registration ID if school ID is not available
-      navigate(`/school-profile/${registrationId}`);
-    } else {
+    // Try multiple ways to get the institution type
+    let type = localStorage.getItem('institutionType');
+    
+    // If not found, try to get from user data
+    if (!type) {
+      const userData = JSON.parse(localStorage.getItem('userData') || '{}');
+      type = userData.institutionType || userData.type;
+    }
+    
+    // If still not found, try to determine from registration data
+    if (!type && registrationData) {
+      type = registrationData.institutionType || registrationData.type;
+    }
+    
+    // If still not found, try to determine from stored data
+    if (!type) {
+      if (localStorage.getItem('collegeData')) {
+        type = 'college';
+      } else if (localStorage.getItem('schoolData')) {
+        type = 'school';
+      } else if (localStorage.getItem('puCollegeData')) {
+        type = 'pu_college';
+      } else if (localStorage.getItem('coachingData')) {
+        type = 'coaching';
+      } else if (localStorage.getItem('teacherData')) {
+        type = 'teacher';
+      }
+    }
+    
+    // If still not found, check what's in the registration data from the API
+    if (!type && registrationData) {
+      // Check if registration data has institution type
+      if (registrationData.institutionType) {
+        type = registrationData.institutionType;
+      } else if (registrationData.type) {
+        type = registrationData.type;
+      }
+    }
+    
+    // Get the institution ID
+    const id = institutionId || localStorage.getItem('institutionId');
+    
+    if (!id) {
       toast.warning('Profile ID not found. Please contact support.');
+      return;
+    }
+
+    console.log('🔍 Navigating to profile - Type:', type, 'ID:', id);
+
+    // Navigate to the correct profile page based on institution type
+    switch(type?.toLowerCase()) {
+      case 'college':
+        navigate('/college-profile');
+        break;
+      case 'school':
+        navigate('/school-profile');
+        break;
+      case 'pu_college':
+      case 'pucollege':
+        navigate('/pu-college-profile');
+        break;
+      case 'coaching':
+      case 'tuition':
+        navigate('/coaching-profile');
+        break;
+      case 'teacher':
+        navigate('/teacher-profile');
+        break;
+      default:
+        // If type is still unknown, try to determine from email or registration
+        console.log('⚠️ Unknown institution type, trying to determine from data');
+        
+        // Check if we have any stored data
+        if (localStorage.getItem('collegeData')) {
+          navigate('/college-profile');
+        } else if (localStorage.getItem('schoolData')) {
+          navigate('/school-profile');
+        } else if (localStorage.getItem('puCollegeData')) {
+          navigate('/pu-college-profile');
+        } else if (localStorage.getItem('coachingData')) {
+          navigate('/coaching-profile');
+        } else if (localStorage.getItem('teacherData')) {
+          navigate('/teacher-profile');
+        } else {
+          toast.warning('Profile type not found. Please contact support.');
+        }
     }
   };
 

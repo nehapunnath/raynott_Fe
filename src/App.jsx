@@ -56,12 +56,16 @@ import TeachersDashboard from './pages/TeachersDashboard'
 import Dashboard from './components/Dashboard'
 import { ToastContainer } from 'react-toastify'
 import SchoolProfile from './components/SchoolProfile'
+import CollegeProfile from './components/CollegeProfile'
+import PUCollegeProfile from './components/PuCollegeProfile'
+import CoachingProfile from './components/CoachingProfile'
+import TeacherProfile from './components/TeacherProfile'
 
 function App() {
   const location = useLocation()
 
   // Paths where footer should be hidden
-  const hideFooterPaths = ['/login', '/admin/dashboard','/admin/edit-school/:id','/admin/view-school/:id','/register-form','/dashboard' ,'/school-profile/:id','/college-Dashboard','/Pu-college-Dashboard','/Coaching-Tuition-Dashboard','/Teachers-Dashboard']
+  const hideFooterPaths = ['/login', '/admin/dashboard','/admin/edit-school/:id','/admin/view-school/:id','/register-form','/dashboard' ,'/school-profile','/college-profile','/pu-college-profile','/coaching-profile','/teacher-profile']
 
   const shouldShowFooter = !hideFooterPaths.includes(location.pathname)
 
@@ -91,13 +95,11 @@ function App() {
         <Route path='/personal' element={<PersonalTeachers/>}/>
 
         <Route path='/dashboard' element={<Dashboard/>}/>
-        <Route path='/school-profile/:id' element={<SchoolProfile/>}/>
-        {/* <Route path='/School-Dashboard' element={<SchoolDashboard/>}/>
-        <Route path='/college-Dashboard' element={<CollegeDashboard/>}/>
-        <Route path='/Pu-college-Dashboard' element={<PuCollegeDashboard/>}/>
-        <Route path='/Coaching-Tuition-Dashboard' element={<CoachingDashboard/>}/>
-        <Route path='/Teachers-Dashboard' element={<TeachersDashboard/>}/> */}
-
+        <Route path='/school-profile' element={<SchoolProfile/>}/>
+        <Route path='/college-profile' element={<CollegeProfile/>}/>
+        <Route path='/pu-college-profile' element={<PUCollegeProfile/>}/>
+        <Route path='/coaching-profile' element={<CoachingProfile/>}/>
+        <Route path='/teacher-profile' element={<TeacherProfile/>}/>
 
         <Route path='/login' element={<LoginPage/>}/>
         <Route path='/bookdemo' element={<BookaDemo/>}/>
