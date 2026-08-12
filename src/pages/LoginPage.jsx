@@ -1,18 +1,21 @@
 // LoginPage.jsx
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
-import { FiMail, FiLock, FiArrowRight, FiAlertCircle, FiUser, FiHome, FiBriefcase, FiChevronRight, FiInfo } from 'react-icons/fi';
+import { FiMail, FiLock, FiArrowRight, FiAlertCircle, FiUser, FiHome, FiBriefcase, FiChevronRight, FiInfo, FiUsers, FiSearch } from 'react-icons/fi';
 import { useNavigate } from 'react-router-dom';
 import { authApis } from '../services/allApis';
 import "tailwindcss";
 
 const LoginPage = () => {
   const [isLoginMode, setIsLoginMode] = useState(true);
+  const [userType, setUserType] = useState('institute'); // 'institute' or 'parent'
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [institutionName, setInstitutionName] = useState('');
   const [institutionType, setInstitutionType] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  const [parentName, setParentName] = useState('');
+  const [parentInstitutionType, setParentInstitutionType] = useState('');
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
@@ -37,7 +40,11 @@ const LoginPage = () => {
       'registrationId',
       'schoolId',
       'schoolData',
-      'registrationData'
+      'registrationData',
+      'parentToken',
+      'parentData',
+      'parentName',
+      'parentInstitutionType'
     ];
     keysToRemove.forEach(key => localStorage.removeItem(key));
     console.log('🧹 All user data cleared');
@@ -58,72 +65,107 @@ const LoginPage = () => {
     // Clear previous user data
     clearUserData();
 
-    const result = await authApis.adminLogin(email, password);
-    
-    if (result.success) {
-      try {
-        console.log('🔑 Login Result:', result);
-        
-        // Store email immediately
-        localStorage.setItem('userEmail', email);
-        
-        if (result.user && result.user.role) {
-          console.log('📋 User data from login response:', result.user);
+    if (userType === 'parent') {
+      // Parent login flow
+      const result = await authApis.parentLogin(email, password);
+      
+      if (result.success) {
+        try {
+          console.log('👨‍👩‍👦 Parent Login Result:', result);
           
-          localStorage.setItem('userRole', result.user.role);
-          localStorage.setItem('institutionType', result.user.institutionType || 'N/A');
-          localStorage.setItem('institutionName', result.user.institutionName || 'N/A');
+          localStorage.setItem('userEmail', email);
+          localStorage.setItem('userRole', 'parent');
           
-          const userRole = result.user.role;
-          const isAdmin = userRole === 'admin';
+          if (result.parentData) {
+            localStorage.setItem('parentData', JSON.stringify(result.parentData));
+            localStorage.setItem('parentName', result.parentData.parentName || 'Parent');
+            localStorage.setItem('parentInstitutionType', result.parentData.institutionType || '');
+          }
           
           await new Promise(resolve => setTimeout(resolve, 100));
           
-          if (isAdmin) {
-            console.log('🚀 Redirecting to /admin/dashboard');
-            navigate('/admin/dashboard', { replace: true });
-          } else {
-            console.log('🚀 Redirecting to /dashboard');
-            navigate('/dashboard', { replace: true });
-          }
+          console.log('🚀 Redirecting to /parent/dashboard');
+          navigate('/parent/dashboard', { replace: true });
           
           setIsLoading(false);
           return;
-        }
-        
-        // Fallback
-        const token = result.token;
-        const userData = await authApis.getCurrentAdminUser(token);
-        
-        if (userData.success) {
-          localStorage.setItem('userRole', userData.role || 'institute');
-          localStorage.setItem('institutionType', userData.institutionType || 'N/A');
-          localStorage.setItem('institutionName', userData.institutionName || 'N/A');
-          if (userData.email) {
-            localStorage.setItem('userEmail', userData.email);
-          }
-
-          const isAdmin = userData.role === 'admin' || userData.isAdmin === true;
-          
-          await new Promise(resolve => setTimeout(resolve, 100));
-
-          if (isAdmin) {
-            navigate('/admin/dashboard', { replace: true });
-          } else {
-            navigate('/dashboard', { replace: true });
-          }
-        } else {
-          setError(userData.error || 'Error loading user data');
+        } catch (error) {
+          console.error('Error loading parent data:', error);
+          setError('Error loading parent data');
           setIsLoading(false);
         }
-      } catch (error) {
-        console.error('Error loading user data:', error);
-        setError('Error loading user data');
+      } else {
+        setError(result.error || 'Parent login failed. Please check your credentials.');
         setIsLoading(false);
       }
     } else {
-      setError(result.error || 'Login failed. Please check your credentials.');
-      setIsLoading(false);
+      // Institute login flow
+      const result = await authApis.adminLogin(email, password);
+      
+      if (result.success) {
+        try {
+          console.log('🔑 Login Result:', result);
+          
+          localStorage.setItem('userEmail', email);
+          
+          if (result.user && result.user.role) {
+            console.log('📋 User data from login response:', result.user);
+            
+            localStorage.setItem('userRole', result.user.role);
+            localStorage.setItem('institutionType', result.user.institutionType || 'N/A');
+            localStorage.setItem('institutionName', result.user.institutionName || 'N/A');
+            
+            const userRole = result.user.role;
+            const isAdmin = userRole === 'admin';
+            
+            await new Promise(resolve => setTimeout(resolve, 100));
+            
+            if (isAdmin) {
+              console.log('🚀 Redirecting to /admin/dashboard');
+              navigate('/admin/dashboard', { replace: true });
+            } else {
+              console.log('🚀 Redirecting to /dashboard');
+              navigate('/dashboard', { replace: true });
+            }
+            
+            setIsLoading(false);
+            return;
+          }
+          
+          // Fallback
+          const token = result.token;
+          const userData = await authApis.getCurrentAdminUser(token);
+          
+          if (userData.success) {
+            localStorage.setItem('userRole', userData.role || 'institute');
+            localStorage.setItem('institutionType', userData.institutionType || 'N/A');
+            localStorage.setItem('institutionName', userData.institutionName || 'N/A');
+            if (userData.email) {
+              localStorage.setItem('userEmail', userData.email);
+            }
+
+            const isAdmin = userData.role === 'admin' || userData.isAdmin === true;
+            
+            await new Promise(resolve => setTimeout(resolve, 100));
+
+            if (isAdmin) {
+              navigate('/admin/dashboard', { replace: true });
+            } else {
+              navigate('/dashboard', { replace: true });
+            }
+          } else {
+            setError(userData.error || 'Error loading user data');
+            setIsLoading(false);
+          }
+        } catch (error) {
+          console.error('Error loading user data:', error);
+          setError('Error loading user data');
+          setIsLoading(false);
+        }
+      } else {
+        setError(result.error || 'Login failed. Please check your credentials.');
+        setIsLoading(false);
+      }
     }
   };
 
@@ -153,24 +195,70 @@ const LoginPage = () => {
       return;
     }
 
-    const result = await authApis.adminRegister({
-      institutionName,
-      institutionType,
-      email,
-      password
-    });
-    
-    if (result.success) {
-      setIsLoginMode(true);
-      setError('');
-      setInstitutionName('');
-      setInstitutionType('');
-      setEmail('');
-      setPassword('');
-      setConfirmPassword('');
-      alert("✅ Registration successful! Please login with your credentials.");
+    if (userType === 'parent') {
+      // Parent registration
+      if (!parentName) {
+        setError('Please enter parent name');
+        setIsLoading(false);
+        return;
+      }
+      if (!parentInstitutionType) {
+        setError('Please select the type of institution you are looking for');
+        setIsLoading(false);
+        return;
+      }
+
+      const result = await authApis.parentRegister({
+        parentName,
+        institutionType: parentInstitutionType,
+        email,
+        password
+      });
+      
+      if (result.success) {
+        setIsLoginMode(true);
+        setError('');
+        setParentName('');
+        setParentInstitutionType('');
+        setEmail('');
+        setPassword('');
+        setConfirmPassword('');
+        alert("✅ Parent registration successful! Please login with your credentials.");
+      } else {
+        setError(result.error || 'Parent registration failed. Please try again.');
+      }
     } else {
-      setError(result.error || 'Registration failed. Please try again.');
+      // Institute registration
+      if (!institutionName) {
+        setError('Please enter institution name');
+        setIsLoading(false);
+        return;
+      }
+      if (!institutionType) {
+        setError('Please select institution type');
+        setIsLoading(false);
+        return;
+      }
+
+      const result = await authApis.adminRegister({
+        institutionName,
+        institutionType,
+        email,
+        password
+      });
+      
+      if (result.success) {
+        setIsLoginMode(true);
+        setError('');
+        setInstitutionName('');
+        setInstitutionType('');
+        setEmail('');
+        setPassword('');
+        setConfirmPassword('');
+        alert("✅ Registration successful! Please login with your credentials.");
+      } else {
+        setError(result.error || 'Registration failed. Please try again.');
+      }
     }
     
     setIsLoading(false);
@@ -179,6 +267,160 @@ const LoginPage = () => {
   const goToHome = () => {
     navigate('/');
   };
+
+  // User Type Toggle Component
+  const UserTypeToggle = () => (
+    <div className="flex bg-gray-700/30 rounded-lg p-1 border border-gray-600/30 mb-6">
+      <button
+        type="button"
+        className={`flex-1 py-2 px-3 rounded-md text-sm font-medium transition-all flex items-center justify-center gap-2 ${
+          userType === 'institute'
+            ? 'bg-gradient-to-r from-orange-600 to-amber-500 text-white shadow-lg'
+            : 'text-gray-400 hover:text-gray-200'
+        }`}
+        onClick={() => {
+          setUserType('institute');
+          setError('');
+        }}
+      >
+        <FiBriefcase className="w-4 h-4" />
+        Institute
+      </button>
+      <button
+        type="button"
+        className={`flex-1 py-2 px-3 rounded-md text-sm font-medium transition-all flex items-center justify-center gap-2 ${
+          userType === 'parent'
+            ? 'bg-gradient-to-r from-orange-600 to-amber-500 text-white shadow-lg'
+            : 'text-gray-400 hover:text-gray-200'
+        }`}
+        onClick={() => {
+          setUserType('parent');
+          setError('');
+        }}
+      >
+        <FiUsers className="w-4 h-4" />
+        Parent
+      </button>
+    </div>
+  );
+
+  // Parent Registration Fields
+  const ParentRegistrationFields = () => (
+    <>
+      <motion.div
+        initial={{ opacity: 0, x: -10 }}
+        animate={{ opacity: 1, x: 0 }}
+        transition={{ delay: 0.6 }}
+      >
+        <div className="relative">
+          <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+            <FiUser className="h-5 w-5 text-gray-400" />
+          </div>
+          <input
+            id="parentName"
+            name="parentName"
+            type="text"
+            required
+            className="block w-full pl-10 pr-3 py-3 bg-gray-700/50 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all"
+            placeholder="Parent Full Name *"
+            value={parentName}
+            onChange={(e) => setParentName(e.target.value)}
+          />
+        </div>
+      </motion.div>
+
+      <motion.div
+        initial={{ opacity: 0, x: -10 }}
+        animate={{ opacity: 1, x: 0 }}
+        transition={{ delay: 0.65 }}
+      >
+        <div className="relative">
+          <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+            <FiSearch className="h-5 w-5 text-gray-400" />
+          </div>
+          <select
+            id="parentInstitutionType"
+            name="parentInstitutionType"
+            required
+            className="block w-full pl-10 pr-3 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all appearance-none cursor-pointer"
+            value={parentInstitutionType}
+            onChange={(e) => setParentInstitutionType(e.target.value)}
+          >
+            <option value="" disabled className="text-gray-400">Select the type of institution you are looking for your child *</option>
+            {institutionTypes.map((type) => (
+              <option key={type} value={type} className="text-white bg-gray-800 py-2">
+                {type}
+              </option>
+            ))}
+          </select>
+          <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
+            <FiChevronRight className="h-5 w-5 text-gray-400" />
+          </div>
+        </div>
+        <p className="mt-1 text-xs text-gray-400 flex items-center gap-1">
+          <FiInfo className="w-3 h-3 text-amber-400" />
+          Select the type of educational institution that best suits your child's needs
+        </p>
+      </motion.div>
+    </>
+  );
+
+  // Institute Registration Fields
+  const InstituteRegistrationFields = () => (
+    <>
+      <motion.div
+        initial={{ opacity: 0, x: -10 }}
+        animate={{ opacity: 1, x: 0 }}
+        transition={{ delay: 0.6 }}
+      >
+        <div className="relative">
+          <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+            <FiBriefcase className="h-5 w-5 text-gray-400" />
+          </div>
+          <input
+            id="institutionName"
+            name="institutionName"
+            type="text"
+            required
+            className="block w-full pl-10 pr-3 py-3 bg-gray-700/50 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all"
+            placeholder="Institution Name *"
+            value={institutionName}
+            onChange={(e) => setInstitutionName(e.target.value)}
+          />
+        </div>
+      </motion.div>
+
+      <motion.div
+        initial={{ opacity: 0, x: -10 }}
+        animate={{ opacity: 1, x: 0 }}
+        transition={{ delay: 0.65 }}
+      >
+        <div className="relative">
+          <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+            <FiUser className="h-5 w-5 text-gray-400" />
+          </div>
+          <select
+            id="institutionType"
+            name="institutionType"
+            required
+            className="block w-full pl-10 pr-3 py-3 bg-gray-700/50 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all appearance-none cursor-pointer"
+            value={institutionType}
+            onChange={(e) => setInstitutionType(e.target.value)}
+          >
+            <option value="" disabled className="text-gray-400">Select Institution Type *</option>
+            {institutionTypes.map((type) => (
+              <option key={type} value={type} className="text-white bg-gray-800 py-2">
+                {type}
+              </option>
+            ))}
+          </select>
+          <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
+            <FiChevronRight className="h-5 w-5 text-gray-400" />
+          </div>
+        </div>
+      </motion.div>
+    </>
+  );
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 to-gray-800 flex flex-col justify-center py-12 sm:px-6 lg:px-8 relative overflow-hidden">
@@ -228,7 +470,7 @@ const LoginPage = () => {
         animate={{
           scale: [1, 1.3, 1],
           opacity: [0.3, 0.6, 0.3]
-        }}
+        }}i
         transition={{
           duration: 10,
           repeat: Infinity,
@@ -262,7 +504,14 @@ const LoginPage = () => {
             animate={{ opacity: 1 }}
             transition={{ delay: 0.3, duration: 0.8 }}
           >
-            {isLoginMode ? 'Sign in to your account' : 'Register your institution'}
+            {isLoginMode 
+              ? userType === 'parent' 
+                ? 'Sign in as Parent' 
+                : 'Sign in to your account'
+              : userType === 'parent'
+                ? 'Register as Parent'
+                : 'Register your institution'
+            }
           </motion.p>
         </motion.div>
       </div>
@@ -288,8 +537,13 @@ const LoginPage = () => {
             </motion.div>
           )}
 
+          {!isLoginMode && <UserTypeToggle />}
+
           {isLoginMode ? (
             <form className="space-y-6" onSubmit={handleLogin}>
+              {/* User Type Toggle for Login */}
+              <UserTypeToggle />
+
               {/* Email Field with Important Badge */}
               <motion.div
                 initial={{ opacity: 0, x: -10 }}
@@ -359,7 +613,7 @@ const LoginPage = () => {
                     </span>
                   ) : (
                     <>
-                      Sign In
+                      {userType === 'parent' ? 'Sign In as Parent' : 'Sign In'}
                       <FiArrowRight className="ml-2 h-5 w-5 group-hover:translate-x-1 transition-transform" />
                     </>
                   )}
@@ -388,57 +642,15 @@ const LoginPage = () => {
             </form>
           ) : (
             <form className="space-y-5" onSubmit={handleRegister}>
-              <motion.div
-                initial={{ opacity: 0, x: -10 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: 0.6 }}
-              >
-                <div className="relative">
-                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                    <FiBriefcase className="h-5 w-5 text-gray-400" />
-                  </div>
-                  <input
-                    id="institutionName"
-                    name="institutionName"
-                    type="text"
-                    required
-                    className="block w-full pl-10 pr-3 py-3 bg-gray-700/50 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all"
-                    placeholder="Institution Name *"
-                    value={institutionName}
-                    onChange={(e) => setInstitutionName(e.target.value)}
-                  />
-                </div>
-              </motion.div>
+              {userType === 'parent' ? (
+                // Parent Registration Fields
+                <ParentRegistrationFields />
+              ) : (
+                // Institute Registration Fields
+                <InstituteRegistrationFields />
+              )}
 
-              <motion.div
-                initial={{ opacity: 0, x: -10 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: 0.65 }}
-              >
-                <div className="relative">
-                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                    <FiUser className="h-5 w-5 text-gray-400" />
-                  </div>
-                  <select
-                    id="institutionType"
-                    name="institutionType"
-                    required
-                    className="block w-full pl-10 pr-3 py-3 bg-gray-700/50 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all appearance-none"
-                    value={institutionType}
-                    onChange={(e) => setInstitutionType(e.target.value)}
-                  >
-                    <option value="" disabled>Select Institution Type *</option>
-                    {institutionTypes.map((type) => (
-                      <option key={type} value={type}>{type}</option>
-                    ))}
-                  </select>
-                  <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
-                    <FiChevronRight className="h-5 w-5 text-gray-400" />
-                  </div>
-                </div>
-              </motion.div>
-
-              {/* Email Field with Important Badge - Registration */}
+              {/* Email Field - Common */}
               <motion.div
                 initial={{ opacity: 0, x: -10 }}
                 animate={{ opacity: 1, x: 0 }}
@@ -528,7 +740,7 @@ const LoginPage = () => {
                     </span>
                   ) : (
                     <>
-                      Register Institution
+                      {userType === 'parent' ? 'Register as Parent' : 'Register Institution'}
                       <FiArrowRight className="ml-2 h-5 w-5 group-hover:translate-x-1 transition-transform" />
                     </>
                   )}

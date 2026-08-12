@@ -1,11 +1,9 @@
-// services/authApis.js
 import base_url from "./base_urls";
 import commonApis from "./commonApis";
 import { auth } from "../firebase-client";
 import { signInWithEmailAndPassword, createUserWithEmailAndPassword } from "firebase/auth";
 
 export const authApis = {
-  // Clear all user-specific data from localStorage
   clearUserData: () => {
     const keysToRemove = [
       'adminToken',
@@ -17,7 +15,12 @@ export const authApis = {
       'registrationId',
       'schoolId',
       'schoolData',
-      'registrationData'
+      'registrationData',
+      'parentToken',
+      'parentData',
+      'parentName',
+      'studentName',
+      'studentClass'
     ];
     
     keysToRemove.forEach(key => {
@@ -27,9 +30,164 @@ export const authApis = {
     console.log('🧹 All user data cleared from localStorage');
   },
 
+  // PARENT LOGIN
+  // PARENT LOGIN
+async parentLogin(email, password) {
+  try {
+    this.clearUserData();
+    
+    const result = await commonApis(
+      `${base_url}/parent/login`,
+      "POST",
+      { "Content-Type": "application/json" },
+      { email, password }
+    );
+
+    if (result.success) {
+      localStorage.setItem("parentToken", result.token);
+      localStorage.setItem("userEmail", email);
+      localStorage.setItem("userRole", 'parent');
+      
+      if (result.parentData) {
+        localStorage.setItem("parentData", JSON.stringify(result.parentData));
+        localStorage.setItem("parentName", result.parentData.parentName || '');
+        localStorage.setItem("parentInstitutionType", result.parentData.institutionType || '');
+      }
+      
+      console.log('✅ Parent login successful for:', email);
+      
+      return { 
+        success: true, 
+        token: result.token,
+        parentData: result.parentData 
+      };
+    }
+    return result;
+  } catch (error) {
+    return {
+      success: false,
+      error: "Network error. Please try again."
+    };
+  }
+},
+
+// PARENT REGISTRATION
+async parentRegister(parentData) {
+  try {
+    const { parentName, institutionType, email, password } = parentData;
+    
+    const result = await commonApis(
+      `${base_url}/parent/register`,
+      "POST",
+      { "Content-Type": "application/json" },
+      {
+        parentName,
+        institutionType,
+        email,
+        password
+      }
+    );
+
+    if (result.success) {
+      if (result.token) {
+        localStorage.setItem("parentToken", result.token);
+        localStorage.setItem("userRole", 'parent');
+        localStorage.setItem("userEmail", email);
+        localStorage.setItem("parentName", parentName);
+        localStorage.setItem("parentInstitutionType", institutionType);
+      }
+      
+      try {
+        const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+        console.log("Firebase client auth parent created:", userCredential.user.uid);
+      } catch (firebaseError) {
+        console.warn("Client-side Firebase auth error:", firebaseError.message);
+      }
+      
+      return { 
+        success: true, 
+        message: result.message || "Parent registration successful",
+        token: result.token,
+        parentData: result.parentData
+      };
+    }
+    
+    return { 
+      success: false, 
+      error: result.error || "Registration failed" 
+    };
+    
+  } catch (error) {
+    console.error("Parent Registration API error:", error);
+    return {
+      success: false,
+      error: error.response?.data?.error || "Network error. Please try again."
+    };
+  }
+},
+  // GET PARENT DATA
+  async getParentData(token) {
+    try {
+      const result = await commonApis(
+        `${base_url}/parent/data`,
+        "GET",
+        { 
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`
+        }
+      );
+      
+      if (result.success && result.parentData) {
+        localStorage.setItem("parentData", JSON.stringify(result.parentData));
+        localStorage.setItem("parentName", result.parentData.parentName || '');
+        localStorage.setItem("studentName", result.parentData.studentName || '');
+        localStorage.setItem("studentClass", result.parentData.studentClass || '');
+      }
+      
+      return result;
+    } catch (error) {
+      console.error('Error getting parent data:', error);
+      return { success: false, error: error.message };
+    }
+  },
+
+  // CHECK IF PARENT IS AUTHENTICATED
+  isParentAuthenticated() {
+    const token = localStorage.getItem("parentToken");
+    return token !== null && token !== undefined;
+  },
+
+  // GET PARENT TOKEN
+  getParentToken() {
+    return localStorage.getItem("parentToken");
+  },
+
+  // GET PARENT DATA FROM LOCAL STORAGE
+  getStoredParentData() {
+    try {
+      const data = localStorage.getItem("parentData");
+      return data ? JSON.parse(data) : null;
+    } catch {
+      return null;
+    }
+  },
+
+  // LOGOUT PARENT
+  async parentLogout() {
+    try {
+      await auth.signOut();
+      this.clearUserData();
+      return { success: true };
+    } catch (error) {
+      console.error("Parent logout error:", error);
+      this.clearUserData();
+      return { success: false, error: error.message };
+    }
+  },
+
+  // Existing methods...
   async adminLogin(email, password) {
     try {
-      // Clear previous user data before login
       this.clearUserData();
       
       const result = await commonApis(
@@ -43,7 +201,6 @@ export const authApis = {
         localStorage.setItem("adminToken", result.token);
         localStorage.setItem("userEmail", email);
         
-        // Store user role from the response
         if (result.user && result.user.role) {
           localStorage.setItem("userRole", result.user.role);
         }
@@ -55,12 +212,6 @@ export const authApis = {
         }
         
         console.log('✅ Login successful for:', email);
-        console.log('📋 User data stored:', {
-          role: localStorage.getItem('userRole'),
-          institutionType: localStorage.getItem('institutionType'),
-          institutionName: localStorage.getItem('institutionName'),
-          email: localStorage.getItem('userEmail')
-        });
         
         return { 
           success: true, 
@@ -185,13 +336,11 @@ export const authApis = {
 
   async getCurrentAdminUser(token) {
     try {
-      // First, try to get user data from localStorage
       const storedRole = localStorage.getItem('userRole');
       const storedInstitutionType = localStorage.getItem('institutionType');
       const storedInstitutionName = localStorage.getItem('institutionName');
       const storedEmail = localStorage.getItem('userEmail');
       
-      // If we have data in localStorage, use it
       if (storedRole && storedInstitutionType) {
         console.log('📋 Using stored user data from localStorage');
         return {
@@ -203,7 +352,6 @@ export const authApis = {
         };
       }
       
-      // Decode the JWT token on client side to get claims
       try {
         const base64Url = token.split('.')[1];
         const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
@@ -214,15 +362,12 @@ export const authApis = {
         const decodedToken = JSON.parse(jsonPayload);
         console.log('📋 Decoded Token:', decodedToken);
         
-        // Extract role from claims
         let role = decodedToken.role || 'institute';
         
-        // If old format with admin: true, set as admin
         if (decodedToken.admin === true && !decodedToken.role) {
           role = 'admin';
         }
         
-        // Store in localStorage for future use
         localStorage.setItem('userRole', role);
         if (decodedToken.institutionType) {
           localStorage.setItem('institutionType', decodedToken.institutionType);
@@ -246,7 +391,6 @@ export const authApis = {
         console.error('Error decoding token:', decodeError);
       }
       
-      // Fallback: Make an API call to get user data
       try {
         const result = await commonApis(
           `${base_url}/admin/user-data`,
@@ -258,7 +402,6 @@ export const authApis = {
         );
         
         if (result.success) {
-          // Store in localStorage
           localStorage.setItem('userRole', result.role || 'institute');
           if (result.institutionType) {
             localStorage.setItem('institutionType', result.institutionType);

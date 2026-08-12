@@ -10,10 +10,6 @@ import "tailwindcss";
 function Register() {
   const navigate = useNavigate();
 
-//   const handleRegisterClick = () => {
-//     navigate('/register-form');
-//   };
-
   // Animation variants
   const containerVariants = {
     hidden: { opacity: 0 },
@@ -63,7 +59,7 @@ function Register() {
           <motion.button
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
-            onClick={() => navigate('/register-form')}
+            // onClick={() => navigate('/register-form')}
             className="mt-6 bg-white text-orange-600 font-bold px-8 py-4 rounded-full hover:bg-amber-100 transition-all shadow-lg hover:shadow-xl"
           >
             Start Registration - It's Free!
@@ -272,7 +268,7 @@ function Register() {
           <motion.button
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
-            onClick={() => navigate('/register-form')}
+            // onClick={() => navigate('/register-form')}
             className="bg-white text-orange-600 font-bold px-10 py-4 rounded-full hover:bg-amber-100 transition-all shadow-lg hover:shadow-xl text-lg"
           >
             Register Now - No Cost!
