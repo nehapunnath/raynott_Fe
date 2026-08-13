@@ -31,7 +31,6 @@ export const authApis = {
   },
 
   // PARENT LOGIN
-  // PARENT LOGIN
 async parentLogin(email, password) {
   try {
     this.clearUserData();

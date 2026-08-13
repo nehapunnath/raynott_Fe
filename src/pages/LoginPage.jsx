@@ -1,5 +1,5 @@
 // LoginPage.jsx
-import React, { useState } from 'react';
+import React, { useState, useCallback, useMemo } from 'react';
 import { motion } from 'framer-motion';
 import { FiMail, FiLock, FiArrowRight, FiAlertCircle, FiUser, FiHome, FiBriefcase, FiChevronRight, FiInfo, FiUsers, FiSearch } from 'react-icons/fi';
 import { useNavigate } from 'react-router-dom';
@@ -8,7 +8,7 @@ import "tailwindcss";
 
 const LoginPage = () => {
   const [isLoginMode, setIsLoginMode] = useState(true);
-  const [userType, setUserType] = useState('institute'); // 'institute' or 'parent'
+  const [userType, setUserType] = useState('institute');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [institutionName, setInstitutionName] = useState('');
@@ -20,16 +20,16 @@ const LoginPage = () => {
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
 
-  const institutionTypes = [
+  const institutionTypes = useMemo(() => [
     'Schools',
     'Colleges',
     'PU College',
     'Coaching/Tuition',
     'All Teachers'
-  ];
+  ], []);
 
   // Clear all user data
-  const clearUserData = () => {
+  const clearUserData = useCallback(() => {
     const keysToRemove = [
       'adminToken',
       'userEmail', 
@@ -47,26 +47,23 @@ const LoginPage = () => {
       'parentInstitutionType'
     ];
     keysToRemove.forEach(key => localStorage.removeItem(key));
-    console.log('🧹 All user data cleared');
-  };
+    console.log(' All user data cleared');
+  }, []);
 
   const handleLogin = async (e) => {
     e.preventDefault();
     setIsLoading(true);
     setError('');
 
-    // Validate email
     if (!email || !email.includes('@')) {
       setError('Please enter a valid email address');
       setIsLoading(false);
       return;
     }
 
-    // Clear previous user data
     clearUserData();
 
     if (userType === 'parent') {
-      // Parent login flow
       const result = await authApis.parentLogin(email, password);
       
       if (result.success) {
@@ -99,7 +96,6 @@ const LoginPage = () => {
         setIsLoading(false);
       }
     } else {
-      // Institute login flow
       const result = await authApis.adminLogin(email, password);
       
       if (result.success) {
@@ -132,7 +128,6 @@ const LoginPage = () => {
             return;
           }
           
-          // Fallback
           const token = result.token;
           const userData = await authApis.getCurrentAdminUser(token);
           
@@ -174,21 +169,18 @@ const LoginPage = () => {
     setIsLoading(true);
     setError('');
 
-    // Validate email
     if (!email || !email.includes('@')) {
       setError('Please enter a valid email address');
       setIsLoading(false);
       return;
     }
 
-    // Validate password
     if (password.length < 6) {
       setError('Password must be at least 6 characters long');
       setIsLoading(false);
       return;
     }
 
-    // Validate confirm password
     if (password !== confirmPassword) {
       setError('Passwords do not match');
       setIsLoading(false);
@@ -196,7 +188,6 @@ const LoginPage = () => {
     }
 
     if (userType === 'parent') {
-      // Parent registration
       if (!parentName) {
         setError('Please enter parent name');
         setIsLoading(false);
@@ -223,12 +214,11 @@ const LoginPage = () => {
         setEmail('');
         setPassword('');
         setConfirmPassword('');
-        alert("✅ Parent registration successful! Please login with your credentials.");
+        alert("Parent registration successful! Please login with your credentials.");
       } else {
         setError(result.error || 'Parent registration failed. Please try again.');
       }
     } else {
-      // Institute registration
       if (!institutionName) {
         setError('Please enter institution name');
         setIsLoading(false);
@@ -255,7 +245,7 @@ const LoginPage = () => {
         setEmail('');
         setPassword('');
         setConfirmPassword('');
-        alert("✅ Registration successful! Please login with your credentials.");
+        alert("Registration successful! Please login with your credentials.");
       } else {
         setError(result.error || 'Registration failed. Please try again.');
       }
@@ -268,8 +258,13 @@ const LoginPage = () => {
     navigate('/');
   };
 
+  const handleUserTypeChange = useCallback((type) => {
+    setUserType(type);
+    setError('');
+  }, []);
+
   // User Type Toggle Component
-  const UserTypeToggle = () => (
+  const UserTypeToggle = useCallback(() => (
     <div className="flex bg-gray-700/30 rounded-lg p-1 border border-gray-600/30 mb-6">
       <button
         type="button"
@@ -278,10 +273,7 @@ const LoginPage = () => {
             ? 'bg-gradient-to-r from-orange-600 to-amber-500 text-white shadow-lg'
             : 'text-gray-400 hover:text-gray-200'
         }`}
-        onClick={() => {
-          setUserType('institute');
-          setError('');
-        }}
+        onClick={() => handleUserTypeChange('institute')}
       >
         <FiBriefcase className="w-4 h-4" />
         Institute
@@ -293,134 +285,22 @@ const LoginPage = () => {
             ? 'bg-gradient-to-r from-orange-600 to-amber-500 text-white shadow-lg'
             : 'text-gray-400 hover:text-gray-200'
         }`}
-        onClick={() => {
-          setUserType('parent');
-          setError('');
-        }}
+        onClick={() => handleUserTypeChange('parent')}
       >
         <FiUsers className="w-4 h-4" />
         Parent
       </button>
     </div>
-  );
+  ), [userType, handleUserTypeChange]);
 
-  // Parent Registration Fields
-  const ParentRegistrationFields = () => (
-    <>
-      <motion.div
-        initial={{ opacity: 0, x: -10 }}
-        animate={{ opacity: 1, x: 0 }}
-        transition={{ delay: 0.6 }}
-      >
-        <div className="relative">
-          <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-            <FiUser className="h-5 w-5 text-gray-400" />
-          </div>
-          <input
-            id="parentName"
-            name="parentName"
-            type="text"
-            required
-            className="block w-full pl-10 pr-3 py-3 bg-gray-700/50 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all"
-            placeholder="Parent Full Name *"
-            value={parentName}
-            onChange={(e) => setParentName(e.target.value)}
-          />
-        </div>
-      </motion.div>
-
-      <motion.div
-        initial={{ opacity: 0, x: -10 }}
-        animate={{ opacity: 1, x: 0 }}
-        transition={{ delay: 0.65 }}
-      >
-        <div className="relative">
-          <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-            <FiSearch className="h-5 w-5 text-gray-400" />
-          </div>
-          <select
-            id="parentInstitutionType"
-            name="parentInstitutionType"
-            required
-            className="block w-full pl-10 pr-3 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all appearance-none cursor-pointer"
-            value={parentInstitutionType}
-            onChange={(e) => setParentInstitutionType(e.target.value)}
-          >
-            <option value="" disabled className="text-gray-400">Select the type of institution you are looking for your child *</option>
-            {institutionTypes.map((type) => (
-              <option key={type} value={type} className="text-white bg-gray-800 py-2">
-                {type}
-              </option>
-            ))}
-          </select>
-          <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
-            <FiChevronRight className="h-5 w-5 text-gray-400" />
-          </div>
-        </div>
-        <p className="mt-1 text-xs text-gray-400 flex items-center gap-1">
-          <FiInfo className="w-3 h-3 text-amber-400" />
-          Select the type of educational institution that best suits your child's needs
-        </p>
-      </motion.div>
-    </>
-  );
-
-  // Institute Registration Fields
-  const InstituteRegistrationFields = () => (
-    <>
-      <motion.div
-        initial={{ opacity: 0, x: -10 }}
-        animate={{ opacity: 1, x: 0 }}
-        transition={{ delay: 0.6 }}
-      >
-        <div className="relative">
-          <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-            <FiBriefcase className="h-5 w-5 text-gray-400" />
-          </div>
-          <input
-            id="institutionName"
-            name="institutionName"
-            type="text"
-            required
-            className="block w-full pl-10 pr-3 py-3 bg-gray-700/50 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all"
-            placeholder="Institution Name *"
-            value={institutionName}
-            onChange={(e) => setInstitutionName(e.target.value)}
-          />
-        </div>
-      </motion.div>
-
-      <motion.div
-        initial={{ opacity: 0, x: -10 }}
-        animate={{ opacity: 1, x: 0 }}
-        transition={{ delay: 0.65 }}
-      >
-        <div className="relative">
-          <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-            <FiUser className="h-5 w-5 text-gray-400" />
-          </div>
-          <select
-            id="institutionType"
-            name="institutionType"
-            required
-            className="block w-full pl-10 pr-3 py-3 bg-gray-700/50 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all appearance-none cursor-pointer"
-            value={institutionType}
-            onChange={(e) => setInstitutionType(e.target.value)}
-          >
-            <option value="" disabled className="text-gray-400">Select Institution Type *</option>
-            {institutionTypes.map((type) => (
-              <option key={type} value={type} className="text-white bg-gray-800 py-2">
-                {type}
-              </option>
-            ))}
-          </select>
-          <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
-            <FiChevronRight className="h-5 w-5 text-gray-400" />
-          </div>
-        </div>
-      </motion.div>
-    </>
-  );
+  // Input change handlers
+  const handleEmailChange = useCallback((e) => setEmail(e.target.value), []);
+  const handlePasswordChange = useCallback((e) => setPassword(e.target.value), []);
+  const handleConfirmPasswordChange = useCallback((e) => setConfirmPassword(e.target.value), []);
+  const handleInstitutionNameChange = useCallback((e) => setInstitutionName(e.target.value), []);
+  const handleInstitutionTypeChange = useCallback((e) => setInstitutionType(e.target.value), []);
+  const handleParentNameChange = useCallback((e) => setParentName(e.target.value), []);
+  const handleParentInstitutionTypeChange = useCallback((e) => setParentInstitutionType(e.target.value), []);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 to-gray-800 flex flex-col justify-center py-12 sm:px-6 lg:px-8 relative overflow-hidden">
@@ -470,7 +350,7 @@ const LoginPage = () => {
         animate={{
           scale: [1, 1.3, 1],
           opacity: [0.3, 0.6, 0.3]
-        }}i
+        }}
         transition={{
           duration: 10,
           repeat: Infinity,
@@ -541,10 +421,8 @@ const LoginPage = () => {
 
           {isLoginMode ? (
             <form className="space-y-6" onSubmit={handleLogin}>
-              {/* User Type Toggle for Login */}
               <UserTypeToggle />
 
-              {/* Email Field with Important Badge */}
               <motion.div
                 initial={{ opacity: 0, x: -10 }}
                 animate={{ opacity: 1, x: 0 }}
@@ -563,7 +441,7 @@ const LoginPage = () => {
                     className="block w-full pl-10 pr-24 py-3 bg-gray-700/50 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all"
                     placeholder="Email address *"
                     value={email}
-                    onChange={(e) => setEmail(e.target.value)}
+                    onChange={handleEmailChange}
                   />
                 </div>
               </motion.div>
@@ -586,7 +464,7 @@ const LoginPage = () => {
                     className="block w-full pl-10 pr-3 py-3 bg-gray-700/50 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all"
                     placeholder="Password"
                     value={password}
-                    onChange={(e) => setPassword(e.target.value)}
+                    onChange={handlePasswordChange}
                   />
                 </div>
               </motion.div>
@@ -643,11 +521,117 @@ const LoginPage = () => {
           ) : (
             <form className="space-y-5" onSubmit={handleRegister}>
               {userType === 'parent' ? (
-                // Parent Registration Fields
-                <ParentRegistrationFields />
+                <>
+                  <motion.div
+                    initial={{ opacity: 0, x: -10 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: 0.6 }}
+                  >
+                    <div className="relative">
+                      <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                        <FiUser className="h-5 w-5 text-gray-400" />
+                      </div>
+                      <input
+                        id="parentName"
+                        name="parentName"
+                        type="text"
+                        required
+                        className="block w-full pl-10 pr-3 py-3 bg-gray-700/50 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all"
+                        placeholder="Parent Full Name *"
+                        value={parentName}
+                        onChange={handleParentNameChange}
+                      />
+                    </div>
+                  </motion.div>
+
+                  <motion.div
+                    initial={{ opacity: 0, x: -10 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: 0.65 }}
+                  >
+                    <div className="relative">
+                      <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                        <FiSearch className="h-5 w-5 text-gray-400" />
+                      </div>
+                      <select
+                        id="parentInstitutionType"
+                        name="parentInstitutionType"
+                        required
+                        className="block w-full pl-10 pr-3 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all appearance-none cursor-pointer"
+                        value={parentInstitutionType}
+                        onChange={handleParentInstitutionTypeChange}
+                      >
+                        <option value="" disabled className="text-gray-400">Select the type of institution you are looking for your child *</option>
+                        {institutionTypes.map((type) => (
+                          <option key={type} value={type} className="text-white bg-gray-800 py-2">
+                            {type}
+                          </option>
+                        ))}
+                      </select>
+                      <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
+                        <FiChevronRight className="h-5 w-5 text-gray-400" />
+                      </div>
+                    </div>
+                    <p className="mt-1 text-xs text-gray-400 flex items-center gap-1">
+                      <FiInfo className="w-3 h-3 text-amber-400" />
+                      Select the type of educational institution that best suits your child
+                    </p>
+                  </motion.div>
+                </>
               ) : (
-                // Institute Registration Fields
-                <InstituteRegistrationFields />
+                <>
+                  <motion.div
+                    initial={{ opacity: 0, x: -10 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: 0.6 }}
+                  >
+                    <div className="relative">
+                      <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                        <FiBriefcase className="h-5 w-5 text-gray-400" />
+                      </div>
+                      <input
+                        id="institutionName"
+                        name="institutionName"
+                        type="text"
+                        required
+                        className="block w-full pl-10 pr-3 py-3 bg-gray-700/50 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all"
+                        placeholder="Institution Name *"
+                        value={institutionName}
+                        onChange={handleInstitutionNameChange}
+                      />
+                    </div>
+                  </motion.div>
+
+                  <motion.div
+                    initial={{ opacity: 0, x: -10 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: 0.65 }}
+                  >
+                    <div className="relative">
+                      <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                        <FiUser className="h-5 w-5 text-gray-400" />
+                      </div>
+                      <select
+                        id="institutionType"
+                        name="institutionType"
+                        required
+                        className="block w-full pl-10 pr-3 py-3 bg-gray-700/50 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all appearance-none cursor-pointer"
+                        value={institutionType}
+                        onChange={handleInstitutionTypeChange}
+                      >
+                        <option value="" disabled className="text-gray-400">Select Institution Type *</option>
+                        {institutionTypes.map((type) => (
+                          <option key={type} value={type} className="text-white bg-gray-800 py-2">
+                            {type}
+                          </option>
+                        ))}
+                      </select>
+                      <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
+                        <FiChevronRight className="h-5 w-5 text-gray-400" />
+                      </div>
+                    </div>
+                  </motion.div>
+                </>
               )}
 
               {/* Email Field - Common */}
@@ -669,7 +653,7 @@ const LoginPage = () => {
                     className="block w-full pl-10 pr-24 py-3 bg-gray-700/50 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all"
                     placeholder="Email address *"
                     value={email}
-                    onChange={(e) => setEmail(e.target.value)}
+                    onChange={handleEmailChange}
                   />
                 </div>
               </motion.div>
@@ -691,7 +675,7 @@ const LoginPage = () => {
                     className="block w-full pl-10 pr-3 py-3 bg-gray-700/50 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all"
                     placeholder="Password (min. 6 characters) *"
                     value={password}
-                    onChange={(e) => setPassword(e.target.value)}
+                    onChange={handlePasswordChange}
                   />
                 </div>
               </motion.div>
@@ -713,7 +697,7 @@ const LoginPage = () => {
                     className="block w-full pl-10 pr-3 py-3 bg-gray-700/50 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all"
                     placeholder="Confirm Password *"
                     value={confirmPassword}
-                    onChange={(e) => setConfirmPassword(e.target.value)}
+                    onChange={handleConfirmPasswordChange}
                   />
                 </div>
               </motion.div>

@@ -60,6 +60,7 @@ import CollegeProfile from './components/CollegeProfile'
 import PUCollegeProfile from './components/PuCollegeProfile'
 import CoachingProfile from './components/CoachingProfile'
 import TeacherProfile from './components/TeacherProfile'
+import ParentDashboard from './pages/ParentDashboard'
 
 function App() {
   const location = useLocation()
@@ -94,12 +95,16 @@ function App() {
         <Route path='/professional' element={<Professional/>}/>
         <Route path='/personal' element={<PersonalTeachers/>}/>
 
+          {/* After institute login */}
         <Route path='/dashboard' element={<Dashboard/>}/>
         <Route path='/school-profile' element={<SchoolProfile/>}/>
         <Route path='/college-profile' element={<CollegeProfile/>}/>
         <Route path='/pu-college-profile' element={<PUCollegeProfile/>}/>
         <Route path='/coaching-profile' element={<CoachingProfile/>}/>
         <Route path='/teacher-profile' element={<TeacherProfile/>}/>
+
+         {/*After parent login */}
+        <Route path='/parent/dashboard' element={<ParentDashboard/>}/>
 
         <Route path='/login' element={<LoginPage/>}/>
         <Route path='/bookdemo' element={<BookaDemo/>}/>
@@ -143,7 +148,6 @@ function App() {
       </Routes>
       <ToastContainer/>
 
-      {/* Only show footer if path is not in hideFooterPaths */}
       {shouldShowFooter && <Footer />}
     </>
   )
