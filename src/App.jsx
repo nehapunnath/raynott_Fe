@@ -61,7 +61,7 @@ function App() {
   const location = useLocation()
 
   // Paths where footer should be hidden
-  const hideFooterPaths = ['/login', '/admin/dashboard','/admin/edit-school/:id','/admin/view-school/:id','/register-form','/dashboard' ,'/school-profile','/college-profile','/pu-college-profile','/coaching-profile','/teacher-profile']
+  const hideFooterPaths = ['/login', '/admin/dashboard','/admin/edit-school/:id','/admin/view-school/:id','/register-form','/dashboard' ,'/school-profile','/college-profile','/pu-college-profile','/coaching-profile','/teacher-profile','/parent/dashboard',]
 
   const shouldShowFooter = !hideFooterPaths.includes(location.pathname)
 
