@@ -1,4 +1,3 @@
-// LoginPage.jsx
 import React, { useState, useCallback, useMemo } from 'react';
 import { motion } from 'framer-motion';
 import { FiMail, FiLock, FiArrowRight, FiAlertCircle, FiUser, FiHome, FiBriefcase, FiChevronRight, FiInfo, FiUsers, FiSearch } from 'react-icons/fi';

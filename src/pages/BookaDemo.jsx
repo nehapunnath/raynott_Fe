@@ -6,7 +6,7 @@ import 'react-time-picker/dist/TimePicker.css';
 import Footer from '../components/Footer';
 import StickyButton from '../components/StickyButton';
 import 'tailwindcss';
-import { bookaDemoApi } from '../services/BookaDemoApi'; // Adjust path to your API file
+import { bookaDemoApi } from '../services/BookaDemoApi'; 
 
 const BookaDemo = () => {
   const [date, setDate] = useState(new Date());
