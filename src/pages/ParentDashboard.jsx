@@ -1,23 +1,27 @@
 // ParentDashboard.jsx
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   FiHome, FiUser, FiSearch, FiBookOpen, FiMessageSquare, 
   FiHeart, FiStar, FiFilter, FiMapPin, FiClock, 
   FiBell, FiLogOut, FiMenu, FiX, FiEye, FiAward,
-  FiTrendingUp, FiChevronRight, FiCalendar, FiPhone,
-  FiMail, FiGlobe, FiShare2, FiBookmark, FiCheckCircle,
-  FiAlertCircle, FiInfo, FiUsers, FiBriefcase, FiSettings,
-  FiArrowRight, FiThumbsUp, FiFacebook, FiTwitter, FiLinkedin,
-  FiCamera
+  FiTrendingUp, FiChevronRight, FiCalendar, FiCamera,
+  FiInfo, FiSettings, FiArrowRight, FiLoader
 } from 'react-icons/fi';
 import { useNavigate } from 'react-router-dom';
+import schoolApi from '../services/schoolApi';
+import collegeApi from '../services/collegeApi';
+import puCollegeApi from '../services/puCollegeApi';
+import TuitionCoachingApi from '../services/TuitionCoachingApi';
+import teacherApi from '../services/teacherApi';
 
 const ParentDashboard = () => {
   const navigate = useNavigate();
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [activeTab, setActiveTab] = useState('dashboard');
   const [showFilters, setShowFilters] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState(null);
   const [filters, setFilters] = useState({
     type: '',
     rating: '',
@@ -25,114 +29,226 @@ const ParentDashboard = () => {
     sortBy: 'rating'
   });
 
-  // Sample data
-  const [institutions, setInstitutions] = useState([
-    {
-      id: 1,
-      name: 'Delhi Public School',
-      type: 'Schools',
-      rating: 4.8,
-      reviews: 127,
-      location: 'New Delhi',
-      image: 'https://images.unsplash.com/photo-1580582932707-520aed937b7b?w=400&h=200&fit=crop',
-      description: 'Premier educational institution with excellent academic record and state-of-the-art facilities.',
-      fees: '₹1.5L - ₹2.5L',
-      facilities: ['Library', 'Sports', 'Computer Lab', 'Science Lab'],
-      isNew: true,
-      isPopular: true
-    },
-    {
-      id: 2,
-      name: 'St. Xavier\'s College',
-      type: 'Colleges',
-      rating: 4.6,
-      reviews: 98,
-      location: 'Mumbai',
-      image: 'https://images.unsplash.com/photo-1562774053-701939374585?w=400&h=200&fit=crop',
-      description: 'Renowned college offering diverse courses with excellent placement record.',
-      fees: '₹2L - ₹3.5L',
-      facilities: ['Library', 'Sports', 'Computer Lab', 'Science Lab', 'Hostel'],
-      isNew: false,
-      isPopular: true
-    },
-    {
-      id: 3,
-      name: 'Expert Coaching Center',
-      type: 'Coaching/Tuition',
-      rating: 4.9,
-      reviews: 156,
-      location: 'Bangalore',
-      image: 'https://images.unsplash.com/photo-1523050854058-8df90110c7f1?w=400&h=200&fit=crop',
-      description: 'Top-rated coaching center for competitive exams with proven track record.',
-      fees: '₹80K - ₹1.5L',
-      facilities: ['Smart Classrooms', 'Mock Tests', 'Study Materials', 'Doubt Sessions'],
-      isNew: true,
-      isPopular: false
-    },
-    {
-      id: 4,
-      name: 'Little Flower School',
-      type: 'Schools',
-      rating: 4.7,
-      reviews: 89,
-      location: 'Chennai',
-      image: 'https://images.unsplash.com/photo-1571260899304-425eee4c7efc?w=400&h=200&fit=crop',
-      description: 'Holistic education with focus on academics and extracurricular activities.',
-      fees: '₹1L - ₹2L',
-      facilities: ['Playground', 'Music Room', 'Art Studio', 'Computer Lab'],
-      isNew: false,
-      isPopular: false
-    },
-    {
-      id: 5,
-      name: 'National Institute of Technology',
-      type: 'Colleges',
-      rating: 4.8,
-      reviews: 210,
-      location: 'Hyderabad',
-      image: 'https://images.unsplash.com/photo-1562774053-701939374585?w=400&h=200&fit=crop',
-      description: 'Premier technical institute with excellent placement and research facilities.',
-      fees: '₹2.5L - ₹4L',
-      facilities: ['Research Labs', 'Library', 'Sports Complex', 'Hostel', 'Cafeteria'],
-      isNew: false,
-      isPopular: true
-    },
-    {
-      id: 6,
-      name: 'Saraswati PU College',
-      type: 'PU College',
-      rating: 4.5,
-      reviews: 67,
-      location: 'Pune',
-      image: 'https://images.unsplash.com/photo-1580582932707-520aed937b7b?w=400&h=200&fit=crop',
-      description: 'Top-rated PU college with excellent results in board examinations.',
-      fees: '₹1L - ₹1.8L',
-      facilities: ['Science Labs', 'Library', 'Sports', 'Career Counseling'],
-      isNew: false,
-      isPopular: false
-    }
-  ]);
+  // Parent data from localStorage
+  const [parentData, setParentData] = useState({
+    parentName: '',
+    email: '',
+    institutionType: 'Schools',
+    studentName: '',
+    studentClass: ''
+  });
 
-  const [filteredInstitutions, setFilteredInstitutions] = useState(institutions);
-  const [bookmarkedInstitutions, setBookmarkedInstitutions] = useState([1, 3, 5]);
+  const [institutions, setInstitutions] = useState([]);
+  const [filteredInstitutions, setFilteredInstitutions] = useState([]);
+  const [bookmarkedInstitutions, setBookmarkedInstitutions] = useState([]);
   const [showBookmarksOnly, setShowBookmarksOnly] = useState(false);
-  const [selectedInstitution, setSelectedInstitution] = useState(null);
+  const [stats, setStats] = useState({
+    totalViewed: 0,
+    shortlisted: 0,
+    inquiries: 0,
+    recommendations: 0
+  });
+  const [recentActivities, setRecentActivities] = useState([]);
 
-  // Parent stats
-  const parentStats = {
-    totalViewed: 24,
-    shortlisted: 8,
-    inquiries: 5,
-    recommendations: 12
+  // Load parent data from localStorage on mount
+  useEffect(() => {
+    const loadParentData = () => {
+      try {
+        const storedData = localStorage.getItem('parentData');
+        if (storedData) {
+          const data = JSON.parse(storedData);
+          setParentData({
+            parentName: data.parentName || 'Parent',
+            email: data.email || 'parent@email.com',
+            institutionType: data.institutionType || 'Schools',
+            studentName: data.studentName || '',
+            studentClass: data.studentClass || ''
+          });
+        }
+      } catch (error) {
+        console.error('Error loading parent data:', error);
+      }
+    };
+    loadParentData();
+  }, []);
+
+  // Helper function to safely extract data from API response
+  const extractData = (response) => {
+    // If response is an array, return it directly
+    if (Array.isArray(response)) {
+      return response;
+    }
+    
+    // If response has a data property that is an array
+    if (response && response.data && Array.isArray(response.data)) {
+      return response.data;
+    }
+    
+    // If response has a success property and data property
+    if (response && response.success && response.data && Array.isArray(response.data)) {
+      return response.data;
+    }
+    
+    // If response has a results property
+    if (response && response.results && Array.isArray(response.results)) {
+      return response.results;
+    }
+    
+    // If response has a items property
+    if (response && response.items && Array.isArray(response.items)) {
+      return response.items;
+    }
+    
+    // If response is an object with values that might be arrays
+    if (response && typeof response === 'object') {
+      // Try to find any property that is an array
+      for (const key in response) {
+        if (Array.isArray(response[key])) {
+          return response[key];
+        }
+      }
+    }
+    
+    // Return empty array if nothing found
+    return [];
   };
 
-  // Recent activities
-  const recentActivities = [
-    { id: 1, action: 'Viewed Delhi Public School', time: '2 hours ago', icon: FiEye },
-    { id: 2, action: 'Bookmarked Expert Coaching Center', time: '5 hours ago', icon: FiHeart },
-    { id: 3, action: 'Inquired about St. Xavier\'s College', time: '1 day ago', icon: FiMessageSquare },
-    { id: 4, action: 'Compared 3 institutions', time: '2 days ago', icon: FiTrendingUp },
-  ];
+  // Fetch institutions based on parent's selected type
+  const fetchInstitutions = useCallback(async () => {
+    setIsLoading(true);
+    setError(null);
+    try {
+      let rawData = [];
+      const type = parentData.institutionType;
+
+      console.log('Fetching institutions for type:', type);
+
+      switch(type) {
+        case 'Schools':
+          const schoolResponse = await schoolApi.getSchools();
+          console.log('School API Response:', schoolResponse);
+          rawData = extractData(schoolResponse);
+          break;
+
+        case 'Colleges':
+          const collegeResponse = await collegeApi.getColleges();
+          console.log('College API Response:', collegeResponse);
+          rawData = extractData(collegeResponse);
+          break;
+
+        case 'PU College':
+          const puResponse = await puCollegeApi.getPUColleges();
+          console.log('PU College API Response:', puResponse);
+          rawData = extractData(puResponse);
+          break;
+
+        case 'Coaching/Tuition':
+          const coachingResponse = await TuitionCoachingApi.getTuitionCoachings();
+          console.log('Coaching API Response:', coachingResponse);
+          rawData = extractData(coachingResponse);
+          break;
+
+        case 'All Teachers':
+          const teacherResponse = await teacherApi.getTeachers();
+          console.log('Teacher API Response:', teacherResponse);
+          rawData = extractData(teacherResponse);
+          break;
+
+        default:
+          rawData = [];
+      }
+
+      // Transform data to consistent format
+      const transformedData = rawData.map((item, index) => {
+        // Try to find the name from various possible fields
+        const name = item.schoolName || item.collegeName || item.centerName || 
+                     item.teacherName || item.name || item.title || `Institution ${index + 1}`;
+        
+        // Try to find the location from various possible fields
+        const location = item.city || item.location || item.address || item.place || 'N/A';
+        
+        // Try to find the image from various possible fields
+        const image = item.schoolImage || item.collegeImage || item.centerImage || 
+                      item.profileImage || item.image || item.photo || 
+                      'https://images.unsplash.com/photo-1580582932707-520aed937b7b?w=400&h=200&fit=crop';
+        
+        // Try to find facilities
+        const facilities = item.facilities || item.amenities || item.features || [];
+
+        return {
+          id: item.id || item._id || index + 1,
+          name: name,
+          type: type,
+          rating: item.rating || item.averageRating || 4.5,
+          reviews: item.reviews || item.reviewCount || item.totalReviews || 0,
+          location: location,
+          image: image,
+          description: item.description || item.about || `${name} - Premier educational institution`,
+          fees: item.fees || item.feeStructure || item.tuitionFees || 'Contact for details',
+          facilities: Array.isArray(facilities) ? facilities : [],
+          isNew: item.isNew || item.newlyAdded || false,
+          isPopular: item.isPopular || item.featured || false,
+          originalData: item
+        };
+      });
+
+      console.log('Transformed data:', transformedData);
+      setInstitutions(transformedData);
+      setFilteredInstitutions(transformedData);
+      
+      // Update stats
+      setStats({
+        totalViewed: transformedData.length,
+        shortlisted: Math.min(transformedData.length, Math.floor(transformedData.length * 0.3)),
+        inquiries: Math.min(transformedData.length, Math.floor(transformedData.length * 0.2)),
+        recommendations: Math.min(transformedData.length, Math.floor(transformedData.length * 0.4))
+      });
+
+      // Update recent activities
+      setRecentActivities([
+        { id: 1, action: `Viewed ${transformedData.length} ${type}`, time: 'Just now', icon: FiEye },
+        { id: 2, action: 'Updated search preferences', time: '2 hours ago', icon: FiTrendingUp },
+        { id: 3, action: 'Compared institutions', time: '1 day ago', icon: FiArrowRight },
+      ]);
+
+    } catch (error) {
+      console.error('Error fetching institutions:', error);
+      setError(error.message || 'Failed to load institutions');
+      setInstitutions([]);
+      setFilteredInstitutions([]);
+    } finally {
+      setIsLoading(false);
+    }
+  }, [parentData.institutionType]);
+
+  // Load bookmarks from localStorage
+  useEffect(() => {
+    const loadBookmarks = () => {
+      try {
+        const stored = localStorage.getItem('parentBookmarks');
+        if (stored) {
+          setBookmarkedInstitutions(JSON.parse(stored));
+        }
+      } catch (error) {
+        console.error('Error loading bookmarks:', error);
+      }
+    };
+    loadBookmarks();
+  }, []);
+
+  // Save bookmarks to localStorage
+  useEffect(() => {
+    try {
+      localStorage.setItem('parentBookmarks', JSON.stringify(bookmarkedInstitutions));
+    } catch (error) {
+      console.error('Error saving bookmarks:', error);
+    }
+  }, [bookmarkedInstitutions]);
+
+  // Fetch institutions on mount and when institution type changes
+  useEffect(() => {
+    fetchInstitutions();
+  }, [fetchInstitutions]);
 
   // Filter institutions
   useEffect(() => {
@@ -177,6 +293,11 @@ const ParentDashboard = () => {
   };
 
   const handleLogout = () => {
+    localStorage.removeItem('parentToken');
+    localStorage.removeItem('parentData');
+    localStorage.removeItem('userEmail');
+    localStorage.removeItem('userRole');
+    localStorage.removeItem('parentBookmarks');
     navigate('/');
   };
 
@@ -185,7 +306,7 @@ const ParentDashboard = () => {
     { id: 'search', label: 'Search', icon: FiSearch },
     { id: 'bookmarks', label: 'Bookmarks', icon: FiHeart },
     { id: 'inquiries', label: 'Inquiries', icon: FiMessageSquare },
-    { id: 'profile', label: 'Profile', icon: FiUser },
+    // { id: 'profile', label: 'Profile', icon: FiUser },
   ];
 
   // Stats Card Component
@@ -228,6 +349,9 @@ const ParentDashboard = () => {
             src={institution.image} 
             alt={institution.name}
             className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
+            onError={(e) => {
+              e.target.src = 'https://via.placeholder.com/400x200/FFA500/FFFFFF?text=Institution';
+            }}
           />
           <div className="absolute inset-0 bg-gradient-to-t from-gray-900/80 via-transparent to-transparent" />
           
@@ -280,12 +404,12 @@ const ParentDashboard = () => {
           </p>
 
           <div className="flex flex-wrap gap-2 mb-4">
-            {institution.facilities.slice(0, 3).map((facility, idx) => (
+            {institution.facilities && institution.facilities.slice(0, 3).map((facility, idx) => (
               <span key={idx} className="px-2.5 py-1 bg-white/5 rounded-full text-xs text-gray-300 border border-white/5">
                 {facility}
               </span>
             ))}
-            {institution.facilities.length > 3 && (
+            {institution.facilities && institution.facilities.length > 3 && (
               <span className="px-2.5 py-1 bg-white/5 rounded-full text-xs text-gray-400 border border-white/5">
                 +{institution.facilities.length - 3}
               </span>
@@ -311,6 +435,35 @@ const ParentDashboard = () => {
     );
   };
 
+  // Loading Component
+  const LoadingSpinner = () => (
+    <div className="flex items-center justify-center min-h-[400px]">
+      <div className="text-center">
+        <FiLoader className="w-12 h-12 text-orange-500 animate-spin mx-auto mb-4" />
+        <p className="text-gray-400">Loading institutions...</p>
+      </div>
+    </div>
+  );
+
+  // Error Component
+  const ErrorDisplay = ({ message }) => (
+    <div className="flex items-center justify-center min-h-[400px]">
+      <div className="text-center max-w-md">
+        <div className="w-16 h-16 bg-red-500/20 rounded-full flex items-center justify-center mx-auto mb-4">
+          <FiInfo className="w-8 h-8 text-red-400" />
+        </div>
+        <h3 className="text-xl font-semibold text-white mb-2">Unable to load institutions</h3>
+        <p className="text-gray-400 mb-4">{message || 'Please try again later'}</p>
+        <button
+          onClick={() => fetchInstitutions()}
+          className="px-6 py-2.5 bg-gradient-to-r from-orange-500 to-amber-500 text-white rounded-xl hover:from-orange-600 hover:to-amber-600 transition-all shadow-lg shadow-orange-500/20"
+        >
+          Retry
+        </button>
+      </div>
+    </div>
+  );
+
   // Dashboard Content
   const renderDashboard = () => (
     <div className="space-y-8">
@@ -321,30 +474,19 @@ const ParentDashboard = () => {
           <div className="flex items-start justify-between flex-wrap gap-4">
             <div>
               <h2 className="text-3xl font-bold text-white">
-                Welcome back, Parent! 
+                Welcome back, {parentData.parentName}! 
               </h2>
               <p className="text-gray-300 mt-2 text-lg">
-                Find the best educational institutions for your child
+                Find the best {parentData.institutionType} for your child
               </p>
-              <div className="flex items-center gap-4 mt-4">
+              <div className="flex items-center gap-4 mt-4 flex-wrap">
                 <span className="px-3 py-1 bg-orange-500/20 rounded-full text-xs text-orange-300">
-                  Looking for: Schools
+                  Looking for: {parentData.institutionType}
                 </span>
                 <span className="px-3 py-1 bg-green-500/20 rounded-full text-xs text-green-300">
-                  24 institutions viewed
+                  {institutions.length} institutions available
                 </span>
               </div>
-            </div>
-            <div className="flex items-center gap-3">
-              <button className="p-3 bg-white/5 rounded-xl hover:bg-white/10 transition-all relative border border-white/10">
-                <FiBell className="w-5 h-5 text-gray-300" />
-                <span className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 rounded-full text-xs flex items-center justify-center text-white font-bold">
-                  3
-                </span>
-              </button>
-              <button className="p-3 bg-white/5 rounded-xl hover:bg-white/10 transition-all border border-white/10">
-                <FiSettings className="w-5 h-5 text-gray-300" />
-              </button>
             </div>
           </div>
         </div>
@@ -355,7 +497,7 @@ const ParentDashboard = () => {
         <StatsCard 
           icon={FiEye}
           label="Viewed"
-          value={parentStats.totalViewed}
+          value={stats.totalViewed}
           color="text-blue-400"
           bgColor="bg-blue-500/20"
           trend="+12% this week"
@@ -363,7 +505,7 @@ const ParentDashboard = () => {
         <StatsCard 
           icon={FiHeart}
           label="Shortlisted"
-          value={parentStats.shortlisted}
+          value={stats.shortlisted}
           color="text-red-400"
           bgColor="bg-red-500/20"
           trend="+5 new"
@@ -371,7 +513,7 @@ const ParentDashboard = () => {
         <StatsCard 
           icon={FiMessageSquare}
           label="Inquiries"
-          value={parentStats.inquiries}
+          value={stats.inquiries}
           color="text-green-400"
           bgColor="bg-green-500/20"
           trend="2 pending"
@@ -379,16 +521,15 @@ const ParentDashboard = () => {
         <StatsCard 
           icon={FiAward}
           label="Recommendations"
-          value={parentStats.recommendations}
+          value={stats.recommendations}
           color="text-amber-400"
           bgColor="bg-amber-500/20"
           trend="+3 this month"
         />
       </div>
 
-      {/* Quick Actions & Recent Activity */}
+      {/* Quick Actions */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Quick Actions */}
         <div className="lg:col-span-2 space-y-4">
           <h3 className="text-lg font-semibold text-white">Quick Actions</h3>
           <div className="grid grid-cols-2 gap-4">
@@ -401,7 +542,7 @@ const ParentDashboard = () => {
               <div className="w-12 h-12 rounded-xl bg-blue-500/20 flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
                 <FiSearch className="w-6 h-6 text-blue-400" />
               </div>
-              <h4 className="text-white font-semibold">Search Institutions</h4>
+              <h4 className="text-white font-semibold">Search {parentData.institutionType}</h4>
               <p className="text-sm text-gray-400">Find the best options</p>
             </motion.button>
 
@@ -449,7 +590,7 @@ const ParentDashboard = () => {
         <div className="bg-white/5 backdrop-blur-lg rounded-2xl p-6 border border-white/10">
           <h3 className="text-lg font-semibold text-white mb-4">Recent Activity</h3>
           <div className="space-y-4">
-            {recentActivities.map((activity) => {
+            {recentActivities.slice(0, 4).map((activity) => {
               const Icon = activity.icon;
               return (
                 <div key={activity.id} className="flex items-start gap-3">
@@ -486,11 +627,17 @@ const ParentDashboard = () => {
             <FiArrowRight className="w-4 h-4" />
           </button>
         </div>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {institutions.slice(0, 3).map((inst) => (
-            <InstitutionCard key={inst.id} institution={inst} />
-          ))}
-        </div>
+        {isLoading ? (
+          <LoadingSpinner />
+        ) : error ? (
+          <ErrorDisplay message={error} />
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {institutions.slice(0, 3).map((inst) => (
+              <InstitutionCard key={inst.id} institution={inst} />
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );
@@ -500,8 +647,8 @@ const ParentDashboard = () => {
     <div className="space-y-6">
       <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
         <div>
-          <h2 className="text-2xl font-bold text-white">Discover Institutions</h2>
-          <p className="text-gray-400">Find the perfect institution for your child</p>
+          <h2 className="text-2xl font-bold text-white">Discover {parentData.institutionType}</h2>
+          <p className="text-gray-400">Find the perfect {parentData.institutionType.toLowerCase()} for your child</p>
         </div>
         <div className="flex flex-wrap gap-2">
           <button
@@ -527,7 +674,6 @@ const ParentDashboard = () => {
           </button>
         </div>
       </div>
-      
 
       {/* Filters */}
       <AnimatePresence>
@@ -613,13 +759,19 @@ const ParentDashboard = () => {
         <span className="text-gray-400">{filteredInstitutions.length} results found</span>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {filteredInstitutions.map((inst) => (
-          <InstitutionCard key={inst.id} institution={inst} />
-        ))}
-      </div>
+      {isLoading ? (
+        <LoadingSpinner />
+      ) : error ? (
+        <ErrorDisplay message={error} />
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {filteredInstitutions.map((inst) => (
+            <InstitutionCard key={inst.id} institution={inst} />
+          ))}
+        </div>
+      )}
 
-      {filteredInstitutions.length === 0 && (
+      {!isLoading && !error && filteredInstitutions.length === 0 && (
         <div className="text-center py-16 bg-white/5 rounded-2xl border border-white/10">
           <FiSearch className="w-16 h-16 text-gray-600 mx-auto mb-4" />
           <h3 className="text-xl font-semibold text-white">No institutions found</h3>
@@ -639,7 +791,11 @@ const ParentDashboard = () => {
           <p className="text-gray-400">Institutions you've shortlisted</p>
         </div>
 
-        {bookmarkedItems.length > 0 ? (
+        {isLoading ? (
+          <LoadingSpinner />
+        ) : error ? (
+          <ErrorDisplay message={error} />
+        ) : bookmarkedItems.length > 0 ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {bookmarkedItems.map((inst) => (
               <InstitutionCard key={inst.id} institution={inst} />
@@ -686,11 +842,11 @@ const ParentDashboard = () => {
                 </div>
                 <div>
                   <h4 className="text-white font-semibold">Inquiry #{item}</h4>
-                  <p className="text-gray-400 text-sm">Delhi Public School - New Delhi</p>
+                  <p className="text-gray-400 text-sm">Inquiry about {parentData.institutionType}</p>
                   <div className="flex items-center gap-3 mt-2 flex-wrap">
                     <span className="text-xs text-gray-400 flex items-center gap-1">
                       <FiCalendar className="w-3 h-3" />
-                      Jan 15, 2024
+                      Jan {15 + item}, 2024
                     </span>
                     <span className={`px-2.5 py-1 rounded-full text-xs font-medium ${
                       item === 1 ? 'bg-green-500/20 text-green-300' : 
@@ -724,18 +880,18 @@ const ParentDashboard = () => {
         <div className="flex items-center gap-8 mb-8">
           <div className="relative">
             <div className="w-28 h-28 rounded-full bg-gradient-to-r from-orange-500 to-amber-500 flex items-center justify-center text-4xl font-bold text-white">
-              P
+              {parentData.parentName ? parentData.parentName[0].toUpperCase() : 'P'}
             </div>
             <button className="absolute bottom-0 right-0 p-2 bg-orange-500 rounded-full hover:bg-orange-600 transition-all">
               <FiCamera className="w-4 h-4 text-white" />
             </button>
           </div>
           <div>
-            <h3 className="text-2xl font-bold text-white">Parent Name</h3>
-            <p className="text-gray-400">parent@email.com</p>
+            <h3 className="text-2xl font-bold text-white">{parentData.parentName}</h3>
+            <p className="text-gray-400">{parentData.email}</p>
             <p className="text-sm text-orange-400 mt-1 flex items-center gap-1">
               <FiInfo className="w-4 h-4" />
-              Looking for: Schools
+              Looking for: {parentData.institutionType}
             </p>
           </div>
         </div>
@@ -743,19 +899,19 @@ const ParentDashboard = () => {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div className="p-4 bg-white/5 rounded-xl">
             <p className="text-xs text-gray-400">Student Name</p>
-            <p className="text-white font-medium mt-1">Student Name</p>
+            <p className="text-white font-medium mt-1">{parentData.studentName || 'Not specified'}</p>
           </div>
           <div className="p-4 bg-white/5 rounded-xl">
             <p className="text-xs text-gray-400">Student Class</p>
-            <p className="text-white font-medium mt-1">Class 10</p>
+            <p className="text-white font-medium mt-1">{parentData.studentClass || 'Not specified'}</p>
           </div>
           <div className="p-4 bg-white/5 rounded-xl">
             <p className="text-xs text-gray-400">Institution Type Looking For</p>
-            <p className="text-white font-medium mt-1">Schools</p>
+            <p className="text-white font-medium mt-1">{parentData.institutionType}</p>
           </div>
           <div className="p-4 bg-white/5 rounded-xl">
             <p className="text-xs text-gray-400">Member Since</p>
-            <p className="text-white font-medium mt-1">January 2024</p>
+            <p className="text-white font-medium mt-1">{new Date().getFullYear()}</p>
           </div>
         </div>
 
@@ -780,7 +936,7 @@ const ParentDashboard = () => {
       case 'search': return renderSearch();
       case 'bookmarks': return renderBookmarks();
       case 'inquiries': return renderInquiries();
-      case 'profile': return renderProfile();
+      // case 'profile': return renderProfile();
       default: return null;
     }
   };
@@ -803,7 +959,7 @@ const ParentDashboard = () => {
         />
       )}
 
-      {/* Sidebar */}
+      {/* Desktop Sidebar */}
       <aside className="hidden lg:flex lg:flex-col lg:w-72 lg:min-h-screen lg:bg-gray-900/95 lg:border-r lg:border-white/10 lg:backdrop-blur-xl lg:fixed lg:inset-y-0 lg:left-0">
         <div className="flex-shrink-0 p-6 border-b border-white/10">
           <div className="flex items-center gap-3">
@@ -817,7 +973,6 @@ const ParentDashboard = () => {
           </div>
         </div>
 
-        {/* Navigation */}
         <nav className="flex-1 overflow-y-auto p-4 space-y-1">
           {navItems.map((item) => {
             const Icon = item.icon;
@@ -851,15 +1006,14 @@ const ParentDashboard = () => {
           })}
         </nav>
 
-        {/* User Profile */}
         <div className="flex-shrink-0 p-6 border-t border-white/10">
           <div className="flex items-center gap-3 mb-4">
             <div className="w-10 h-10 rounded-full bg-gradient-to-r from-orange-500 to-amber-500 flex items-center justify-center text-white font-semibold flex-shrink-0">
-              P
+              {parentData.parentName ? parentData.parentName[0].toUpperCase() : 'P'}
             </div>
             <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium text-white truncate">Parent</p>
-              <p className="text-xs text-gray-400 truncate">parent@email.com</p>
+              <p className="text-sm font-medium text-white truncate">{parentData.parentName}</p>
+              <p className="text-xs text-gray-400 truncate">{parentData.email}</p>
             </div>
           </div>
           <button
@@ -872,7 +1026,7 @@ const ParentDashboard = () => {
         </div>
       </aside>
 
-      {/* Mobile Sidebar  */}
+      {/* Mobile Sidebar */}
       <AnimatePresence>
         {isSidebarOpen && (
           <motion.aside
@@ -882,7 +1036,6 @@ const ParentDashboard = () => {
             transition={{ duration: 0.3, ease: 'easeInOut' }}
             className="lg:hidden fixed inset-y-0 left-0 w-72 bg-gray-900/95 backdrop-blur-xl border-r border-white/10 z-50 flex flex-col"
           >
-            {/* Logo */}
             <div className="flex-shrink-0 p-6 border-b border-white/10">
               <div className="flex items-center gap-3">
                 <div className="w-12 h-12 rounded-2xl bg-gradient-to-r from-orange-500 to-amber-500 flex items-center justify-center shadow-lg shadow-orange-500/20">
@@ -895,7 +1048,6 @@ const ParentDashboard = () => {
               </div>
             </div>
 
-            {/* Navigation */}
             <nav className="flex-1 overflow-y-auto p-4 space-y-1">
               {navItems.map((item) => {
                 const Icon = item.icon;
@@ -928,15 +1080,14 @@ const ParentDashboard = () => {
               })}
             </nav>
 
-            {/* User Profile */}
             <div className="flex-shrink-0 p-6 border-t border-white/10">
               <div className="flex items-center gap-3 mb-4">
                 <div className="w-10 h-10 rounded-full bg-gradient-to-r from-orange-500 to-amber-500 flex items-center justify-center text-white font-semibold flex-shrink-0">
-                  P
+                  {parentData.parentName ? parentData.parentName[0].toUpperCase() : 'P'}
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-white truncate">Parent</p>
-                  <p className="text-xs text-gray-400 truncate">parent@email.com</p>
+                  <p className="text-sm font-medium text-white truncate">{parentData.parentName}</p>
+                  <p className="text-xs text-gray-400 truncate">{parentData.email}</p>
                 </div>
               </div>
               <button
