@@ -1,19 +1,20 @@
 // ParentDashboard.jsx
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   FiHome, FiUser, FiSearch, FiBookOpen, FiMessageSquare, 
   FiHeart, FiStar, FiFilter, FiMapPin, FiClock, 
   FiBell, FiLogOut, FiMenu, FiX, FiEye, FiAward,
   FiTrendingUp, FiChevronRight, FiCalendar, FiCamera,
-  FiInfo, FiSettings, FiArrowRight, FiLoader
+  FiInfo, FiSettings, FiArrowRight, FiLoader, FiMail, FiPhone,
+  FiShare2, FiExternalLink
 } from 'react-icons/fi';
 import { useNavigate } from 'react-router-dom';
 import schoolApi from '../services/schoolApi';
 import collegeApi from '../services/collegeApi';
-import puCollegeApi from '../services/puCollegeApi';
+import puCollegeApi from '../services/pucollegeApi';
 import TuitionCoachingApi from '../services/TuitionCoachingApi';
-import teacherApi from '../services/teacherApi';
+import teacherApi from '../services/TeacherApi';
 
 const ParentDashboard = () => {
   const navigate = useNavigate();
@@ -23,7 +24,6 @@ const ParentDashboard = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
   const [filters, setFilters] = useState({
-    type: '',
     rating: '',
     location: '',
     sortBy: 'rating'
@@ -50,13 +50,22 @@ const ParentDashboard = () => {
   });
   const [recentActivities, setRecentActivities] = useState([]);
 
+  // Add ref to prevent duplicate API calls
+  const fetchCalledRef = useRef(false);
+  const currentTypeRef = useRef('');
+  const isDataLoadedRef = useRef(false);
+
   // Load parent data from localStorage on mount
   useEffect(() => {
     const loadParentData = () => {
       try {
         const storedData = localStorage.getItem('parentData');
+        console.log('📋 Stored parent data:', storedData);
+        
         if (storedData) {
           const data = JSON.parse(storedData);
+          console.log('📋 Parsed parent data:', data);
+          
           setParentData({
             parentName: data.parentName || 'Parent',
             email: data.email || 'parent@email.com',
@@ -64,6 +73,8 @@ const ParentDashboard = () => {
             studentName: data.studentName || '',
             studentClass: data.studentClass || ''
           });
+        } else {
+          console.warn('⚠️ No parent data found in localStorage');
         }
       } catch (error) {
         console.error('Error loading parent data:', error);
@@ -72,127 +83,274 @@ const ParentDashboard = () => {
     loadParentData();
   }, []);
 
-  // Helper function to safely extract data from API response
-  const extractData = (response) => {
-    // If response is an array, return it directly
+  // ============ FIXED DATA EXTRACTION ============
+  const extractDataFromResponse = (response, type) => {
+    console.log(`📥 Extracting ${type} data from response:`, response);
+    
+    if (!response) {
+      console.warn('⚠️ No response received');
+      return [];
+    }
+
+    // If response is already an array
     if (Array.isArray(response)) {
+      console.log(`✅ Response is already an array with ${response.length} items`);
       return response;
     }
-    
-    // If response has a data property that is an array
-    if (response && response.data && Array.isArray(response.data)) {
-      return response.data;
-    }
-    
-    // If response has a success property and data property
-    if (response && response.success && response.data && Array.isArray(response.data)) {
-      return response.data;
-    }
-    
-    // If response has a results property
-    if (response && response.results && Array.isArray(response.results)) {
-      return response.results;
-    }
-    
-    // If response has a items property
-    if (response && response.items && Array.isArray(response.items)) {
-      return response.items;
-    }
-    
-    // If response is an object with values that might be arrays
-    if (response && typeof response === 'object') {
-      // Try to find any property that is an array
-      for (const key in response) {
-        if (Array.isArray(response[key])) {
-          return response[key];
+
+    if (response.success === true && response.data) {
+      console.log('🔍 Response.data type:', typeof response.data);
+      console.log('🔍 Response.data keys:', Object.keys(response.data || {}));
+      
+      // If response.data is an array
+      if (Array.isArray(response.data)) {
+        console.log(`✅ response.data is an array with ${response.data.length} items`);
+        return response.data;
+      }
+
+      if (typeof response.data === 'object' && response.data !== null) {
+        const keys = Object.keys(response.data);
+        
+        // If there are keys and the first value is an object (institution data)
+        if (keys.length > 0 && typeof response.data[keys[0]] === 'object' && response.data[keys[0]] !== null) {
+          console.log(`✅ Converting Firebase object to array with ${keys.length} items`);
+          
+          // Convert object to array with IDs included
+          const arrayData = keys.map(key => ({
+            id: key,
+            ...response.data[key]
+          }));
+          
+          console.log('📋 First item:', arrayData[0]);
+          return arrayData;
+        }
+        
+        // Check for nested arrays (like response.data.schools)
+        for (const key in response.data) {
+          if (Array.isArray(response.data[key])) {
+            console.log(`✅ Found array in response.data.${key} with ${response.data[key].length} items`);
+            return response.data[key];
+          }
+          
+          // Check for nested Firebase objects
+          if (response.data[key] && typeof response.data[key] === 'object' && response.data[key] !== null) {
+            const subKeys = Object.keys(response.data[key]);
+            if (subKeys.length > 0 && typeof response.data[key][subKeys[0]] === 'object' && response.data[key][subKeys[0]] !== null) {
+              console.log(`✅ Converting nested Firebase object ${key} to array with ${subKeys.length} items`);
+              const arrayData = subKeys.map(subKey => ({
+                id: subKey,
+                ...response.data[key][subKey]
+              }));
+              return arrayData;
+            }
+          }
         }
       }
     }
-    
-    // Return empty array if nothing found
+
+    if (typeof response === 'object' && response !== null) {
+      const keys = Object.keys(response);
+      if (keys.length > 0 && typeof response[keys[0]] === 'object' && response[keys[0]] !== null) {
+        console.log(`✅ Converting direct Firebase object to array with ${keys.length} items`);
+        const arrayData = keys.map(key => ({
+          id: key,
+          ...response[key]
+        }));
+        return arrayData;
+      }
+    }
+
+    console.warn(' No data array found in response');
     return [];
   };
 
-  // Fetch institutions based on parent's selected type
+  // ============ DATA TRANSFORMATION ============
+  const transformInstitutionData = (item, index, type) => {
+    // Common field mappings for different institution types
+    const fieldMappings = {
+      'Schools': {
+        name: ['schoolName', 'name', 'title', 'institutionName'],
+        location: ['city', 'location', 'address', 'place', 'district'],
+        image: ['schoolImage', 'image', 'photo', 'logo', 'profileImage'],
+        rating: ['rating', 'averageRating', 'avgRating', 'ratingValue'],
+        reviews: ['reviews', 'reviewCount', 'totalReviews', 'reviewCount'],
+        facilities: ['facilities', 'amenities', 'features', 'services'],
+        fees: ['fees', 'feeStructure', 'tuitionFees', 'feeRange', 'totalAnnualFee'],
+        description: ['description', 'about', 'overview', 'introduction']
+      },
+      'Colleges': {
+        name: ['collegeName', 'name', 'title', 'institutionName'],
+        location: ['city', 'location', 'address', 'place', 'district'],
+        image: ['collegeImage', 'image', 'photo', 'logo', 'profileImage'],
+        rating: ['rating', 'averageRating', 'avgRating', 'ratingValue'],
+        reviews: ['reviews', 'reviewCount', 'totalReviews', 'reviewCount'],
+        facilities: ['facilities', 'amenities', 'features', 'services'],
+        fees: ['fees', 'feeStructure', 'tuitionFees', 'feeRange', 'totalAnnualFee'],
+        description: ['description', 'about', 'overview', 'introduction']
+      },
+      'PU College': {
+        name: ['puCollegeName', 'collegeName', 'name', 'title', 'institutionName'],
+        location: ['city', 'location', 'address', 'place', 'district'],
+        image: ['puCollegeImage', 'collegeImage', 'image', 'photo', 'logo'],
+        rating: ['rating', 'averageRating', 'avgRating', 'ratingValue'],
+        reviews: ['reviews', 'reviewCount', 'totalReviews', 'reviewCount'],
+        facilities: ['facilities', 'amenities', 'features', 'services'],
+        fees: ['fees', 'feeStructure', 'tuitionFees', 'feeRange', 'totalAnnualFee'],
+        description: ['description', 'about', 'overview', 'introduction']
+      },
+      'Coaching/Tuition': {
+        name: ['centerName', 'name', 'title', 'coachingName', 'institutionName'],
+        location: ['city', 'location', 'address', 'place', 'district'],
+        image: ['centerImage', 'image', 'photo', 'logo', 'profileImage'],
+        rating: ['rating', 'averageRating', 'avgRating', 'ratingValue'],
+        reviews: ['reviews', 'reviewCount', 'totalReviews', 'reviewCount'],
+        facilities: ['facilities', 'amenities', 'features', 'subjects', 'courses'],
+        fees: ['fees', 'feeStructure', 'tuitionFees', 'courseFees', 'feeRange', 'totalAnnualFee'],
+        description: ['description', 'about', 'overview', 'introduction']
+      },
+      'All Teachers': {
+        name: ['teacherName', 'name', 'fullName', 'title'],
+        location: ['city', 'location', 'address', 'place'],
+        image: ['profileImage', 'image', 'photo', 'avatar'],
+        rating: ['rating', 'averageRating', 'avgRating', 'ratingValue'],
+        reviews: ['reviews', 'reviewCount', 'totalReviews'],
+        facilities: ['subjects', 'specializations', 'expertise', 'skills'],
+        fees: ['hourlyRate', 'fees', 'rate', 'charges'],
+        description: ['description', 'about', 'bio', 'introduction']
+      }
+    };
+
+    const fields = fieldMappings[type] || fieldMappings['Schools'];
+
+    // Helper to get value from multiple possible fields
+    const getValue = (mappings, fallback = '') => {
+      for (const key of mappings) {
+        if (item[key] !== undefined && item[key] !== null && item[key] !== '') {
+          return item[key];
+        }
+      }
+      return fallback;
+    };
+
+    const name = getValue(fields.name, `Institution ${index + 1}`);
+    const location = getValue(fields.location, 'Location not specified');
+    const image = getValue(fields.image) || `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=FFA500&color=fff&size=400x200`;
+    const rating = parseFloat(getValue(fields.rating, 4.0));
+    const reviews = parseInt(getValue(fields.reviews, 0));
+    const facilities = getValue(fields.facilities, []);
+    let fees = getValue(fields.fees, 'Contact for details');
+    
+    // If fees is an object, try to get the totalAnnualFee or convert to string
+    if (typeof fees === 'object' && fees !== null) {
+      fees = fees.totalAnnualFee || fees.feeRange || fees.tuitionFees || 'Contact for details';
+    }
+    
+    const description = getValue(fields.description, `${name} - Premier educational institution`);
+
+    return {
+      id: item.id || item._id || `temp-${index}`,
+      name: name,
+      type: type,
+      rating: Math.min(5, Math.max(0, rating)),
+      reviews: reviews,
+      location: location,
+      image: image,
+      description: description,
+      fees: typeof fees === 'object' ? JSON.stringify(fees) : String(fees),
+      facilities: Array.isArray(facilities) ? facilities : [],
+      isNew: item.isNew || item.newlyAdded || false,
+      isPopular: item.isPopular || item.featured || false,
+      email: item.email || item.contactEmail || null,
+      phone: item.phone || item.contactNumber || null,
+      website: item.website || item.webUrl || null,
+      originalData: item
+    };
+  };
+
+  // ============ FETCH INSTITUTIONS ============
   const fetchInstitutions = useCallback(async () => {
+    // Get the current institution type from parentData
+    const type = parentData.institutionType;
+    
+    console.log(`🔍 Fetching institutions for type: "${type}"`);
+    
+    // If no type is set, default to Schools
+    if (!type || type === '') {
+      console.warn('⚠️ No institution type found, defaulting to Schools');
+      // You could set a default here or show an error
+    }
+
+    // Prevent duplicate calls for the same type
+    if (fetchCalledRef.current && currentTypeRef.current === type) {
+      console.log(`⏭️ Skipping duplicate fetch for ${type}`);
+      return;
+    }
+
+    fetchCalledRef.current = true;
+    currentTypeRef.current = type;
     setIsLoading(true);
     setError(null);
+    
     try {
+      let response = null;
       let rawData = [];
-      const type = parentData.institutionType;
 
-      console.log('Fetching institutions for type:', type);
+      console.log(`📡 Fetching ${type}...`);
 
+      // Fetch data based on institution type
       switch(type) {
         case 'Schools':
-          const schoolResponse = await schoolApi.getSchools();
-          console.log('School API Response:', schoolResponse);
-          rawData = extractData(schoolResponse);
+          console.log('🏫 Calling schoolApi.getSchools()');
+          response = await schoolApi.getSchools();
           break;
 
         case 'Colleges':
-          const collegeResponse = await collegeApi.getColleges();
-          console.log('College API Response:', collegeResponse);
-          rawData = extractData(collegeResponse);
+          console.log('🎓 Calling collegeApi.getColleges()');
+          response = await collegeApi.getColleges();
           break;
 
         case 'PU College':
-          const puResponse = await puCollegeApi.getPUColleges();
-          console.log('PU College API Response:', puResponse);
-          rawData = extractData(puResponse);
+          console.log('📚 Calling puCollegeApi.getPUColleges()');
+          response = await puCollegeApi.getPUColleges();
           break;
 
         case 'Coaching/Tuition':
-          const coachingResponse = await TuitionCoachingApi.getTuitionCoachings();
-          console.log('Coaching API Response:', coachingResponse);
-          rawData = extractData(coachingResponse);
+          console.log('📖 Calling TuitionCoachingApi.getTuitionCoachings()');
+          response = await TuitionCoachingApi.getTuitionCoachings();
           break;
 
         case 'All Teachers':
-          const teacherResponse = await teacherApi.getTeachers();
-          console.log('Teacher API Response:', teacherResponse);
-          rawData = extractData(teacherResponse);
+          console.log('👨‍🏫 Calling teacherApi.getTeachers()');
+          response = await teacherApi.getTeachers();
           break;
 
         default:
+          console.warn('⚠️ Unknown institution type:', type);
           rawData = [];
       }
 
-      // Transform data to consistent format
-      const transformedData = rawData.map((item, index) => {
-        // Try to find the name from various possible fields
-        const name = item.schoolName || item.collegeName || item.centerName || 
-                     item.teacherName || item.name || item.title || `Institution ${index + 1}`;
-        
-        // Try to find the location from various possible fields
-        const location = item.city || item.location || item.address || item.place || 'N/A';
-        
-        // Try to find the image from various possible fields
-        const image = item.schoolImage || item.collegeImage || item.centerImage || 
-                      item.profileImage || item.image || item.photo || 
-                      'https://images.unsplash.com/photo-1580582932707-520aed937b7b?w=400&h=200&fit=crop';
-        
-        // Try to find facilities
-        const facilities = item.facilities || item.amenities || item.features || [];
+      console.log(`📦 ${type} API Response:`, response);
+      
+      // Extract data from response
+      rawData = extractDataFromResponse(response, type);
+      
+      console.log(`🔄 Transforming ${rawData.length} items for ${type}...`);
+      
+      // Transform each item
+      const transformedData = rawData.map((item, index) => 
+        transformInstitutionData(item, index, type)
+      );
+      
+      console.log(`✅ Transformed ${transformedData.length} items for ${type}`);
+      
+      // Log the actual data to verify
+      if (transformedData.length > 0) {
+        console.log('📋 First 3 transformed items:', transformedData.slice(0, 3));
+      } else {
+        console.warn(`⚠️ No data transformed for ${type}!`);
+      }
 
-        return {
-          id: item.id || item._id || index + 1,
-          name: name,
-          type: type,
-          rating: item.rating || item.averageRating || 4.5,
-          reviews: item.reviews || item.reviewCount || item.totalReviews || 0,
-          location: location,
-          image: image,
-          description: item.description || item.about || `${name} - Premier educational institution`,
-          fees: item.fees || item.feeStructure || item.tuitionFees || 'Contact for details',
-          facilities: Array.isArray(facilities) ? facilities : [],
-          isNew: item.isNew || item.newlyAdded || false,
-          isPopular: item.isPopular || item.featured || false,
-          originalData: item
-        };
-      });
-
-      console.log('Transformed data:', transformedData);
+      // Set the data
       setInstitutions(transformedData);
       setFilteredInstitutions(transformedData);
       
@@ -205,14 +363,27 @@ const ParentDashboard = () => {
       });
 
       // Update recent activities
-      setRecentActivities([
-        { id: 1, action: `Viewed ${transformedData.length} ${type}`, time: 'Just now', icon: FiEye },
-        { id: 2, action: 'Updated search preferences', time: '2 hours ago', icon: FiTrendingUp },
-        { id: 3, action: 'Compared institutions', time: '1 day ago', icon: FiArrowRight },
-      ]);
+      if (transformedData.length > 0) {
+        setRecentActivities([
+          { 
+            id: 1, 
+            action: `Viewed ${transformedData.length} ${type}`, 
+            time: 'Just now', 
+            icon: FiEye 
+          },
+          { 
+            id: 2, 
+            action: `Looking for ${type}`, 
+            time: 'Today', 
+            icon: FiTrendingUp 
+          },
+        ]);
+      }
+
+      isDataLoadedRef.current = true;
 
     } catch (error) {
-      console.error('Error fetching institutions:', error);
+      console.error('❌ Error fetching institutions:', error);
       setError(error.message || 'Failed to load institutions');
       setInstitutions([]);
       setFilteredInstitutions([]);
@@ -245,10 +416,22 @@ const ParentDashboard = () => {
     }
   }, [bookmarkedInstitutions]);
 
-  // Fetch institutions on mount and when institution type changes
+  // ============ FETCH WHEN PARENT DATA IS READY ============
   useEffect(() => {
-    fetchInstitutions();
-  }, [fetchInstitutions]);
+    // Only fetch if we have parent data with a valid institution type
+    if (parentData.institutionType && parentData.institutionType !== '') {
+      console.log(`📋 Parent data loaded with type: ${parentData.institutionType}`);
+      
+      // Reset fetch flag to allow new fetch
+      fetchCalledRef.current = false;
+      currentTypeRef.current = '';
+      
+      // Fetch institutions for the selected type
+      fetchInstitutions();
+    } else {
+      console.warn('⚠️ Parent data not ready or institution type not set');
+    }
+  }, [parentData.institutionType]); // This will run when parentData.institutionType changes
 
   // Filter institutions
   useEffect(() => {
@@ -256,10 +439,6 @@ const ParentDashboard = () => {
 
     if (showBookmarksOnly) {
       filtered = filtered.filter(inst => bookmarkedInstitutions.includes(inst.id));
-    }
-
-    if (filters.type) {
-      filtered = filtered.filter(inst => inst.type === filters.type);
     }
 
     if (filters.rating) {
@@ -303,13 +482,12 @@ const ParentDashboard = () => {
 
   const navItems = [
     { id: 'dashboard', label: 'Dashboard', icon: FiHome },
-    { id: 'search', label: 'Search', icon: FiSearch },
+    { id: 'search', label: `Browse ${parentData.institutionType}`, icon: FiSearch },
     { id: 'bookmarks', label: 'Bookmarks', icon: FiHeart },
     { id: 'inquiries', label: 'Inquiries', icon: FiMessageSquare },
-    // { id: 'profile', label: 'Profile', icon: FiUser },
   ];
 
-  // Stats Card Component
+  // ============ STATS CARD ============
   const StatsCard = ({ icon: Icon, label, value, color, bgColor, trend }) => (
     <motion.div
       whileHover={{ scale: 1.02, y: -4 }}
@@ -333,7 +511,7 @@ const ParentDashboard = () => {
     </motion.div>
   );
 
-  // Institution Card Component
+  // ============ INSTITUTION CARD ============
   const InstitutionCard = ({ institution }) => {
     const isBookmarked = bookmarkedInstitutions.includes(institution.id);
 
@@ -350,7 +528,7 @@ const ParentDashboard = () => {
             alt={institution.name}
             className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
             onError={(e) => {
-              e.target.src = 'https://via.placeholder.com/400x200/FFA500/FFFFFF?text=Institution';
+              e.target.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(institution.name)}&background=FFA500&color=fff&size=400x200`;
             }}
           />
           <div className="absolute inset-0 bg-gradient-to-t from-gray-900/80 via-transparent to-transparent" />
@@ -379,7 +557,7 @@ const ParentDashboard = () => {
             <div className="flex items-center gap-2">
               <div className="flex items-center gap-1 bg-black/50 backdrop-blur-sm px-3 py-1 rounded-full">
                 <FiStar className="w-4 h-4 text-yellow-400 fill-yellow-400" />
-                <span className="text-white font-semibold text-sm">{institution.rating}</span>
+                <span className="text-white font-semibold text-sm">{institution.rating.toFixed(1)}</span>
                 <span className="text-gray-300 text-xs">({institution.reviews})</span>
               </div>
               <span className="text-xs text-white/70 bg-black/50 backdrop-blur-sm px-3 py-1 rounded-full">
@@ -390,42 +568,57 @@ const ParentDashboard = () => {
         </div>
 
         <div className="p-5">
-          <h3 className="text-xl font-bold text-white mb-1 group-hover:text-orange-400 transition-colors">
+          <h3 className="text-xl font-bold text-white mb-1 group-hover:text-orange-400 transition-colors line-clamp-1">
             {institution.name}
           </h3>
           
           <div className="flex items-center gap-2 text-gray-400 text-sm mb-3">
-            <FiMapPin className="w-4 h-4" />
-            <span>{institution.location}</span>
+            <FiMapPin className="w-4 h-4 flex-shrink-0" />
+            <span className="line-clamp-1">{institution.location}</span>
           </div>
 
           <p className="text-gray-300 text-sm mb-4 line-clamp-2">
             {institution.description}
           </p>
 
-          <div className="flex flex-wrap gap-2 mb-4">
-            {institution.facilities && institution.facilities.slice(0, 3).map((facility, idx) => (
-              <span key={idx} className="px-2.5 py-1 bg-white/5 rounded-full text-xs text-gray-300 border border-white/5">
-                {facility}
-              </span>
-            ))}
-            {institution.facilities && institution.facilities.length > 3 && (
-              <span className="px-2.5 py-1 bg-white/5 rounded-full text-xs text-gray-400 border border-white/5">
-                +{institution.facilities.length - 3}
-              </span>
-            )}
-          </div>
+          {institution.facilities && institution.facilities.length > 0 && (
+            <div className="flex flex-wrap gap-2 mb-4">
+              {institution.facilities.slice(0, 3).map((facility, idx) => (
+                <span key={idx} className="px-2.5 py-1 bg-white/5 rounded-full text-xs text-gray-300 border border-white/5">
+                  {facility}
+                </span>
+              ))}
+              {institution.facilities.length > 3 && (
+                <span className="px-2.5 py-1 bg-white/5 rounded-full text-xs text-gray-400 border border-white/5">
+                  +{institution.facilities.length - 3}
+                </span>
+              )}
+            </div>
+          )}
 
           <div className="flex items-center justify-between pt-4 border-t border-white/10">
             <div>
               <p className="text-xs text-gray-400">Fee Range</p>
-              <p className="text-sm font-semibold text-orange-400">{institution.fees}</p>
+              <p className="text-sm font-semibold text-orange-400 line-clamp-1">{institution.fees}</p>
             </div>
             <div className="flex gap-2">
-              <button className="px-4 py-2 bg-white/10 text-white rounded-xl text-sm hover:bg-white/20 transition-all">
+              <button 
+                onClick={() => {
+                  console.log('View details for:', institution.id);
+                }}
+                className="px-4 py-2 bg-white/10 text-white rounded-xl text-sm hover:bg-white/20 transition-all"
+              >
                 Details
               </button>
-              <button className="px-4 py-2 bg-gradient-to-r from-orange-500 to-amber-500 text-white rounded-xl text-sm hover:from-orange-600 hover:to-amber-600 transition-all shadow-lg shadow-orange-500/20">
+              <button 
+                onClick={() => {
+                  console.log('Contact institution:', institution.id);
+                  if (institution.phone) {
+                    window.location.href = `tel:${institution.phone}`;
+                  }
+                }}
+                className="px-4 py-2 bg-gradient-to-r from-orange-500 to-amber-500 text-white rounded-xl text-sm hover:from-orange-600 hover:to-amber-600 transition-all shadow-lg shadow-orange-500/20"
+              >
                 Contact
               </button>
             </div>
@@ -435,27 +628,30 @@ const ParentDashboard = () => {
     );
   };
 
-  // Loading Component
+  // ============ LOADING ============
   const LoadingSpinner = () => (
     <div className="flex items-center justify-center min-h-[400px]">
       <div className="text-center">
         <FiLoader className="w-12 h-12 text-orange-500 animate-spin mx-auto mb-4" />
-        <p className="text-gray-400">Loading institutions...</p>
+        <p className="text-gray-400">Loading {parentData.institutionType}...</p>
       </div>
     </div>
   );
 
-  // Error Component
+  // ============ ERROR ============
   const ErrorDisplay = ({ message }) => (
     <div className="flex items-center justify-center min-h-[400px]">
       <div className="text-center max-w-md">
         <div className="w-16 h-16 bg-red-500/20 rounded-full flex items-center justify-center mx-auto mb-4">
           <FiInfo className="w-8 h-8 text-red-400" />
         </div>
-        <h3 className="text-xl font-semibold text-white mb-2">Unable to load institutions</h3>
+        <h3 className="text-xl font-semibold text-white mb-2">Unable to load {parentData.institutionType}</h3>
         <p className="text-gray-400 mb-4">{message || 'Please try again later'}</p>
         <button
-          onClick={() => fetchInstitutions()}
+          onClick={() => {
+            fetchCalledRef.current = false;
+            fetchInstitutions();
+          }}
           className="px-6 py-2.5 bg-gradient-to-r from-orange-500 to-amber-500 text-white rounded-xl hover:from-orange-600 hover:to-amber-600 transition-all shadow-lg shadow-orange-500/20"
         >
           Retry
@@ -464,17 +660,31 @@ const ParentDashboard = () => {
     </div>
   );
 
-  // Dashboard Content
+  // ============ EMPTY STATE ============
+  const EmptyState = () => (
+    <div className="text-center py-16 bg-white/5 rounded-2xl border border-white/10">
+      <FiBookOpen className="w-16 h-16 text-gray-600 mx-auto mb-4" />
+      <h3 className="text-xl font-semibold text-white">No {parentData.institutionType} Found</h3>
+      <p className="text-gray-400">We couldn't find any {parentData.institutionType.toLowerCase()} matching your criteria.</p>
+    </div>
+  );
+
+  // ============ DASHBOARD ============
   const renderDashboard = () => (
     <div className="space-y-8">
       {/* Welcome Section */}
-      <div className="relative overflow-hidden bg-gradient-to-r from-orange-500/20 via-amber-500/20 to-transparent rounded-3xl p-8 border border-orange-500/20">
+      <motion.div
+        initial={{ opacity: 0, y: -20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5 }}
+        className="relative overflow-hidden bg-gradient-to-r from-orange-500/20 via-amber-500/20 to-transparent rounded-3xl p-8 border border-orange-500/20"
+      >
         <div className="absolute top-0 right-0 w-64 h-64 bg-orange-500/10 rounded-full blur-3xl" />
         <div className="relative">
           <div className="flex items-start justify-between flex-wrap gap-4">
             <div>
               <h2 className="text-3xl font-bold text-white">
-                Welcome back, {parentData.parentName}! 
+                Welcome back, {parentData.parentName}! 👋
               </h2>
               <p className="text-gray-300 mt-2 text-lg">
                 Find the best {parentData.institutionType} for your child
@@ -484,23 +694,32 @@ const ParentDashboard = () => {
                   Looking for: {parentData.institutionType}
                 </span>
                 <span className="px-3 py-1 bg-green-500/20 rounded-full text-xs text-green-300">
-                  {institutions.length} institutions available
+                  {institutions.length} {parentData.institutionType} available
                 </span>
+                {parentData.studentName && (
+                  <span className="px-3 py-1 bg-blue-500/20 rounded-full text-xs text-blue-300">
+                    Student: {parentData.studentName}
+                  </span>
+                )}
               </div>
             </div>
           </div>
         </div>
-      </div>
+      </motion.div>
 
       {/* Stats Grid */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5, delay: 0.1 }}
+        className="grid grid-cols-2 lg:grid-cols-4 gap-4"
+      >
         <StatsCard 
           icon={FiEye}
-          label="Viewed"
+          label={`${parentData.institutionType} Viewed`}
           value={stats.totalViewed}
           color="text-blue-400"
           bgColor="bg-blue-500/20"
-          trend="+12% this week"
         />
         <StatsCard 
           icon={FiHeart}
@@ -508,7 +727,6 @@ const ParentDashboard = () => {
           value={stats.shortlisted}
           color="text-red-400"
           bgColor="bg-red-500/20"
-          trend="+5 new"
         />
         <StatsCard 
           icon={FiMessageSquare}
@@ -516,7 +734,6 @@ const ParentDashboard = () => {
           value={stats.inquiries}
           color="text-green-400"
           bgColor="bg-green-500/20"
-          trend="2 pending"
         />
         <StatsCard 
           icon={FiAward}
@@ -524,12 +741,16 @@ const ParentDashboard = () => {
           value={stats.recommendations}
           color="text-amber-400"
           bgColor="bg-amber-500/20"
-          trend="+3 this month"
         />
-      </div>
+      </motion.div>
 
       {/* Quick Actions */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5, delay: 0.2 }}
+        className="grid grid-cols-1 lg:grid-cols-3 gap-6"
+      >
         <div className="lg:col-span-2 space-y-4">
           <h3 className="text-lg font-semibold text-white">Quick Actions</h3>
           <div className="grid grid-cols-2 gap-4">
@@ -542,7 +763,7 @@ const ParentDashboard = () => {
               <div className="w-12 h-12 rounded-xl bg-blue-500/20 flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
                 <FiSearch className="w-6 h-6 text-blue-400" />
               </div>
-              <h4 className="text-white font-semibold">Search {parentData.institutionType}</h4>
+              <h4 className="text-white font-semibold">Browse {parentData.institutionType}</h4>
               <p className="text-sm text-gray-400">Find the best options</p>
             </motion.button>
 
@@ -581,7 +802,7 @@ const ParentDashboard = () => {
                 <FiTrendingUp className="w-6 h-6 text-purple-400" />
               </div>
               <h4 className="text-white font-semibold">Compare</h4>
-              <p className="text-sm text-gray-400">Compare institutions</p>
+              <p className="text-sm text-gray-400">Compare {parentData.institutionType}</p>
             </motion.button>
           </div>
         </div>
@@ -605,49 +826,71 @@ const ParentDashboard = () => {
               );
             })}
           </div>
-          <button className="mt-4 text-sm text-orange-400 hover:text-orange-300 transition-colors flex items-center gap-1">
-            View all activity
-            <FiArrowRight className="w-4 h-4" />
-          </button>
         </div>
-      </div>
+      </motion.div>
 
       {/* Top Picks Section */}
-      <div>
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5, delay: 0.3 }}
+      >
         <div className="flex items-center justify-between mb-6">
           <div>
-            <h3 className="text-xl font-bold text-white">Top Picks for You</h3>
-            <p className="text-sm text-gray-400">Based on your preferences</p>
+            <h3 className="text-2xl font-bold text-white">Top {parentData.institutionType} Picks</h3>
+            <p className="text-sm text-gray-400">Handpicked recommendations for your child's education</p>
           </div>
           <button 
             onClick={() => setActiveTab('search')}
-            className="text-orange-400 text-sm hover:text-orange-300 transition-colors flex items-center gap-1"
+            className="text-orange-400 text-sm hover:text-orange-300 transition-colors flex items-center gap-1 bg-orange-500/10 px-4 py-2 rounded-xl"
           >
             View All
             <FiArrowRight className="w-4 h-4" />
           </button>
         </div>
+
         {isLoading ? (
           <LoadingSpinner />
         ) : error ? (
           <ErrorDisplay message={error} />
+        ) : institutions.length === 0 ? (
+          <EmptyState />
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {institutions.slice(0, 3).map((inst) => (
-              <InstitutionCard key={inst.id} institution={inst} />
+            {institutions.slice(0, 6).map((inst, index) => (
+              <motion.div
+                key={inst.id}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.3, delay: index * 0.1 }}
+              >
+                <InstitutionCard institution={inst} />
+              </motion.div>
             ))}
           </div>
         )}
-      </div>
+
+        {institutions.length > 6 && !isLoading && !error && (
+          <div className="text-center mt-8">
+            <button
+              onClick={() => setActiveTab('search')}
+              className="px-8 py-3 bg-white/5 hover:bg-white/10 text-white rounded-xl border border-white/10 transition-all"
+            >
+              View All {institutions.length} {parentData.institutionType}
+              <FiArrowRight className="inline ml-2" />
+            </button>
+          </div>
+        )}
+      </motion.div>
     </div>
   );
 
-  // Search Content
+  // ============ SEARCH ============
   const renderSearch = () => (
     <div className="space-y-6">
       <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
         <div>
-          <h2 className="text-2xl font-bold text-white">Discover {parentData.institutionType}</h2>
+          <h2 className="text-2xl font-bold text-white">Browse {parentData.institutionType}</h2>
           <p className="text-gray-400">Find the perfect {parentData.institutionType.toLowerCase()} for your child</p>
         </div>
         <div className="flex flex-wrap gap-2">
@@ -684,23 +927,7 @@ const ParentDashboard = () => {
             exit={{ opacity: 0, height: 0 }}
             className="bg-white/5 backdrop-blur-lg rounded-2xl p-6 border border-white/10 overflow-hidden"
           >
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-              <div>
-                <label className="text-sm text-gray-400 block mb-2">Institution Type</label>
-                <select
-                  className="w-full px-4 py-2.5 bg-white/5 border border-white/10 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-orange-500"
-                  value={filters.type}
-                  onChange={(e) => setFilters({...filters, type: e.target.value})}
-                >
-                  <option value="">All Types</option>
-                  <option value="Schools">Schools</option>
-                  <option value="Colleges">Colleges</option>
-                  <option value="PU College">PU College</option>
-                  <option value="Coaching/Tuition">Coaching/Tuition</option>
-                  <option value="All Teachers">All Teachers</option>
-                </select>
-              </div>
-
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div>
                 <label className="text-sm text-gray-400 block mb-2">Minimum Rating</label>
                 <select
@@ -743,7 +970,7 @@ const ParentDashboard = () => {
 
             <div className="mt-4 flex justify-end">
               <button
-                onClick={() => setFilters({ type: '', rating: '', location: '', sortBy: 'rating' })}
+                onClick={() => setFilters({ rating: '', location: '', sortBy: 'rating' })}
                 className="px-4 py-2 text-gray-400 hover:text-white transition-colors text-sm"
               >
                 Clear All
@@ -755,7 +982,7 @@ const ParentDashboard = () => {
 
       {/* Results */}
       <div className="flex items-center justify-between text-sm">
-        <span className="text-gray-400">Showing {filteredInstitutions.length} institutions</span>
+        <span className="text-gray-400">Showing {filteredInstitutions.length} {parentData.institutionType}</span>
         <span className="text-gray-400">{filteredInstitutions.length} results found</span>
       </div>
 
@@ -763,6 +990,8 @@ const ParentDashboard = () => {
         <LoadingSpinner />
       ) : error ? (
         <ErrorDisplay message={error} />
+      ) : filteredInstitutions.length === 0 ? (
+        <EmptyState />
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {filteredInstitutions.map((inst) => (
@@ -770,25 +999,17 @@ const ParentDashboard = () => {
           ))}
         </div>
       )}
-
-      {!isLoading && !error && filteredInstitutions.length === 0 && (
-        <div className="text-center py-16 bg-white/5 rounded-2xl border border-white/10">
-          <FiSearch className="w-16 h-16 text-gray-600 mx-auto mb-4" />
-          <h3 className="text-xl font-semibold text-white">No institutions found</h3>
-          <p className="text-gray-400">Try adjusting your filters</p>
-        </div>
-      )}
     </div>
   );
 
-  // Bookmarks Content
+  // ============ BOOKMARKS ============
   const renderBookmarks = () => {
     const bookmarkedItems = institutions.filter(inst => bookmarkedInstitutions.includes(inst.id));
     return (
       <div className="space-y-6">
         <div>
           <h2 className="text-2xl font-bold text-white">Your Bookmarks</h2>
-          <p className="text-gray-400">Institutions you've shortlisted</p>
+          <p className="text-gray-400">{parentData.institutionType} you've shortlisted</p>
         </div>
 
         {isLoading ? (
@@ -805,12 +1026,12 @@ const ParentDashboard = () => {
           <div className="text-center py-16 bg-white/5 rounded-2xl border border-white/10">
             <FiHeart className="w-16 h-16 text-gray-600 mx-auto mb-4" />
             <h3 className="text-xl font-semibold text-white">No bookmarks yet</h3>
-            <p className="text-gray-400">Start exploring and save institutions you like</p>
+            <p className="text-gray-400">Start exploring and save {parentData.institutionType} you like</p>
             <button
               onClick={() => setActiveTab('search')}
               className="mt-4 px-6 py-2.5 bg-gradient-to-r from-orange-500 to-amber-500 text-white rounded-xl hover:from-orange-600 hover:to-amber-600 transition-all shadow-lg shadow-orange-500/20"
             >
-              Explore Institutions
+              Explore {parentData.institutionType}
             </button>
           </div>
         )}
@@ -818,7 +1039,7 @@ const ParentDashboard = () => {
     );
   };
 
-  // Inquiries Content
+  // ============ INQUIRIES ============
   const renderInquiries = () => (
     <div className="space-y-6">
       <div>
@@ -868,79 +1089,18 @@ const ParentDashboard = () => {
     </div>
   );
 
-  // Profile Content
-  const renderProfile = () => (
-    <div className="space-y-6">
-      <div>
-        <h2 className="text-2xl font-bold text-white">Parent Profile</h2>
-        <p className="text-gray-400">Manage your profile settings</p>
-      </div>
-
-      <div className="bg-white/5 backdrop-blur-lg p-8 rounded-2xl border border-white/10">
-        <div className="flex items-center gap-8 mb-8">
-          <div className="relative">
-            <div className="w-28 h-28 rounded-full bg-gradient-to-r from-orange-500 to-amber-500 flex items-center justify-center text-4xl font-bold text-white">
-              {parentData.parentName ? parentData.parentName[0].toUpperCase() : 'P'}
-            </div>
-            <button className="absolute bottom-0 right-0 p-2 bg-orange-500 rounded-full hover:bg-orange-600 transition-all">
-              <FiCamera className="w-4 h-4 text-white" />
-            </button>
-          </div>
-          <div>
-            <h3 className="text-2xl font-bold text-white">{parentData.parentName}</h3>
-            <p className="text-gray-400">{parentData.email}</p>
-            <p className="text-sm text-orange-400 mt-1 flex items-center gap-1">
-              <FiInfo className="w-4 h-4" />
-              Looking for: {parentData.institutionType}
-            </p>
-          </div>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div className="p-4 bg-white/5 rounded-xl">
-            <p className="text-xs text-gray-400">Student Name</p>
-            <p className="text-white font-medium mt-1">{parentData.studentName || 'Not specified'}</p>
-          </div>
-          <div className="p-4 bg-white/5 rounded-xl">
-            <p className="text-xs text-gray-400">Student Class</p>
-            <p className="text-white font-medium mt-1">{parentData.studentClass || 'Not specified'}</p>
-          </div>
-          <div className="p-4 bg-white/5 rounded-xl">
-            <p className="text-xs text-gray-400">Institution Type Looking For</p>
-            <p className="text-white font-medium mt-1">{parentData.institutionType}</p>
-          </div>
-          <div className="p-4 bg-white/5 rounded-xl">
-            <p className="text-xs text-gray-400">Member Since</p>
-            <p className="text-white font-medium mt-1">{new Date().getFullYear()}</p>
-          </div>
-        </div>
-
-        <div className="mt-8 flex flex-wrap gap-3">
-          <button className="px-6 py-2.5 bg-gradient-to-r from-orange-500 to-amber-500 text-white rounded-xl hover:from-orange-600 hover:to-amber-600 transition-all shadow-lg shadow-orange-500/20">
-            Edit Profile
-          </button>
-          <button className="px-6 py-2.5 bg-white/5 text-gray-300 rounded-xl hover:bg-white/10 transition-all border border-white/10">
-            Change Password
-          </button>
-          <button className="px-6 py-2.5 bg-red-500/10 text-red-400 rounded-xl hover:bg-red-500/20 transition-all border border-red-500/20">
-            Deactivate Account
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-
+  // ============ RENDER CONTENT ============
   const renderContent = () => {
     switch(activeTab) {
       case 'dashboard': return renderDashboard();
       case 'search': return renderSearch();
       case 'bookmarks': return renderBookmarks();
       case 'inquiries': return renderInquiries();
-      // case 'profile': return renderProfile();
-      default: return null;
+      default: return renderDashboard();
     }
   };
 
+  // ============ MAIN RENDER ============
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 flex">
       {/* Mobile Menu Button */}
