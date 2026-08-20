@@ -68,8 +68,8 @@ const ParentDashboard = () => {
           
           setParentData({
             parentName: data.parentName || 'Parent',
-            email: data.email || 'parent@email.com',
-            institutionType: data.institutionType || 'Schools',
+            email: data.email || '',
+            institutionType: data.institutionType || 'N/A',
             studentName: data.studentName || '',
             studentClass: data.studentClass || ''
           });
@@ -151,7 +151,7 @@ const ParentDashboard = () => {
     if (typeof response === 'object' && response !== null) {
       const keys = Object.keys(response);
       if (keys.length > 0 && typeof response[keys[0]] === 'object' && response[keys[0]] !== null) {
-        console.log(`✅ Converting direct Firebase object to array with ${keys.length} items`);
+        console.log(` Converting direct Firebase object to array with ${keys.length} items`);
         const arrayData = keys.map(key => ({
           id: key,
           ...response[key]
@@ -245,7 +245,7 @@ const ParentDashboard = () => {
       fees = fees.totalAnnualFee || fees.feeRange || fees.tuitionFees || 'Contact for details';
     }
     
-    const description = getValue(fields.description, `${name} - Premier educational institution`);
+    const description = getValue(fields.description, );
 
     return {
       id: item.id || item._id || `temp-${index}`,
@@ -316,7 +316,8 @@ const ParentDashboard = () => {
 
         case 'Coaching/Tuition':
           console.log('📖 Calling TuitionCoachingApi.getTuitionCoachings()');
-          response = await TuitionCoachingApi.getTuitionCoachings();
+          response = await TuitionCoachingApi.
+          getTuitionCoachings();
           break;
 
         case 'All Teachers':
@@ -684,7 +685,7 @@ const ParentDashboard = () => {
           <div className="flex items-start justify-between flex-wrap gap-4">
             <div>
               <h2 className="text-3xl font-bold text-white">
-                Welcome back, {parentData.parentName}! 👋
+                Welcome back, {parentData.parentName}! 
               </h2>
               <p className="text-gray-300 mt-2 text-lg">
                 Find the best {parentData.institutionType} for your child
@@ -1074,7 +1075,7 @@ const ParentDashboard = () => {
                       item === 2 ? 'bg-yellow-500/20 text-yellow-300' : 
                       'bg-blue-500/20 text-blue-300'
                     }`}>
-                      {item === 1 ? '✓ Responded' : item === 2 ? '⏳ Pending' : '📋 Reviewed'}
+                      {item === 1 ? '✓ Responded' : item === 2 ? ' Pending' : ' Reviewed'}
                     </span>
                   </div>
                 </div>
