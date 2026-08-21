@@ -43,10 +43,8 @@ const ParentDashboard = () => {
   const [bookmarkedInstitutions, setBookmarkedInstitutions] = useState([]);
   const [showBookmarksOnly, setShowBookmarksOnly] = useState(false);
   const [stats, setStats] = useState({
-    totalViewed: 0,
-    shortlisted: 0,
-    inquiries: 0,
-    recommendations: 0
+    totalAvailable: 0,
+    bookmarksCount: 0
   });
   const [recentActivities, setRecentActivities] = useState([]);
 
@@ -245,7 +243,7 @@ const ParentDashboard = () => {
       fees = fees.totalAnnualFee || fees.feeRange || fees.tuitionFees || 'Contact for details';
     }
     
-    const description = getValue(fields.description, );
+    const description = getValue(fields.description, `${name} - Premier educational institution`);
 
     return {
       id: item.id || item._id || `temp-${index}`,
@@ -277,7 +275,6 @@ const ParentDashboard = () => {
     // If no type is set, default to Schools
     if (!type || type === '') {
       console.warn('⚠️ No institution type found, defaulting to Schools');
-      // You could set a default here or show an error
     }
 
     // Prevent duplicate calls for the same type
@@ -316,8 +313,7 @@ const ParentDashboard = () => {
 
         case 'Coaching/Tuition':
           console.log('📖 Calling TuitionCoachingApi.getTuitionCoachings()');
-          response = await TuitionCoachingApi.
-          getTuitionCoachings();
+          response = await TuitionCoachingApi.getTuitionCoachings();
           break;
 
         case 'All Teachers':
@@ -357,29 +353,9 @@ const ParentDashboard = () => {
       
       // Update stats
       setStats({
-        totalViewed: transformedData.length,
-        shortlisted: Math.min(transformedData.length, Math.floor(transformedData.length * 0.3)),
-        inquiries: Math.min(transformedData.length, Math.floor(transformedData.length * 0.2)),
-        recommendations: Math.min(transformedData.length, Math.floor(transformedData.length * 0.4))
+        totalAvailable: transformedData.length,
+        bookmarksCount: bookmarkedInstitutions.length
       });
-
-      // Update recent activities
-      if (transformedData.length > 0) {
-        setRecentActivities([
-          { 
-            id: 1, 
-            action: `Viewed ${transformedData.length} ${type}`, 
-            time: 'Just now', 
-            icon: FiEye 
-          },
-          { 
-            id: 2, 
-            action: `Looking for ${type}`, 
-            time: 'Today', 
-            icon: FiTrendingUp 
-          },
-        ]);
-      }
 
       isDataLoadedRef.current = true;
 
@@ -412,6 +388,11 @@ const ParentDashboard = () => {
   useEffect(() => {
     try {
       localStorage.setItem('parentBookmarks', JSON.stringify(bookmarkedInstitutions));
+      // Update bookmarks count in stats
+      setStats(prev => ({
+        ...prev,
+        bookmarksCount: bookmarkedInstitutions.length
+      }));
     } catch (error) {
       console.error('Error saving bookmarks:', error);
     }
@@ -432,7 +413,7 @@ const ParentDashboard = () => {
     } else {
       console.warn('⚠️ Parent data not ready or institution type not set');
     }
-  }, [parentData.institutionType]); // This will run when parentData.institutionType changes
+  }, [parentData.institutionType]);
 
   // Filter institutions
   useEffect(() => {
@@ -485,11 +466,10 @@ const ParentDashboard = () => {
     { id: 'dashboard', label: 'Dashboard', icon: FiHome },
     { id: 'search', label: `Browse ${parentData.institutionType}`, icon: FiSearch },
     { id: 'bookmarks', label: 'Bookmarks', icon: FiHeart },
-    { id: 'inquiries', label: 'Inquiries', icon: FiMessageSquare },
   ];
 
   // ============ STATS CARD ============
-  const StatsCard = ({ icon: Icon, label, value, color, bgColor, trend }) => (
+  const StatsCard = ({ icon: Icon, label, value, color, bgColor }) => (
     <motion.div
       whileHover={{ scale: 1.02, y: -4 }}
       className="bg-white/5 backdrop-blur-lg p-6 rounded-2xl border border-white/10 hover:border-orange-500/30 transition-all duration-300"
@@ -498,12 +478,6 @@ const ParentDashboard = () => {
         <div>
           <p className="text-gray-400 text-sm font-medium">{label}</p>
           <p className="text-3xl font-bold text-white mt-2">{value}</p>
-          {trend && (
-            <p className="text-xs text-green-400 mt-1 flex items-center gap-1">
-              <FiTrendingUp className="w-3 h-3" />
-              {trend}
-            </p>
-          )}
         </div>
         <div className={`p-3 rounded-xl ${bgColor}`}>
           <Icon className={`w-6 h-6 ${color}`} />
@@ -606,6 +580,7 @@ const ParentDashboard = () => {
               <button 
                 onClick={() => {
                   console.log('View details for:', institution.id);
+                  navigate(`/institution/${institution.type}/${institution.id}`)
                 }}
                 className="px-4 py-2 bg-white/10 text-white rounded-xl text-sm hover:bg-white/20 transition-all"
               >
@@ -708,138 +683,39 @@ const ParentDashboard = () => {
         </div>
       </motion.div>
 
-      {/* Stats Grid */}
+      {/* Stats Grid - Updated */}
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5, delay: 0.1 }}
-        className="grid grid-cols-2 lg:grid-cols-4 gap-4"
+        className="grid grid-cols-2 gap-4"
       >
         <StatsCard 
-          icon={FiEye}
-          label={`${parentData.institutionType} Viewed`}
-          value={stats.totalViewed}
+          icon={FiBookOpen}
+          label={`Available ${parentData.institutionType}`}
+          value={stats.totalAvailable}
           color="text-blue-400"
           bgColor="bg-blue-500/20"
         />
         <StatsCard 
           icon={FiHeart}
-          label="Shortlisted"
-          value={stats.shortlisted}
+          label="Bookmarks"
+          value={stats.bookmarksCount}
           color="text-red-400"
           bgColor="bg-red-500/20"
         />
-        <StatsCard 
-          icon={FiMessageSquare}
-          label="Inquiries"
-          value={stats.inquiries}
-          color="text-green-400"
-          bgColor="bg-green-500/20"
-        />
-        <StatsCard 
-          icon={FiAward}
-          label="Recommendations"
-          value={stats.recommendations}
-          color="text-amber-400"
-          bgColor="bg-amber-500/20"
-        />
       </motion.div>
 
-      {/* Quick Actions */}
+      {/* Top Picks Section - Shows top 3 rated institutions */}
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5, delay: 0.2 }}
-        className="grid grid-cols-1 lg:grid-cols-3 gap-6"
-      >
-        <div className="lg:col-span-2 space-y-4">
-          <h3 className="text-lg font-semibold text-white">Quick Actions</h3>
-          <div className="grid grid-cols-2 gap-4">
-            <motion.button
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.98 }}
-              onClick={() => setActiveTab('search')}
-              className="p-5 bg-gradient-to-br from-blue-600/20 to-blue-700/20 rounded-2xl border border-blue-500/20 text-left hover:shadow-lg transition-all group"
-            >
-              <div className="w-12 h-12 rounded-xl bg-blue-500/20 flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
-                <FiSearch className="w-6 h-6 text-blue-400" />
-              </div>
-              <h4 className="text-white font-semibold">Browse {parentData.institutionType}</h4>
-              <p className="text-sm text-gray-400">Find the best options</p>
-            </motion.button>
-
-            <motion.button
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.98 }}
-              onClick={() => setActiveTab('bookmarks')}
-              className="p-5 bg-gradient-to-br from-red-600/20 to-red-700/20 rounded-2xl border border-red-500/20 text-left hover:shadow-lg transition-all group"
-            >
-              <div className="w-12 h-12 rounded-xl bg-red-500/20 flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
-                <FiHeart className="w-6 h-6 text-red-400" />
-              </div>
-              <h4 className="text-white font-semibold">View Bookmarks</h4>
-              <p className="text-sm text-gray-400">{bookmarkedInstitutions.length} saved items</p>
-            </motion.button>
-
-            <motion.button
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.98 }}
-              onClick={() => setActiveTab('inquiries')}
-              className="p-5 bg-gradient-to-br from-green-600/20 to-green-700/20 rounded-2xl border border-green-500/20 text-left hover:shadow-lg transition-all group"
-            >
-              <div className="w-12 h-12 rounded-xl bg-green-500/20 flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
-                <FiMessageSquare className="w-6 h-6 text-green-400" />
-              </div>
-              <h4 className="text-white font-semibold">My Inquiries</h4>
-              <p className="text-sm text-gray-400">Track your inquiries</p>
-            </motion.button>
-
-            <motion.button
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.98 }}
-              className="p-5 bg-gradient-to-br from-purple-600/20 to-purple-700/20 rounded-2xl border border-purple-500/20 text-left hover:shadow-lg transition-all group"
-            >
-              <div className="w-12 h-12 rounded-xl bg-purple-500/20 flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
-                <FiTrendingUp className="w-6 h-6 text-purple-400" />
-              </div>
-              <h4 className="text-white font-semibold">Compare</h4>
-              <p className="text-sm text-gray-400">Compare {parentData.institutionType}</p>
-            </motion.button>
-          </div>
-        </div>
-
-        {/* Recent Activity */}
-        <div className="bg-white/5 backdrop-blur-lg rounded-2xl p-6 border border-white/10">
-          <h3 className="text-lg font-semibold text-white mb-4">Recent Activity</h3>
-          <div className="space-y-4">
-            {recentActivities.slice(0, 4).map((activity) => {
-              const Icon = activity.icon;
-              return (
-                <div key={activity.id} className="flex items-start gap-3">
-                  <div className="p-2 bg-white/5 rounded-lg">
-                    <Icon className="w-4 h-4 text-orange-400" />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm text-white font-medium">{activity.action}</p>
-                    <p className="text-xs text-gray-400">{activity.time}</p>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      </motion.div>
-
-      {/* Top Picks Section */}
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5, delay: 0.3 }}
       >
         <div className="flex items-center justify-between mb-6">
           <div>
             <h3 className="text-2xl font-bold text-white">Top {parentData.institutionType} Picks</h3>
-            <p className="text-sm text-gray-400">Handpicked recommendations for your child's education</p>
+            <p className="text-sm text-gray-400">Highest rated {parentData.institutionType.toLowerCase()} for your child</p>
           </div>
           <button 
             onClick={() => setActiveTab('search')}
@@ -858,28 +734,20 @@ const ParentDashboard = () => {
           <EmptyState />
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {institutions.slice(0, 6).map((inst, index) => (
-              <motion.div
-                key={inst.id}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.3, delay: index * 0.1 }}
-              >
-                <InstitutionCard institution={inst} />
-              </motion.div>
-            ))}
-          </div>
-        )}
-
-        {institutions.length > 6 && !isLoading && !error && (
-          <div className="text-center mt-8">
-            <button
-              onClick={() => setActiveTab('search')}
-              className="px-8 py-3 bg-white/5 hover:bg-white/10 text-white rounded-xl border border-white/10 transition-all"
-            >
-              View All {institutions.length} {parentData.institutionType}
-              <FiArrowRight className="inline ml-2" />
-            </button>
+            {/* Sort by rating and take top 3 */}
+            {[...institutions]
+              .sort((a, b) => b.rating - a.rating)
+              .slice(0, 3)
+              .map((inst, index) => (
+                <motion.div
+                  key={inst.id}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.3, delay: index * 0.1 }}
+                >
+                  <InstitutionCard institution={inst} />
+                </motion.div>
+              ))}
           </div>
         )}
       </motion.div>
@@ -919,20 +787,20 @@ const ParentDashboard = () => {
         </div>
       </div>
 
-      {/* Filters */}
+      {/* Filters - Updated with dark background */}
       <AnimatePresence>
         {showFilters && (
           <motion.div
             initial={{ opacity: 0, height: 0 }}
             animate={{ opacity: 1, height: 'auto' }}
             exit={{ opacity: 0, height: 0 }}
-            className="bg-white/5 backdrop-blur-lg rounded-2xl p-6 border border-white/10 overflow-hidden"
+            className="bg-gray-800/80 backdrop-blur-lg rounded-2xl p-6 border border-white/10 overflow-hidden"
           >
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div>
                 <label className="text-sm text-gray-400 block mb-2">Minimum Rating</label>
                 <select
-                  className="w-full px-4 py-2.5 bg-white/5 border border-white/10 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-orange-500"
+                  className="w-full px-4 py-2.5 bg-gray-800/80 border border-white/10 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-orange-500"
                   value={filters.rating}
                   onChange={(e) => setFilters({...filters, rating: e.target.value})}
                 >
@@ -949,7 +817,7 @@ const ParentDashboard = () => {
                 <input
                   type="text"
                   placeholder="Search location..."
-                  className="w-full px-4 py-2.5 bg-white/5 border border-white/10 rounded-xl text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-orange-500"
+                  className="w-full px-4 py-2.5 bg-gray-800/80 border border-white/10 rounded-xl text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-orange-500"
                   value={filters.location}
                   onChange={(e) => setFilters({...filters, location: e.target.value})}
                 />
@@ -958,7 +826,7 @@ const ParentDashboard = () => {
               <div>
                 <label className="text-sm text-gray-400 block mb-2">Sort By</label>
                 <select
-                  className="w-full px-4 py-2.5 bg-white/5 border border-white/10 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-orange-500"
+                  className="w-full px-4 py-2.5 bg-gray-800/80 border border-white/10 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-orange-500"
                   value={filters.sortBy}
                   onChange={(e) => setFilters({...filters, sortBy: e.target.value})}
                 >
@@ -1040,63 +908,12 @@ const ParentDashboard = () => {
     );
   };
 
-  // ============ INQUIRIES ============
-  const renderInquiries = () => (
-    <div className="space-y-6">
-      <div>
-        <h2 className="text-2xl font-bold text-white">My Inquiries</h2>
-        <p className="text-gray-400">Track all your inquiries</p>
-      </div>
-
-      <div className="space-y-4">
-        {[1, 2, 3].map((item) => (
-          <motion.div
-            key={item}
-            initial={{ opacity: 0, x: -20 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ delay: item * 0.1 }}
-            className="bg-white/5 backdrop-blur-lg p-6 rounded-2xl border border-white/10 hover:border-orange-500/30 transition-all"
-          >
-            <div className="flex items-start justify-between flex-wrap gap-4">
-              <div className="flex items-start gap-4">
-                <div className="w-12 h-12 rounded-xl bg-orange-500/20 flex items-center justify-center flex-shrink-0">
-                  <FiMessageSquare className="w-6 h-6 text-orange-400" />
-                </div>
-                <div>
-                  <h4 className="text-white font-semibold">Inquiry #{item}</h4>
-                  <p className="text-gray-400 text-sm">Inquiry about {parentData.institutionType}</p>
-                  <div className="flex items-center gap-3 mt-2 flex-wrap">
-                    <span className="text-xs text-gray-400 flex items-center gap-1">
-                      <FiCalendar className="w-3 h-3" />
-                      Jan {15 + item}, 2024
-                    </span>
-                    <span className={`px-2.5 py-1 rounded-full text-xs font-medium ${
-                      item === 1 ? 'bg-green-500/20 text-green-300' : 
-                      item === 2 ? 'bg-yellow-500/20 text-yellow-300' : 
-                      'bg-blue-500/20 text-blue-300'
-                    }`}>
-                      {item === 1 ? '✓ Responded' : item === 2 ? ' Pending' : ' Reviewed'}
-                    </span>
-                  </div>
-                </div>
-              </div>
-              <button className="px-4 py-2 bg-white/5 rounded-xl text-sm text-gray-300 hover:bg-white/10 transition-all border border-white/10">
-                View Details
-              </button>
-            </div>
-          </motion.div>
-        ))}
-      </div>
-    </div>
-  );
-
   // ============ RENDER CONTENT ============
   const renderContent = () => {
     switch(activeTab) {
       case 'dashboard': return renderDashboard();
       case 'search': return renderSearch();
       case 'bookmarks': return renderBookmarks();
-      case 'inquiries': return renderInquiries();
       default: return renderDashboard();
     }
   };

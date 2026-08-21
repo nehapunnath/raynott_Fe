@@ -56,12 +56,13 @@ import PUCollegeProfile from './components/PuCollegeProfile'
 import CoachingProfile from './components/CoachingProfile'
 import TeacherProfile from './components/TeacherProfile'
 import ParentDashboard from './pages/ParentDashboard'
+import InstitutionDetails from './pages/InstitutionDetails'
 
 function App() {
   const location = useLocation()
 
   // Paths where footer should be hidden
-  const hideFooterPaths = ['/login', '/admin/dashboard','/admin/edit-school/:id','/admin/view-school/:id','/register-form','/dashboard' ,'/school-profile','/college-profile','/pu-college-profile','/coaching-profile','/teacher-profile','/parent/dashboard',]
+  const hideFooterPaths = ['/login', '/admin/dashboard','/admin/edit-school/:id','/admin/view-school/:id','/register-form','/dashboard' ,'/school-profile','/college-profile','/pu-college-profile','/coaching-profile','/teacher-profile','/parent/dashboard','/institution/:type/:id']
 
   const shouldShowFooter = !hideFooterPaths.includes(location.pathname)
 
@@ -100,10 +101,12 @@ function App() {
 
          {/*After parent login */}
         <Route path='/parent/dashboard' element={<ParentDashboard/>}/>
+        <Route path='/institution/:type/:id' element={<InstitutionDetails/>}/>
 
         <Route path='/login' element={<LoginPage/>}/>
         <Route path='/bookdemo' element={<BookaDemo/>}/>
 
+        {/* Public */}
         <Route path='/school-details/:id' element={<SchoolDetails/>}/>
         <Route path='/college-details/:id' element={<CollegeDetails/>}/>
         <Route path='/pucollege-details/:id' element={<PUCollegeDetails/>}/>
@@ -117,6 +120,7 @@ function App() {
         <Route path='/register-form' element={<RegisterForm/>}/>
         <Route path='/contact' element={<ContactUs/>}/>
 
+          {/* Admin */}
         <Route path='/admin/dashboard' element={<AdminDashboard/>}/>
         <Route path='/admin/edit-school/:id' element={<EditSchool/>}/>
         <Route path='/admin/school-details/:id' element={<ViewSchool/>}/>

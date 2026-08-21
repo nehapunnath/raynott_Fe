@@ -42,13 +42,13 @@ const Sidebar = ({ sidebarOpen, setSidebarOpen, activeTab, setActiveTab }) => {
       </div>
 
       <nav className="flex-1 overflow-y-auto py-4">
-        {/* <NavItem 
-          icon={<FaHome />} 
-          text="Dashboard" 
-          active={activeTab === 'dashboard'} 
-          onClick={() => setActiveTab('dashboard')}
+        <NavItem 
+          icon={<FaCog />} 
+          text="Registered" 
+          active={activeTab === 'Registered'} 
+          onClick={() => setActiveTab('Registered')}
           sidebarOpen={sidebarOpen}
-        /> */}
+        />
         <NavItem 
           icon={<FaSchool />} 
           text="Schools" 
@@ -84,13 +84,7 @@ const Sidebar = ({ sidebarOpen, setSidebarOpen, activeTab, setActiveTab }) => {
           onClick={() => setActiveTab('teachers')}
           sidebarOpen={sidebarOpen}
         />
-        <NavItem 
-          icon={<FaCog />} 
-          text="Registered" 
-          active={activeTab === 'Registered'} 
-          onClick={() => setActiveTab('Registered')}
-          sidebarOpen={sidebarOpen}
-        />
+        
         <NavItem 
           icon={<FaCog />} 
           text="Bookings" 

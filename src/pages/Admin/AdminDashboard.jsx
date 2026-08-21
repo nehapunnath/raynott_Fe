@@ -22,12 +22,12 @@ import AdminBookings from './AdminBookings';
 
 const AdminDashboard = () => {
   const [sidebarOpen, setSidebarOpen] = useState(true);
-  const [activeTab, setActiveTab] = useState('schools');
+  const [activeTab, setActiveTab] = useState('Registered');
 
   const renderContent = () => {
     switch (activeTab) {
-      // case 'dashboard':
-      //   return <Dashboard />;
+      case ('Registered'):
+        return <AdminReg />;
       case 'schools':
         return (
           <div className="p-6">
@@ -119,8 +119,7 @@ const AdminDashboard = () => {
       case 'add-teachers':
         return <AddTeachers />;
 
-      case ('Registered'):
-        return <AdminReg />;
+      
         case 'Bookings':
           return <AdminBookings/>
 
