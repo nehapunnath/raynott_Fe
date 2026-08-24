@@ -7,7 +7,7 @@ import {
   FiBell, FiLogOut, FiMenu, FiX, FiEye, FiAward,
   FiTrendingUp, FiChevronRight, FiCalendar, FiCamera,
   FiInfo, FiSettings, FiArrowRight, FiLoader, FiMail, FiPhone,
-  FiShare2, FiExternalLink
+  FiShare2, FiExternalLink, FiAlertCircle
 } from 'react-icons/fi';
 import { useNavigate } from 'react-router-dom';
 import schoolApi from '../services/schoolApi';
@@ -29,14 +29,9 @@ const ParentDashboard = () => {
     sortBy: 'rating'
   });
 
-  // Parent data from localStorage
-  const [parentData, setParentData] = useState({
-    parentName: '',
-    email: '',
-    institutionType: 'Schools',
-    studentName: '',
-    studentClass: ''
-  });
+  // Parent data from localStorage - initialize with null to track loading state
+  const [parentData, setParentData] = useState(null);
+  const [isParentDataLoaded, setIsParentDataLoaded] = useState(false);
 
   const [institutions, setInstitutions] = useState([]);
   const [filteredInstitutions, setFilteredInstitutions] = useState([]);
@@ -46,14 +41,14 @@ const ParentDashboard = () => {
     totalAvailable: 0,
     bookmarksCount: 0
   });
-  const [recentActivities, setRecentActivities] = useState([]);
 
   // Add ref to prevent duplicate API calls
   const fetchCalledRef = useRef(false);
   const currentTypeRef = useRef('');
   const isDataLoadedRef = useRef(false);
+  const initialFetchDoneRef = useRef(false);
 
-  // Load parent data from localStorage on mount
+  // Load parent data from localStorage on mount - ONLY ONCE
   useEffect(() => {
     const loadParentData = () => {
       try {
@@ -63,23 +58,62 @@ const ParentDashboard = () => {
         if (storedData) {
           const data = JSON.parse(storedData);
           console.log('📋 Parsed parent data:', data);
+          console.log('📋 Institution Type from storage:', data.institutionType);
           
-          setParentData({
-            parentName: data.parentName || 'Parent',
+          // Ensure institutionType is properly set
+          let institutionType = data.institutionType || 'Schools';
+          
+          // Normalize the type
+          if (typeof institutionType === 'string') {
+            const trimmed = institutionType.trim();
+            if (trimmed.toLowerCase() === 'all teachers' || 
+                trimmed.includes('Teacher') || 
+                trimmed.includes('teacher')) {
+              institutionType = 'All Teachers';
+            }
+          }
+          
+          const newParentData = {
+            parentName: data.parentName || data.name || 'Parent',
             email: data.email || '',
-            institutionType: data.institutionType || 'N/A',
+            institutionType: institutionType,
             studentName: data.studentName || '',
-            studentClass: data.studentClass || ''
-          });
+            studentClass: data.studentClass || '',
+            uid: data.uid || '',
+            role: data.role || 'parent'
+          };
+          
+          console.log('📋 Setting parent data:', newParentData);
+          setParentData(newParentData);
         } else {
           console.warn('⚠️ No parent data found in localStorage');
+          setParentData({
+            parentName: 'Parent',
+            email: '',
+            institutionType: 'Schools',
+            studentName: '',
+            studentClass: '',
+            uid: '',
+            role: 'parent'
+          });
         }
       } catch (error) {
         console.error('Error loading parent data:', error);
+        setParentData({
+          parentName: 'Parent',
+          email: '',
+          institutionType: 'Schools',
+          studentName: '',
+          studentClass: '',
+          uid: '',
+          role: 'parent'
+        });
+      } finally {
+        setIsParentDataLoaded(true);
       }
     };
     loadParentData();
-  }, []);
+  }, []); // Empty dependency array - runs only once
 
   // ============ FIXED DATA EXTRACTION ============
   const extractDataFromResponse = (response, type) => {
@@ -96,73 +130,89 @@ const ParentDashboard = () => {
       return response;
     }
 
-    if (response.success === true && response.data) {
-      console.log('🔍 Response.data type:', typeof response.data);
-      console.log('🔍 Response.data keys:', Object.keys(response.data || {}));
+    // Check if response has success property
+    if (response.success === true) {
+      console.log('🔍 Response has success: true');
       
-      // If response.data is an array
-      if (Array.isArray(response.data)) {
-        console.log(`✅ response.data is an array with ${response.data.length} items`);
-        return response.data;
-      }
-
-      if (typeof response.data === 'object' && response.data !== null) {
-        const keys = Object.keys(response.data);
-        
-        // If there are keys and the first value is an object (institution data)
-        if (keys.length > 0 && typeof response.data[keys[0]] === 'object' && response.data[keys[0]] !== null) {
-          console.log(`✅ Converting Firebase object to array with ${keys.length} items`);
+      // Check common data keys
+      const possibleDataKeys = ['data', 'teachers', 'users', 'items', 'results', 'records'];
+      
+      for (const key of possibleDataKeys) {
+        if (response[key]) {
+          console.log(`🔍 Found response.${key}:`, response[key]);
           
-          // Convert object to array with IDs included
-          const arrayData = keys.map(key => ({
-            id: key,
-            ...response.data[key]
-          }));
-          
-          console.log('📋 First item:', arrayData[0]);
-          return arrayData;
-        }
-        
-        // Check for nested arrays (like response.data.schools)
-        for (const key in response.data) {
-          if (Array.isArray(response.data[key])) {
-            console.log(`✅ Found array in response.data.${key} with ${response.data[key].length} items`);
-            return response.data[key];
+          // If it's an array
+          if (Array.isArray(response[key])) {
+            console.log(`✅ response.${key} is an array with ${response[key].length} items`);
+            return response[key];
           }
           
-          // Check for nested Firebase objects
-          if (response.data[key] && typeof response.data[key] === 'object' && response.data[key] !== null) {
-            const subKeys = Object.keys(response.data[key]);
-            if (subKeys.length > 0 && typeof response.data[key][subKeys[0]] === 'object' && response.data[key][subKeys[0]] !== null) {
-              console.log(`✅ Converting nested Firebase object ${key} to array with ${subKeys.length} items`);
-              const arrayData = subKeys.map(subKey => ({
-                id: subKey,
-                ...response.data[key][subKey]
-              }));
-              return arrayData;
+          // If it's an object (Firebase style)
+          if (typeof response[key] === 'object' && response[key] !== null) {
+            const keys = Object.keys(response[key]);
+            if (keys.length > 0) {
+              const firstItem = response[key][keys[0]];
+              if (typeof firstItem === 'object' && firstItem !== null) {
+                console.log(`✅ Converting Firebase object to array with ${keys.length} items`);
+                return keys.map(k => ({
+                  id: k,
+                  ...response[key][k]
+                }));
+              }
             }
           }
         }
       }
     }
 
-    if (typeof response === 'object' && response !== null) {
-      const keys = Object.keys(response);
-      if (keys.length > 0 && typeof response[keys[0]] === 'object' && response[keys[0]] !== null) {
-        console.log(` Converting direct Firebase object to array with ${keys.length} items`);
-        const arrayData = keys.map(key => ({
-          id: key,
-          ...response[key]
-        }));
-        return arrayData;
+    // If response has data property directly
+    if (response.data) {
+      console.log('🔍 Found response.data:', response.data);
+      
+      if (Array.isArray(response.data)) {
+        console.log(`✅ response.data is an array with ${response.data.length} items`);
+        return response.data;
+      }
+      
+      if (typeof response.data === 'object' && response.data !== null) {
+        const keys = Object.keys(response.data);
+        if (keys.length > 0) {
+          const firstItem = response.data[keys[0]];
+          if (typeof firstItem === 'object' && firstItem !== null) {
+            console.log(`✅ Converting response.data Firebase object to array with ${keys.length} items`);
+            return keys.map(k => ({
+              id: k,
+              ...response.data[k]
+            }));
+          }
+        }
       }
     }
 
-    console.warn(' No data array found in response');
+    // For teacher API specifically - check for teachers array
+    if (type === 'All Teachers' && response.teachers) {
+      console.log('🔍 Found response.teachers:', response.teachers);
+      if (Array.isArray(response.teachers)) {
+        console.log(`✅ response.teachers is an array with ${response.teachers.length} items`);
+        return response.teachers;
+      }
+      if (typeof response.teachers === 'object' && response.teachers !== null) {
+        const keys = Object.keys(response.teachers);
+        if (keys.length > 0) {
+          console.log(`✅ Converting response.teachers Firebase object to array with ${keys.length} items`);
+          return keys.map(k => ({
+            id: k,
+            ...response.teachers[k]
+          }));
+        }
+      }
+    }
+
+    console.warn('⚠️ No data array found in response');
     return [];
   };
 
-  // ============ DATA TRANSFORMATION ============
+  // ============ IMPROVED DATA TRANSFORMATION ============
   const transformInstitutionData = (item, index, type) => {
     // Common field mappings for different institution types
     const fieldMappings = {
@@ -207,14 +257,14 @@ const ParentDashboard = () => {
         description: ['description', 'about', 'overview', 'introduction']
       },
       'All Teachers': {
-        name: ['teacherName', 'name', 'fullName', 'title'],
-        location: ['city', 'location', 'address', 'place'],
-        image: ['profileImage', 'image', 'photo', 'avatar'],
-        rating: ['rating', 'averageRating', 'avgRating', 'ratingValue'],
-        reviews: ['reviews', 'reviewCount', 'totalReviews'],
-        facilities: ['subjects', 'specializations', 'expertise', 'skills'],
-        fees: ['hourlyRate', 'fees', 'rate', 'charges'],
-        description: ['description', 'about', 'bio', 'introduction']
+        name: ['teacherName', 'name', 'fullName', 'username', 'displayName', 'title'],
+        location: ['city', 'location', 'address', 'place', 'teachingCity', 'preferredLocation'],
+        image: ['profileImage', 'profilePhoto', 'image', 'photo', 'avatar', 'profilePicture'],
+        rating: ['rating', 'averageRating', 'avgRating', 'ratingValue', 'teacherRating'],
+        reviews: ['reviews', 'reviewCount', 'totalReviews', 'reviewCount'],
+        facilities: ['subjects', 'specializations', 'expertise', 'skills', 'subjectsTaught'],
+        fees: ['hourlyRate', 'rate', 'fees', 'charges', 'price', 'fee'],
+        description: ['description', 'about', 'bio', 'introduction', 'profileDescription']
       }
     };
 
@@ -235,18 +285,43 @@ const ParentDashboard = () => {
     const image = getValue(fields.image) || `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=FFA500&color=fff&size=400x200`;
     const rating = parseFloat(getValue(fields.rating, 4.0));
     const reviews = parseInt(getValue(fields.reviews, 0));
-    const facilities = getValue(fields.facilities, []);
+    let facilities = getValue(fields.facilities, []);
+    
+    if (typeof facilities === 'string') {
+      try {
+        facilities = JSON.parse(facilities);
+      } catch {
+        facilities = facilities.split(',').map(s => s.trim()).filter(Boolean);
+      }
+    }
+    
     let fees = getValue(fields.fees, 'Contact for details');
     
-    // If fees is an object, try to get the totalAnnualFee or convert to string
     if (typeof fees === 'object' && fees !== null) {
-      fees = fees.totalAnnualFee || fees.feeRange || fees.tuitionFees || 'Contact for details';
+      fees = fees.hourlyRate || fees.totalAnnualFee || fees.feeRange || fees.tuitionFees || 'Contact for details';
     }
     
     const description = getValue(fields.description, `${name} - Premier educational institution`);
+    const displayId = item.id || item._id || `temp-${index}`;
+
+    let subjects = getValue(['subjects', 'subjectsTaught', 'specializations'], []);
+    if (!Array.isArray(subjects)) {
+      if (typeof subjects === 'string') {
+        try {
+          subjects = JSON.parse(subjects);
+        } catch {
+          subjects = subjects.split(',').map(s => s.trim()).filter(Boolean);
+        }
+      } else {
+        subjects = [];
+      }
+    }
+    
+    const experience = getValue(['experience', 'yearsExperience', 'teachingExperience'], '');
+    const qualification = getValue(['qualification', 'qualifications', 'education'], '');
 
     return {
-      id: item.id || item._id || `temp-${index}`,
+      id: displayId,
       name: name,
       type: type,
       rating: Math.min(5, Math.max(0, rating)),
@@ -261,24 +336,33 @@ const ParentDashboard = () => {
       email: item.email || item.contactEmail || null,
       phone: item.phone || item.contactNumber || null,
       website: item.website || item.webUrl || null,
+      subjects: subjects,
+      experience: experience,
+      qualification: qualification,
       originalData: item
     };
   };
 
   // ============ FETCH INSTITUTIONS ============
-  const fetchInstitutions = useCallback(async () => {
-    // Get the current institution type from parentData
-    const type = parentData.institutionType;
+  const fetchInstitutions = useCallback(async (forceType = null) => {
+    // Use forceType if provided, otherwise use parentData.institutionType
+    let type = forceType || parentData?.institutionType;
+    
+    // Trim and clean the type
+    type = type?.trim() || '';
     
     console.log(`🔍 Fetching institutions for type: "${type}"`);
+    console.log(`🔍 Force type: ${forceType || 'none'}`);
+    console.log(`🔍 Current parentData:`, parentData);
     
     // If no type is set, default to Schools
     if (!type || type === '') {
       console.warn('⚠️ No institution type found, defaulting to Schools');
+      type = 'Schools';
     }
 
     // Prevent duplicate calls for the same type
-    if (fetchCalledRef.current && currentTypeRef.current === type) {
+    if (fetchCalledRef.current && currentTypeRef.current === type && !forceType) {
       console.log(`⏭️ Skipping duplicate fetch for ${type}`);
       return;
     }
@@ -295,63 +379,61 @@ const ParentDashboard = () => {
       console.log(`📡 Fetching ${type}...`);
 
       // Fetch data based on institution type
-      switch(type) {
-        case 'Schools':
-          console.log('🏫 Calling schoolApi.getSchools()');
-          response = await schoolApi.getSchools();
-          break;
-
-        case 'Colleges':
-          console.log('🎓 Calling collegeApi.getColleges()');
-          response = await collegeApi.getColleges();
-          break;
-
-        case 'PU College':
-          console.log('📚 Calling puCollegeApi.getPUColleges()');
-          response = await puCollegeApi.getPUColleges();
-          break;
-
-        case 'Coaching/Tuition':
-          console.log('📖 Calling TuitionCoachingApi.getTuitionCoachings()');
-          response = await TuitionCoachingApi.getTuitionCoachings();
-          break;
-
-        case 'All Teachers':
-          console.log('👨‍🏫 Calling teacherApi.getTeachers()');
+      if (type === 'Schools') {
+        console.log('🏫 Calling schoolApi.getSchools()');
+        response = await schoolApi.getSchools();
+      } else if (type === 'Colleges') {
+        console.log('🎓 Calling collegeApi.getColleges()');
+        response = await collegeApi.getColleges();
+      } else if (type === 'PU College') {
+        console.log('📚 Calling puCollegeApi.getPUColleges()');
+        response = await puCollegeApi.getPUColleges();
+      } else if (type === 'Coaching/Tuition') {
+        console.log('📖 Calling TuitionCoachingApi.getTuitionCoachings()');
+        response = await TuitionCoachingApi.getTuitionCoachings();
+      } else if (type === 'All Teachers') {
+        console.log('👨‍🏫 Calling teacherApi.getTeachers()');
+        try {
           response = await teacherApi.getTeachers();
-          break;
-
-        default:
-          console.warn('⚠️ Unknown institution type:', type);
-          rawData = [];
+          console.log('👨‍🏫 Teacher API Response:', response);
+          console.log('👨‍🏫 Response keys:', Object.keys(response || {}));
+        } catch (teacherError) {
+          console.error('❌ Teacher API error:', teacherError);
+          throw teacherError;
+        }
+      } else {
+        console.warn(`⚠️ Unknown institution type: "${type}", defaulting to Schools`);
+        response = await schoolApi.getSchools();
       }
 
       console.log(`📦 ${type} API Response:`, response);
       
-      // Extract data from response
+      if (!response) {
+        console.error(`❌ No response from ${type} API`);
+        setError(`Failed to fetch ${type} data`);
+        setIsLoading(false);
+        return;
+      }
+      
       rawData = extractDataFromResponse(response, type);
       
       console.log(`🔄 Transforming ${rawData.length} items for ${type}...`);
       
-      // Transform each item
       const transformedData = rawData.map((item, index) => 
         transformInstitutionData(item, index, type)
       );
       
       console.log(`✅ Transformed ${transformedData.length} items for ${type}`);
       
-      // Log the actual data to verify
       if (transformedData.length > 0) {
-        console.log('📋 First 3 transformed items:', transformedData.slice(0, 3));
+        console.log('📋 First transformed item:', transformedData[0]);
       } else {
         console.warn(`⚠️ No data transformed for ${type}!`);
       }
 
-      // Set the data
       setInstitutions(transformedData);
       setFilteredInstitutions(transformedData);
       
-      // Update stats
       setStats({
         totalAvailable: transformedData.length,
         bookmarksCount: bookmarkedInstitutions.length
@@ -367,7 +449,7 @@ const ParentDashboard = () => {
     } finally {
       setIsLoading(false);
     }
-  }, [parentData.institutionType]);
+  }, [parentData]); // Add parentData as dependency
 
   // Load bookmarks from localStorage
   useEffect(() => {
@@ -388,7 +470,6 @@ const ParentDashboard = () => {
   useEffect(() => {
     try {
       localStorage.setItem('parentBookmarks', JSON.stringify(bookmarkedInstitutions));
-      // Update bookmarks count in stats
       setStats(prev => ({
         ...prev,
         bookmarksCount: bookmarkedInstitutions.length
@@ -400,20 +481,24 @@ const ParentDashboard = () => {
 
   // ============ FETCH WHEN PARENT DATA IS READY ============
   useEffect(() => {
-    // Only fetch if we have parent data with a valid institution type
-    if (parentData.institutionType && parentData.institutionType !== '') {
+    // Only fetch if parent data is loaded and has a valid institution type
+    if (isParentDataLoaded && parentData && parentData.institutionType) {
       console.log(`📋 Parent data loaded with type: ${parentData.institutionType}`);
+      console.log(`📋 Initial fetch done: ${initialFetchDoneRef.current}`);
       
       // Reset fetch flag to allow new fetch
       fetchCalledRef.current = false;
       currentTypeRef.current = '';
       
       // Fetch institutions for the selected type
-      fetchInstitutions();
-    } else {
-      console.warn('⚠️ Parent data not ready or institution type not set');
+      if (!initialFetchDoneRef.current) {
+        initialFetchDoneRef.current = true;
+        fetchInstitutions();
+      }
+    } else if (isParentDataLoaded) {
+      console.warn('⚠️ Parent data loaded but no institution type set');
     }
-  }, [parentData.institutionType]);
+  }, [isParentDataLoaded, parentData]); // Depend on both flags
 
   // Filter institutions
   useEffect(() => {
@@ -462,9 +547,21 @@ const ParentDashboard = () => {
     navigate('/');
   };
 
+  // Show loading while parent data is being loaded
+  if (!isParentDataLoaded) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 flex items-center justify-center">
+        <div className="text-center">
+          <FiLoader className="w-12 h-12 text-orange-500 animate-spin mx-auto mb-4" />
+          <p className="text-gray-400">Loading your dashboard...</p>
+        </div>
+      </div>
+    );
+  }
+
   const navItems = [
     { id: 'dashboard', label: 'Dashboard', icon: FiHome },
-    { id: 'search', label: `Browse ${parentData.institutionType}`, icon: FiSearch },
+    { id: 'search', label: `Browse ${parentData?.institutionType || 'Schools'}`, icon: FiSearch },
     { id: 'bookmarks', label: 'Bookmarks', icon: FiHeart },
   ];
 
@@ -489,6 +586,8 @@ const ParentDashboard = () => {
   // ============ INSTITUTION CARD ============
   const InstitutionCard = ({ institution }) => {
     const isBookmarked = bookmarkedInstitutions.includes(institution.id);
+    const subjects = Array.isArray(institution.subjects) ? institution.subjects : [];
+    const facilities = Array.isArray(institution.facilities) ? institution.facilities : [];
 
     return (
       <motion.div
@@ -508,7 +607,7 @@ const ParentDashboard = () => {
           />
           <div className="absolute inset-0 bg-gradient-to-t from-gray-900/80 via-transparent to-transparent" />
           
-          <div className="absolute top-4 left-4 flex gap-2">
+          <div className="absolute top-4 left-4 flex gap-2 flex-wrap">
             {institution.isNew && (
               <span className="px-3 py-1 bg-green-500/90 backdrop-blur-sm rounded-full text-xs font-semibold text-white">
                 New
@@ -517,6 +616,11 @@ const ParentDashboard = () => {
             {institution.isPopular && (
               <span className="px-3 py-1 bg-orange-500/90 backdrop-blur-sm rounded-full text-xs font-semibold text-white">
                 Popular
+              </span>
+            )}
+            {institution.type === 'All Teachers' && institution.experience && (
+              <span className="px-3 py-1 bg-blue-500/90 backdrop-blur-sm rounded-full text-xs font-semibold text-white">
+                {institution.experience} yrs exp
               </span>
             )}
           </div>
@@ -556,16 +660,33 @@ const ParentDashboard = () => {
             {institution.description}
           </p>
 
-          {institution.facilities && institution.facilities.length > 0 && (
+          {institution.type === 'All Teachers' && subjects.length > 0 && (
+            <div className="mb-3">
+              <div className="flex flex-wrap gap-1.5">
+                {subjects.slice(0, 3).map((subject, idx) => (
+                  <span key={idx} className="px-2 py-0.5 bg-orange-500/20 text-orange-300 rounded-full text-xs border border-orange-500/20">
+                    {subject}
+                  </span>
+                ))}
+                {subjects.length > 3 && (
+                  <span className="px-2 py-0.5 bg-white/5 text-gray-400 rounded-full text-xs border border-white/10">
+                    +{subjects.length - 3}
+                  </span>
+                )}
+              </div>
+            </div>
+          )}
+
+          {facilities.length > 0 && (
             <div className="flex flex-wrap gap-2 mb-4">
-              {institution.facilities.slice(0, 3).map((facility, idx) => (
+              {facilities.slice(0, 3).map((facility, idx) => (
                 <span key={idx} className="px-2.5 py-1 bg-white/5 rounded-full text-xs text-gray-300 border border-white/5">
                   {facility}
                 </span>
               ))}
-              {institution.facilities.length > 3 && (
+              {facilities.length > 3 && (
                 <span className="px-2.5 py-1 bg-white/5 rounded-full text-xs text-gray-400 border border-white/5">
-                  +{institution.facilities.length - 3}
+                  +{facilities.length - 3}
                 </span>
               )}
             </div>
@@ -573,22 +694,20 @@ const ParentDashboard = () => {
 
           <div className="flex items-center justify-between pt-4 border-t border-white/10">
             <div>
-              <p className="text-xs text-gray-400">Fee Range</p>
-              <p className="text-sm font-semibold text-orange-400 line-clamp-1">{institution.fees}</p>
+              <p className="text-xs text-gray-400">{institution.type === 'All Teachers' ? 'Hourly Rate' : 'Fee Range'}</p>
+              <p className="text-sm font-semibold text-orange-400 line-clamp-1">
+                {institution.type === 'All Teachers' ? `₹${institution.fees}/hr` : institution.fees}
+              </p>
             </div>
             <div className="flex gap-2">
               <button 
-                onClick={() => {
-                  console.log('View details for:', institution.id);
-                  navigate(`/institution/${institution.type}/${institution.id}`)
-                }}
+                onClick={() => navigate(`/institution/${institution.type}/${institution.id}`)}
                 className="px-4 py-2 bg-white/10 text-white rounded-xl text-sm hover:bg-white/20 transition-all"
               >
                 Details
               </button>
               <button 
                 onClick={() => {
-                  console.log('Contact institution:', institution.id);
                   if (institution.phone) {
                     window.location.href = `tel:${institution.phone}`;
                   }
@@ -609,7 +728,7 @@ const ParentDashboard = () => {
     <div className="flex items-center justify-center min-h-[400px]">
       <div className="text-center">
         <FiLoader className="w-12 h-12 text-orange-500 animate-spin mx-auto mb-4" />
-        <p className="text-gray-400">Loading {parentData.institutionType}...</p>
+        <p className="text-gray-400">Loading {parentData?.institutionType || 'institutions'}...</p>
       </div>
     </div>
   );
@@ -621,7 +740,7 @@ const ParentDashboard = () => {
         <div className="w-16 h-16 bg-red-500/20 rounded-full flex items-center justify-center mx-auto mb-4">
           <FiInfo className="w-8 h-8 text-red-400" />
         </div>
-        <h3 className="text-xl font-semibold text-white mb-2">Unable to load {parentData.institutionType}</h3>
+        <h3 className="text-xl font-semibold text-white mb-2">Unable to load {parentData?.institutionType || 'institutions'}</h3>
         <p className="text-gray-400 mb-4">{message || 'Please try again later'}</p>
         <button
           onClick={() => {
@@ -640,15 +759,14 @@ const ParentDashboard = () => {
   const EmptyState = () => (
     <div className="text-center py-16 bg-white/5 rounded-2xl border border-white/10">
       <FiBookOpen className="w-16 h-16 text-gray-600 mx-auto mb-4" />
-      <h3 className="text-xl font-semibold text-white">No {parentData.institutionType} Found</h3>
-      <p className="text-gray-400">We couldn't find any {parentData.institutionType.toLowerCase()} matching your criteria.</p>
+      <h3 className="text-xl font-semibold text-white">No {parentData?.institutionType || 'institutions'} Found</h3>
+      <p className="text-gray-400">We couldn't find any {parentData?.institutionType?.toLowerCase() || 'institutions'} matching your criteria.</p>
     </div>
   );
 
   // ============ DASHBOARD ============
   const renderDashboard = () => (
     <div className="space-y-8">
-      {/* Welcome Section */}
       <motion.div
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
@@ -660,19 +778,19 @@ const ParentDashboard = () => {
           <div className="flex items-start justify-between flex-wrap gap-4">
             <div>
               <h2 className="text-3xl font-bold text-white">
-                Welcome back, {parentData.parentName}! 
+                Welcome back, {parentData?.parentName || 'Parent'}! 
               </h2>
               <p className="text-gray-300 mt-2 text-lg">
-                Find the best {parentData.institutionType} for your child
+                Find the best {parentData?.institutionType || 'Schools'} for your child
               </p>
               <div className="flex items-center gap-4 mt-4 flex-wrap">
                 <span className="px-3 py-1 bg-orange-500/20 rounded-full text-xs text-orange-300">
-                  Looking for: {parentData.institutionType}
+                  Looking for: {parentData?.institutionType || 'Schools'}
                 </span>
                 <span className="px-3 py-1 bg-green-500/20 rounded-full text-xs text-green-300">
-                  {institutions.length} {parentData.institutionType} available
+                  {institutions.length} {parentData?.institutionType || 'Schools'} available
                 </span>
-                {parentData.studentName && (
+                {parentData?.studentName && (
                   <span className="px-3 py-1 bg-blue-500/20 rounded-full text-xs text-blue-300">
                     Student: {parentData.studentName}
                   </span>
@@ -683,7 +801,53 @@ const ParentDashboard = () => {
         </div>
       </motion.div>
 
-      {/* Stats Grid - Updated */}
+      {/* Debug Section */}
+      {/* <div className="bg-yellow-500/10 border border-yellow-500/20 rounded-xl p-4">
+        <h4 className="text-yellow-300 text-sm font-semibold mb-2 flex items-center gap-2">
+          <FiAlertCircle className="w-4 h-4" />
+          Debug Info
+        </h4>
+        <div className="flex flex-wrap gap-4 text-xs">
+          <div>
+            <span className="text-gray-400">Type:</span>
+            <span className="text-white ml-1">"{parentData?.institutionType}"</span>
+          </div>
+          <div>
+            <span className="text-gray-400">Is "All Teachers":</span>
+            <span className="text-white ml-1">{parentData?.institutionType === 'All Teachers' ? '✅' : '❌'}</span>
+          </div>
+          <div>
+            <span className="text-gray-400">Institutions:</span>
+            <span className="text-white ml-1">{institutions.length}</span>
+          </div>
+          <button
+            onClick={() => {
+              console.log('🔄 Force fetching teachers...');
+              fetchCalledRef.current = false;
+              currentTypeRef.current = '';
+              fetchInstitutions('All Teachers');
+            }}
+            className="px-3 py-1 bg-orange-500/20 text-orange-300 rounded-lg hover:bg-orange-500/30 transition-all"
+          >
+            Force Fetch Teachers
+          </button>
+          <button
+            onClick={() => {
+              console.log('📊 Current state:', {
+                parentData,
+                institutions: institutions.length,
+                filteredInstitutions: filteredInstitutions.length,
+                bookmarks: bookmarkedInstitutions.length
+              });
+            }}
+            className="px-3 py-1 bg-blue-500/20 text-blue-300 rounded-lg hover:bg-blue-500/30 transition-all"
+          >
+            Log State
+          </button>
+        </div>
+      </div> */}
+
+      {/* Stats Grid */}
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
@@ -692,7 +856,7 @@ const ParentDashboard = () => {
       >
         <StatsCard 
           icon={FiBookOpen}
-          label={`Available ${parentData.institutionType}`}
+          label={`Available ${parentData?.institutionType || 'Schools'}`}
           value={stats.totalAvailable}
           color="text-blue-400"
           bgColor="bg-blue-500/20"
@@ -706,7 +870,7 @@ const ParentDashboard = () => {
         />
       </motion.div>
 
-      {/* Top Picks Section - Shows top 3 rated institutions */}
+      {/* Top Picks Section */}
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
@@ -714,8 +878,8 @@ const ParentDashboard = () => {
       >
         <div className="flex items-center justify-between mb-6">
           <div>
-            <h3 className="text-2xl font-bold text-white">Top {parentData.institutionType} Picks</h3>
-            <p className="text-sm text-gray-400">Highest rated {parentData.institutionType.toLowerCase()} for your child</p>
+            <h3 className="text-2xl font-bold text-white">Top {parentData?.institutionType || 'Schools'} Picks</h3>
+            <p className="text-sm text-gray-400">Highest rated {parentData?.institutionType?.toLowerCase() || 'schools'} for your child</p>
           </div>
           <button 
             onClick={() => setActiveTab('search')}
@@ -734,7 +898,6 @@ const ParentDashboard = () => {
           <EmptyState />
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {/* Sort by rating and take top 3 */}
             {[...institutions]
               .sort((a, b) => b.rating - a.rating)
               .slice(0, 3)
@@ -759,8 +922,8 @@ const ParentDashboard = () => {
     <div className="space-y-6">
       <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
         <div>
-          <h2 className="text-2xl font-bold text-white">Browse {parentData.institutionType}</h2>
-          <p className="text-gray-400">Find the perfect {parentData.institutionType.toLowerCase()} for your child</p>
+          <h2 className="text-2xl font-bold text-white">Browse {parentData?.institutionType || 'Schools'}</h2>
+          <p className="text-gray-400">Find the perfect {parentData?.institutionType?.toLowerCase() || 'schools'} for your child</p>
         </div>
         <div className="flex flex-wrap gap-2">
           <button
@@ -787,7 +950,6 @@ const ParentDashboard = () => {
         </div>
       </div>
 
-      {/* Filters - Updated with dark background */}
       <AnimatePresence>
         {showFilters && (
           <motion.div
@@ -849,9 +1011,8 @@ const ParentDashboard = () => {
         )}
       </AnimatePresence>
 
-      {/* Results */}
       <div className="flex items-center justify-between text-sm">
-        <span className="text-gray-400">Showing {filteredInstitutions.length} {parentData.institutionType}</span>
+        <span className="text-gray-400">Showing {filteredInstitutions.length} {parentData?.institutionType || 'Schools'}</span>
         <span className="text-gray-400">{filteredInstitutions.length} results found</span>
       </div>
 
@@ -878,7 +1039,7 @@ const ParentDashboard = () => {
       <div className="space-y-6">
         <div>
           <h2 className="text-2xl font-bold text-white">Your Bookmarks</h2>
-          <p className="text-gray-400">{parentData.institutionType} you've shortlisted</p>
+          <p className="text-gray-400">{parentData?.institutionType || 'Schools'} you've shortlisted</p>
         </div>
 
         {isLoading ? (
@@ -895,12 +1056,12 @@ const ParentDashboard = () => {
           <div className="text-center py-16 bg-white/5 rounded-2xl border border-white/10">
             <FiHeart className="w-16 h-16 text-gray-600 mx-auto mb-4" />
             <h3 className="text-xl font-semibold text-white">No bookmarks yet</h3>
-            <p className="text-gray-400">Start exploring and save {parentData.institutionType} you like</p>
+            <p className="text-gray-400">Start exploring and save {parentData?.institutionType || 'Schools'} you like</p>
             <button
               onClick={() => setActiveTab('search')}
               className="mt-4 px-6 py-2.5 bg-gradient-to-r from-orange-500 to-amber-500 text-white rounded-xl hover:from-orange-600 hover:to-amber-600 transition-all shadow-lg shadow-orange-500/20"
             >
-              Explore {parentData.institutionType}
+              Explore {parentData?.institutionType || 'Schools'}
             </button>
           </div>
         )}
@@ -987,11 +1148,11 @@ const ParentDashboard = () => {
         <div className="flex-shrink-0 p-6 border-t border-white/10">
           <div className="flex items-center gap-3 mb-4">
             <div className="w-10 h-10 rounded-full bg-gradient-to-r from-orange-500 to-amber-500 flex items-center justify-center text-white font-semibold flex-shrink-0">
-              {parentData.parentName ? parentData.parentName[0].toUpperCase() : 'P'}
+              {parentData?.parentName ? parentData.parentName[0].toUpperCase() : 'P'}
             </div>
             <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium text-white truncate">{parentData.parentName}</p>
-              <p className="text-xs text-gray-400 truncate">{parentData.email}</p>
+              <p className="text-sm font-medium text-white truncate">{parentData?.parentName || 'Parent'}</p>
+              <p className="text-xs text-gray-400 truncate">{parentData?.email || ''}</p>
             </div>
           </div>
           <button
@@ -1061,11 +1222,11 @@ const ParentDashboard = () => {
             <div className="flex-shrink-0 p-6 border-t border-white/10">
               <div className="flex items-center gap-3 mb-4">
                 <div className="w-10 h-10 rounded-full bg-gradient-to-r from-orange-500 to-amber-500 flex items-center justify-center text-white font-semibold flex-shrink-0">
-                  {parentData.parentName ? parentData.parentName[0].toUpperCase() : 'P'}
+                  {parentData?.parentName ? parentData.parentName[0].toUpperCase() : 'P'}
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-white truncate">{parentData.parentName}</p>
-                  <p className="text-xs text-gray-400 truncate">{parentData.email}</p>
+                  <p className="text-sm font-medium text-white truncate">{parentData?.parentName || 'Parent'}</p>
+                  <p className="text-xs text-gray-400 truncate">{parentData?.email || ''}</p>
                 </div>
               </div>
               <button

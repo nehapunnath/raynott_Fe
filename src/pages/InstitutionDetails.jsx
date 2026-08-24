@@ -527,7 +527,7 @@ const InstitutionDetails = () => {
     );
   };
 
-  // Overview Tab - FIXED with safe array checking
+  // Overview Tab 
   const renderOverview = () => {
     // Ensure facilities is an array
     const facilities = Array.isArray(institution.facilities) ? institution.facilities : [];
