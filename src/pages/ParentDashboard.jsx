@@ -1,4 +1,3 @@
-// ParentDashboard.jsx
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
@@ -7,7 +6,8 @@ import {
   FiBell, FiLogOut, FiMenu, FiX, FiEye, FiAward,
   FiTrendingUp, FiChevronRight, FiCalendar, FiCamera,
   FiInfo, FiSettings, FiArrowRight, FiLoader, FiMail, FiPhone,
-  FiShare2, FiExternalLink, FiAlertCircle
+  FiShare2, FiExternalLink, FiAlertCircle, FiSend, FiCheckCircle,
+  FiClock as FiClockIcon, FiXCircle, FiMessageCircle, FiAtSign
 } from 'react-icons/fi';
 import { useNavigate } from 'react-router-dom';
 import schoolApi from '../services/schoolApi';
@@ -41,6 +41,23 @@ const ParentDashboard = () => {
     totalAvailable: 0,
     bookmarksCount: 0
   });
+
+  // Enquiries state
+  const [enquiries, setEnquiries] = useState([]);
+  const [showEnquiryModal, setShowEnquiryModal] = useState(false);
+  const [selectedInstitution, setSelectedInstitution] = useState(null);
+  const [enquiryForm, setEnquiryForm] = useState({
+    subject: '',
+    message: '',
+    studentName: '',
+    studentClass: '',
+    parentEmail: '',
+    parentPhone: '',
+    preferredContact: 'email'
+  });
+  const [isSubmittingEnquiry, setIsSubmittingEnquiry] = useState(false);
+  const [enquirySuccess, setEnquirySuccess] = useState(false);
+  const [enquiryError, setEnquiryError] = useState(null);
 
   // Add ref to prevent duplicate API calls
   const fetchCalledRef = useRef(false);
@@ -76,6 +93,7 @@ const ParentDashboard = () => {
           const newParentData = {
             parentName: data.parentName || data.name || 'Parent',
             email: data.email || '',
+            phone: data.phone || data.mobile || '',
             institutionType: institutionType,
             studentName: data.studentName || '',
             studentClass: data.studentClass || '',
@@ -90,6 +108,7 @@ const ParentDashboard = () => {
           setParentData({
             parentName: 'Parent',
             email: '',
+            phone: '',
             institutionType: 'Schools',
             studentName: '',
             studentClass: '',
@@ -102,6 +121,7 @@ const ParentDashboard = () => {
         setParentData({
           parentName: 'Parent',
           email: '',
+          phone: '',
           institutionType: 'Schools',
           studentName: '',
           studentClass: '',
@@ -113,7 +133,31 @@ const ParentDashboard = () => {
       }
     };
     loadParentData();
-  }, []); // Empty dependency array - runs only once
+  }, []);
+
+  // Load enquiries from localStorage
+  useEffect(() => {
+    const loadEnquiries = () => {
+      try {
+        const stored = localStorage.getItem('parentEnquiries');
+        if (stored) {
+          setEnquiries(JSON.parse(stored));
+        }
+      } catch (error) {
+        console.error('Error loading enquiries:', error);
+      }
+    };
+    loadEnquiries();
+  }, []);
+
+  // Save enquiries to localStorage
+  useEffect(() => {
+    try {
+      localStorage.setItem('parentEnquiries', JSON.stringify(enquiries));
+    } catch (error) {
+      console.error('Error saving enquiries:', error);
+    }
+  }, [enquiries]);
 
   // ============ FIXED DATA EXTRACTION ============
   const extractDataFromResponse = (response, type) => {
@@ -124,30 +168,25 @@ const ParentDashboard = () => {
       return [];
     }
 
-    // If response is already an array
     if (Array.isArray(response)) {
       console.log(`✅ Response is already an array with ${response.length} items`);
       return response;
     }
 
-    // Check if response has success property
     if (response.success === true) {
       console.log('🔍 Response has success: true');
       
-      // Check common data keys
       const possibleDataKeys = ['data', 'teachers', 'users', 'items', 'results', 'records'];
       
       for (const key of possibleDataKeys) {
         if (response[key]) {
           console.log(`🔍 Found response.${key}:`, response[key]);
           
-          // If it's an array
           if (Array.isArray(response[key])) {
             console.log(`✅ response.${key} is an array with ${response[key].length} items`);
             return response[key];
           }
           
-          // If it's an object (Firebase style)
           if (typeof response[key] === 'object' && response[key] !== null) {
             const keys = Object.keys(response[key]);
             if (keys.length > 0) {
@@ -165,7 +204,6 @@ const ParentDashboard = () => {
       }
     }
 
-    // If response has data property directly
     if (response.data) {
       console.log('🔍 Found response.data:', response.data);
       
@@ -189,7 +227,6 @@ const ParentDashboard = () => {
       }
     }
 
-    // For teacher API specifically - check for teachers array
     if (type === 'All Teachers' && response.teachers) {
       console.log('🔍 Found response.teachers:', response.teachers);
       if (Array.isArray(response.teachers)) {
@@ -214,7 +251,6 @@ const ParentDashboard = () => {
 
   // ============ IMPROVED DATA TRANSFORMATION ============
   const transformInstitutionData = (item, index, type) => {
-    // Common field mappings for different institution types
     const fieldMappings = {
       'Schools': {
         name: ['schoolName', 'name', 'title', 'institutionName'],
@@ -224,7 +260,9 @@ const ParentDashboard = () => {
         reviews: ['reviews', 'reviewCount', 'totalReviews', 'reviewCount'],
         facilities: ['facilities', 'amenities', 'features', 'services'],
         fees: ['fees', 'feeStructure', 'tuitionFees', 'feeRange', 'totalAnnualFee'],
-        description: ['description', 'about', 'overview', 'introduction']
+        description: ['description', 'about', 'overview', 'introduction'],
+        email: ['email', 'contactEmail', 'schoolEmail'],
+        phone: ['phone', 'contactNumber', 'schoolPhone', 'mobile']
       },
       'Colleges': {
         name: ['collegeName', 'name', 'title', 'institutionName'],
@@ -234,7 +272,9 @@ const ParentDashboard = () => {
         reviews: ['reviews', 'reviewCount', 'totalReviews', 'reviewCount'],
         facilities: ['facilities', 'amenities', 'features', 'services'],
         fees: ['fees', 'feeStructure', 'tuitionFees', 'feeRange', 'totalAnnualFee'],
-        description: ['description', 'about', 'overview', 'introduction']
+        description: ['description', 'about', 'overview', 'introduction'],
+        email: ['email', 'contactEmail', 'collegeEmail'],
+        phone: ['phone', 'contactNumber', 'collegePhone', 'mobile']
       },
       'PU College': {
         name: ['puCollegeName', 'collegeName', 'name', 'title', 'institutionName'],
@@ -244,7 +284,9 @@ const ParentDashboard = () => {
         reviews: ['reviews', 'reviewCount', 'totalReviews', 'reviewCount'],
         facilities: ['facilities', 'amenities', 'features', 'services'],
         fees: ['fees', 'feeStructure', 'tuitionFees', 'feeRange', 'totalAnnualFee'],
-        description: ['description', 'about', 'overview', 'introduction']
+        description: ['description', 'about', 'overview', 'introduction'],
+        email: ['email', 'contactEmail', 'puCollegeEmail'],
+        phone: ['phone', 'contactNumber', 'puCollegePhone', 'mobile']
       },
       'Coaching/Tuition': {
         name: ['centerName', 'name', 'title', 'coachingName', 'institutionName'],
@@ -254,7 +296,9 @@ const ParentDashboard = () => {
         reviews: ['reviews', 'reviewCount', 'totalReviews', 'reviewCount'],
         facilities: ['facilities', 'amenities', 'features', 'subjects', 'courses'],
         fees: ['fees', 'feeStructure', 'tuitionFees', 'courseFees', 'feeRange', 'totalAnnualFee'],
-        description: ['description', 'about', 'overview', 'introduction']
+        description: ['description', 'about', 'overview', 'introduction'],
+        email: ['email', 'contactEmail', 'centerEmail'],
+        phone: ['phone', 'contactNumber', 'centerPhone', 'mobile']
       },
       'All Teachers': {
         name: ['teacherName', 'name', 'fullName', 'username', 'displayName', 'title'],
@@ -264,13 +308,14 @@ const ParentDashboard = () => {
         reviews: ['reviews', 'reviewCount', 'totalReviews', 'reviewCount'],
         facilities: ['subjects', 'specializations', 'expertise', 'skills', 'subjectsTaught'],
         fees: ['hourlyRate', 'rate', 'fees', 'charges', 'price', 'fee'],
-        description: ['description', 'about', 'bio', 'introduction', 'profileDescription']
+        description: ['description', 'about', 'bio', 'introduction', 'profileDescription'],
+        email: ['email', 'teacherEmail', 'contactEmail'],
+        phone: ['phone', 'teacherPhone', 'contactNumber', 'mobile']
       }
     };
 
     const fields = fieldMappings[type] || fieldMappings['Schools'];
 
-    // Helper to get value from multiple possible fields
     const getValue = (mappings, fallback = '') => {
       for (const key of mappings) {
         if (item[key] !== undefined && item[key] !== null && item[key] !== '') {
@@ -319,6 +364,8 @@ const ParentDashboard = () => {
     
     const experience = getValue(['experience', 'yearsExperience', 'teachingExperience'], '');
     const qualification = getValue(['qualification', 'qualifications', 'education'], '');
+    const email = getValue(fields.email, null);
+    const phone = getValue(fields.phone, null);
 
     return {
       id: displayId,
@@ -333,8 +380,8 @@ const ParentDashboard = () => {
       facilities: Array.isArray(facilities) ? facilities : [],
       isNew: item.isNew || item.newlyAdded || false,
       isPopular: item.isPopular || item.featured || false,
-      email: item.email || item.contactEmail || null,
-      phone: item.phone || item.contactNumber || null,
+      email: email,
+      phone: phone,
       website: item.website || item.webUrl || null,
       subjects: subjects,
       experience: experience,
@@ -345,23 +392,16 @@ const ParentDashboard = () => {
 
   // ============ FETCH INSTITUTIONS ============
   const fetchInstitutions = useCallback(async (forceType = null) => {
-    // Use forceType if provided, otherwise use parentData.institutionType
     let type = forceType || parentData?.institutionType;
-    
-    // Trim and clean the type
     type = type?.trim() || '';
     
     console.log(`🔍 Fetching institutions for type: "${type}"`);
-    console.log(`🔍 Force type: ${forceType || 'none'}`);
-    console.log(`🔍 Current parentData:`, parentData);
     
-    // If no type is set, default to Schools
     if (!type || type === '') {
       console.warn('⚠️ No institution type found, defaulting to Schools');
       type = 'Schools';
     }
 
-    // Prevent duplicate calls for the same type
     if (fetchCalledRef.current && currentTypeRef.current === type && !forceType) {
       console.log(`⏭️ Skipping duplicate fetch for ${type}`);
       return;
@@ -378,7 +418,6 @@ const ParentDashboard = () => {
 
       console.log(`📡 Fetching ${type}...`);
 
-      // Fetch data based on institution type
       if (type === 'Schools') {
         console.log('🏫 Calling schoolApi.getSchools()');
         response = await schoolApi.getSchools();
@@ -396,7 +435,6 @@ const ParentDashboard = () => {
         try {
           response = await teacherApi.getTeachers();
           console.log('👨‍🏫 Teacher API Response:', response);
-          console.log('👨‍🏫 Response keys:', Object.keys(response || {}));
         } catch (teacherError) {
           console.error('❌ Teacher API error:', teacherError);
           throw teacherError;
@@ -449,7 +487,7 @@ const ParentDashboard = () => {
     } finally {
       setIsLoading(false);
     }
-  }, [parentData]); // Add parentData as dependency
+  }, [parentData]);
 
   // Load bookmarks from localStorage
   useEffect(() => {
@@ -481,16 +519,12 @@ const ParentDashboard = () => {
 
   // ============ FETCH WHEN PARENT DATA IS READY ============
   useEffect(() => {
-    // Only fetch if parent data is loaded and has a valid institution type
     if (isParentDataLoaded && parentData && parentData.institutionType) {
       console.log(`📋 Parent data loaded with type: ${parentData.institutionType}`);
-      console.log(`📋 Initial fetch done: ${initialFetchDoneRef.current}`);
       
-      // Reset fetch flag to allow new fetch
       fetchCalledRef.current = false;
       currentTypeRef.current = '';
       
-      // Fetch institutions for the selected type
       if (!initialFetchDoneRef.current) {
         initialFetchDoneRef.current = true;
         fetchInstitutions();
@@ -498,7 +532,7 @@ const ParentDashboard = () => {
     } else if (isParentDataLoaded) {
       console.warn('⚠️ Parent data loaded but no institution type set');
     }
-  }, [isParentDataLoaded, parentData]); // Depend on both flags
+  }, [isParentDataLoaded, parentData]);
 
   // Filter institutions
   useEffect(() => {
@@ -538,12 +572,124 @@ const ParentDashboard = () => {
     );
   };
 
+  // ============ ENQUIRY FUNCTIONS ============
+  const openEnquiryModal = (institution) => {
+    setSelectedInstitution(institution);
+    setEnquiryForm({
+      subject: `Enquiry about ${institution.name}`,
+      message: '',
+      studentName: parentData?.studentName || '',
+      studentClass: parentData?.studentClass || '',
+      parentEmail: parentData?.email || '',
+      parentPhone: parentData?.phone || '',
+      preferredContact: 'email'
+    });
+    setEnquirySuccess(false);
+    setEnquiryError(null);
+    setShowEnquiryModal(true);
+  };
+
+  const handleEnquirySubmit = async (e) => {
+    e.preventDefault();
+    setIsSubmittingEnquiry(true);
+    setEnquiryError(null);
+
+    // Validate email
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (enquiryForm.parentEmail && !emailRegex.test(enquiryForm.parentEmail)) {
+      setEnquiryError('Please enter a valid email address');
+      setIsSubmittingEnquiry(false);
+      return;
+    }
+
+    // Validate phone 
+    const phoneRegex = /^[0-9+\-\s()]{10,15}$/;
+    if (enquiryForm.parentPhone && !phoneRegex.test(enquiryForm.parentPhone)) {
+      setEnquiryError('Please enter a valid phone number (10-15 digits)');
+      setIsSubmittingEnquiry(false);
+      return;
+    }
+
+    try {
+      // Create enquiry object
+      const newEnquiry = {
+        id: `enq_${Date.now()}`,
+        institutionId: selectedInstitution.id,
+        institutionName: selectedInstitution.name,
+        institutionType: selectedInstitution.type,
+        institutionEmail: selectedInstitution.email || null,
+        institutionPhone: selectedInstitution.phone || null,
+        parentName: parentData?.parentName || 'Parent',
+        parentEmail: enquiryForm.parentEmail || parentData?.email || '',
+        parentPhone: enquiryForm.parentPhone || parentData?.phone || '',
+        studentName: enquiryForm.studentName,
+        studentClass: enquiryForm.studentClass,
+        subject: enquiryForm.subject,
+        message: enquiryForm.message,
+        preferredContact: enquiryForm.preferredContact,
+        status: 'pending', // pending, responded, closed
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+        responses: []
+      };
+
+      // In a real app, you would send this to your backend
+      // await api.sendEnquiry(newEnquiry);
+      
+      // For demo, save to localStorage
+      setEnquiries(prev => [newEnquiry, ...prev]);
+      
+      setEnquirySuccess(true);
+      setIsSubmittingEnquiry(false);
+      
+      // Close modal after success
+      setTimeout(() => {
+        setShowEnquiryModal(false);
+        setEnquirySuccess(false);
+      }, 2000);
+      
+    } catch (error) {
+      console.error('Error submitting enquiry:', error);
+      setEnquiryError(error.message || 'Failed to send enquiry. Please try again.');
+      setIsSubmittingEnquiry(false);
+    }
+  };
+
+  const updateEnquiryStatus = (enquiryId, newStatus) => {
+    setEnquiries(prev => 
+      prev.map(enq => 
+        enq.id === enquiryId 
+          ? { ...enq, status: newStatus, updatedAt: new Date().toISOString() }
+          : enq
+      )
+    );
+  };
+
+  const getStatusColor = (status) => {
+    switch(status) {
+      case 'pending': return 'text-yellow-400 bg-yellow-500/20';
+      case 'responded': return 'text-green-400 bg-green-500/20';
+      case 'closed': return 'text-gray-400 bg-gray-500/20';
+      default: return 'text-gray-400 bg-gray-500/20';
+    }
+  };
+
+  const getStatusIcon = (status) => {
+    switch(status) {
+      case 'pending': return FiClockIcon;
+      case 'responded': return FiCheckCircle;
+      case 'closed': return FiXCircle;
+      default: return FiClockIcon;
+    }
+  };
+
   const handleLogout = () => {
     localStorage.removeItem('parentToken');
     localStorage.removeItem('parentData');
     localStorage.removeItem('userEmail');
     localStorage.removeItem('userRole');
     localStorage.removeItem('parentBookmarks');
+    localStorage.removeItem('parentEnquiries');
     navigate('/');
   };
 
@@ -563,6 +709,7 @@ const ParentDashboard = () => {
     { id: 'dashboard', label: 'Dashboard', icon: FiHome },
     { id: 'search', label: `Browse ${parentData?.institutionType || 'Schools'}`, icon: FiSearch },
     { id: 'bookmarks', label: 'Bookmarks', icon: FiHeart },
+    { id: 'enquiries', label: 'Enquiries', icon: FiMessageSquare },
   ];
 
   // ============ STATS CARD ============
@@ -588,6 +735,7 @@ const ParentDashboard = () => {
     const isBookmarked = bookmarkedInstitutions.includes(institution.id);
     const subjects = Array.isArray(institution.subjects) ? institution.subjects : [];
     const facilities = Array.isArray(institution.facilities) ? institution.facilities : [];
+    const hasEnquired = enquiries.some(enq => enq.institutionId === institution.id);
 
     return (
       <motion.div
@@ -621,6 +769,11 @@ const ParentDashboard = () => {
             {institution.type === 'All Teachers' && institution.experience && (
               <span className="px-3 py-1 bg-blue-500/90 backdrop-blur-sm rounded-full text-xs font-semibold text-white">
                 {institution.experience} yrs exp
+              </span>
+            )}
+            {hasEnquired && (
+              <span className="px-3 py-1 bg-purple-500/90 backdrop-blur-sm rounded-full text-xs font-semibold text-white">
+                Enquired
               </span>
             )}
           </div>
@@ -707,17 +860,34 @@ const ParentDashboard = () => {
                 Details
               </button>
               <button 
-                onClick={() => {
-                  if (institution.phone) {
-                    window.location.href = `tel:${institution.phone}`;
-                  }
-                }}
-                className="px-4 py-2 bg-gradient-to-r from-orange-500 to-amber-500 text-white rounded-xl text-sm hover:from-orange-600 hover:to-amber-600 transition-all shadow-lg shadow-orange-500/20"
+                onClick={() => openEnquiryModal(institution)}
+                className="px-4 py-2 bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-xl text-sm hover:from-purple-600 hover:to-pink-600 transition-all shadow-lg shadow-purple-500/20 flex items-center gap-1"
               >
-                Contact
+                <FiMessageCircle className="w-3 h-3" />
+                Enquire
               </button>
             </div>
           </div>
+
+          {/* Show contact info if available */}
+          {(institution.email || institution.phone) && (
+            <div className="mt-3 pt-3 border-t border-white/5">
+              <div className="flex flex-wrap gap-3 text-xs">
+                {institution.email && (
+                  <a href={`mailto:${institution.email}`} className="text-gray-400 hover:text-orange-400 transition-colors flex items-center gap-1">
+                    <FiMail className="w-3 h-3" />
+                    {institution.email}
+                  </a>
+                )}
+                {institution.phone && (
+                  <a href={`tel:${institution.phone}`} className="text-gray-400 hover:text-orange-400 transition-colors flex items-center gap-1">
+                    <FiPhone className="w-3 h-3" />
+                    {institution.phone}
+                  </a>
+                )}
+              </div>
+            </div>
+          )}
         </div>
       </motion.div>
     );
@@ -764,158 +934,420 @@ const ParentDashboard = () => {
     </div>
   );
 
+  // ============ ENQUIRY MODAL ============
+  const EnquiryModal = () => {
+    if (!selectedInstitution) return null;
+
+    return (
+      <AnimatePresence>
+        {showEnquiryModal && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm"
+            onClick={() => !isSubmittingEnquiry && setShowEnquiryModal(false)}
+          >
+            <motion.div
+              initial={{ scale: 0.9, y: 20 }}
+              animate={{ scale: 1, y: 0 }}
+              exit={{ scale: 0.9, y: 20 }}
+              className="w-full max-w-lg bg-gray-900 rounded-3xl border border-white/10 shadow-2xl overflow-hidden max-h-[100vh] overflow-y-auto"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="p-6 border-b border-white/10 sticky top-0 bg-gray-900 z-10">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h3 className="text-xl font-bold text-white">Send Enquiry</h3>
+                    <p className="text-sm text-gray-400 mt-1">
+                      To: <span className="text-orange-300">{selectedInstitution.name}</span>
+                    </p>
+                  </div>
+                  <button
+                    onClick={() => setShowEnquiryModal(false)}
+                    className="p-2 hover:bg-white/10 rounded-xl transition-colors"
+                    disabled={isSubmittingEnquiry}
+                  >
+                    <FiX className="w-5 h-5 text-gray-400" />
+                  </button>
+                </div>
+              </div>
+
+              {enquirySuccess ? (
+                <div className="p-8 text-center">
+                  <div className="w-20 h-20 bg-green-500/20 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <FiCheckCircle className="w-10 h-10 text-green-400" />
+                  </div>
+                  <h4 className="text-xl font-bold text-white mb-2">Enquiry Sent!</h4>
+                  <p className="text-gray-400">
+                    Your enquiry has been sent to {selectedInstitution.name}. 
+                    They will get back to you shortly.
+                  </p>
+                </div>
+              ) : (
+                <form onSubmit={handleEnquirySubmit} className="p-6 space-y-4">
+                  {enquiryError && (
+                    <div className="p-3 bg-red-500/20 border border-red-500/30 rounded-xl text-red-400 text-sm flex items-center gap-2">
+                      <FiAlertCircle className="w-4 h-4 flex-shrink-0" />
+                      {enquiryError}
+                    </div>
+                  )}
+
+                  <div>
+                    <label className="text-sm text-gray-400 block mb-1.5">Subject <span className="text-red-400">*</span></label>
+                    <input
+                      type="text"
+                      className="w-full px-4 py-2.5 bg-gray-800/80 border border-white/10 rounded-xl text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500"
+                      value={enquiryForm.subject}
+                      onChange={(e) => setEnquiryForm({...enquiryForm, subject: e.target.value})}
+                      required
+                      disabled={isSubmittingEnquiry}
+                    />
+                  </div>
+
+                  <div>
+                    <label className="text-sm text-gray-400 block mb-1.5">Message <span className="text-red-400">*</span></label>
+                    <textarea
+                      rows={4}
+                      className="w-full px-4 py-2.5 bg-gray-800/80 border border-white/10 rounded-xl text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 resize-none"
+                      placeholder="Write your enquiry details here..."
+                      value={enquiryForm.message}
+                      onChange={(e) => setEnquiryForm({...enquiryForm, message: e.target.value})}
+                      required
+                      disabled={isSubmittingEnquiry}
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="text-sm text-gray-400 block mb-1.5">Student Name <span className="text-red-400">*</span></label>
+                      <input
+                        type="text"
+                        className="w-full px-4 py-2.5 bg-gray-800/80 border border-white/10 rounded-xl text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500"
+                        value={enquiryForm.studentName}
+                        onChange={(e) => setEnquiryForm({...enquiryForm, studentName: e.target.value})}
+                        required
+                        disabled={isSubmittingEnquiry}
+                      />
+                    </div>
+                    <div>
+                      <label className="text-sm text-gray-400 block mb-1.5">Student Class <span className="text-red-400">*</span></label>
+                      <input
+                        type="text"
+                        className="w-full px-4 py-2.5 bg-gray-800/80 border border-white/10 rounded-xl text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500"
+                        value={enquiryForm.studentClass}
+                        onChange={(e) => setEnquiryForm({...enquiryForm, studentClass: e.target.value})}
+                        required
+                        disabled={isSubmittingEnquiry}
+                      />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="text-sm text-gray-400 block mb-1.5">
+                        <FiMail className="inline w-3 h-3 mr-1" />
+                        Your Email
+                      </label>
+                      <input
+                        type="email"
+                        className="w-full px-4 py-2.5 bg-gray-800/80 border border-white/10 rounded-xl text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500"
+                        placeholder="your@email.com"
+                        value={enquiryForm.parentEmail}
+                        onChange={(e) => setEnquiryForm({...enquiryForm, parentEmail: e.target.value})}
+                        disabled={isSubmittingEnquiry}
+                      />
+                    </div>
+                    <div>
+                      <label className="text-sm text-gray-400 block mb-1.5">
+                        <FiPhone className="inline w-3 h-3 mr-1" />
+                        Your Phone
+                      </label>
+                      <input
+                        type="tel"
+                        className="w-full px-4 py-2.5 bg-gray-800/80 border border-white/10 rounded-xl text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500"
+                        placeholder="+91 9876543210"
+                        value={enquiryForm.parentPhone}
+                        onChange={(e) => setEnquiryForm({...enquiryForm, parentPhone: e.target.value})}
+                        disabled={isSubmittingEnquiry}
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="text-sm text-gray-400 block mb-1.5">Preferred Contact <span className="text-red-400">*</span></label>
+                    <div className="flex gap-4 flex-wrap">
+                      <label className="flex items-center gap-2 text-white cursor-pointer">
+                        <input
+                          type="radio"
+                          value="email"
+                          checked={enquiryForm.preferredContact === 'email'}
+                          onChange={(e) => setEnquiryForm({...enquiryForm, preferredContact: e.target.value})}
+                          disabled={isSubmittingEnquiry}
+                          className="text-purple-500 focus:ring-purple-500"
+                        />
+                        <FiMail className="w-3 h-3" />
+                        Email
+                      </label>
+                      <label className="flex items-center gap-2 text-white cursor-pointer">
+                        <input
+                          type="radio"
+                          value="phone"
+                          checked={enquiryForm.preferredContact === 'phone'}
+                          onChange={(e) => setEnquiryForm({...enquiryForm, preferredContact: e.target.value})}
+                          disabled={isSubmittingEnquiry}
+                          className="text-purple-500 focus:ring-purple-500"
+                        />
+                        <FiPhone className="w-3 h-3" />
+                        Phone
+                      </label>
+                      <label className="flex items-center gap-2 text-white cursor-pointer">
+                        <input
+                          type="radio"
+                          value="both"
+                          checked={enquiryForm.preferredContact === 'both'}
+                          onChange={(e) => setEnquiryForm({...enquiryForm, preferredContact: e.target.value})}
+                          disabled={isSubmittingEnquiry}
+                          className="text-purple-500 focus:ring-purple-500"
+                        />
+                        Both
+                      </label>
+                    </div>
+                  </div>
+
+                  {/* Institution Contact Info Display */}
+                  {(selectedInstitution.email || selectedInstitution.phone) && (
+                    <div className="p-3 bg-white/5 rounded-xl border border-white/10">
+                      <p className="text-xs text-gray-400 mb-1">Institution Contact:</p>
+                      <div className="flex flex-wrap gap-3 text-sm">
+                        {selectedInstitution.email && (
+                          <span className="text-gray-300 flex items-center gap-1">
+                            <FiMail className="w-3 h-3 text-orange-400" />
+                            {selectedInstitution.email}
+                          </span>
+                        )}
+                        {selectedInstitution.phone && (
+                          <span className="text-gray-300 flex items-center gap-1">
+                            <FiPhone className="w-3 h-3 text-orange-400" />
+                            {selectedInstitution.phone}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  )}
+
+                  <button
+                    type="submit"
+                    disabled={isSubmittingEnquiry}
+                    className="w-full py-3 bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-xl hover:from-purple-600 hover:to-pink-600 transition-all shadow-lg shadow-purple-500/20 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {isSubmittingEnquiry ? (
+                      <>
+                        <FiLoader className="w-4 h-4 animate-spin" />
+                        Sending...
+                      </>
+                    ) : (
+                      <>
+                        <FiSend className="w-4 h-4" />
+                        Send Enquiry
+                      </>
+                    )}
+                  </button>
+                </form>
+              )}
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    );
+  };
+
   // ============ DASHBOARD ============
-  const renderDashboard = () => (
-    <div className="space-y-8">
-      <motion.div
-        initial={{ opacity: 0, y: -20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5 }}
-        className="relative overflow-hidden bg-gradient-to-r from-orange-500/20 via-amber-500/20 to-transparent rounded-3xl p-8 border border-orange-500/20"
-      >
-        <div className="absolute top-0 right-0 w-64 h-64 bg-orange-500/10 rounded-full blur-3xl" />
-        <div className="relative">
-          <div className="flex items-start justify-between flex-wrap gap-4">
-            <div>
-              <h2 className="text-3xl font-bold text-white">
-                Welcome back, {parentData?.parentName || 'Parent'}! 
-              </h2>
-              <p className="text-gray-300 mt-2 text-lg">
-                Find the best {parentData?.institutionType || 'Schools'} for your child
-              </p>
-              <div className="flex items-center gap-4 mt-4 flex-wrap">
-                <span className="px-3 py-1 bg-orange-500/20 rounded-full text-xs text-orange-300">
-                  Looking for: {parentData?.institutionType || 'Schools'}
-                </span>
-                <span className="px-3 py-1 bg-green-500/20 rounded-full text-xs text-green-300">
-                  {institutions.length} {parentData?.institutionType || 'Schools'} available
-                </span>
-                {parentData?.studentName && (
-                  <span className="px-3 py-1 bg-blue-500/20 rounded-full text-xs text-blue-300">
-                    Student: {parentData.studentName}
+  const renderDashboard = () => {
+    const pendingEnquiries = enquiries.filter(enq => enq.status === 'pending').length;
+    const respondedEnquiries = enquiries.filter(enq => enq.status === 'responded').length;
+
+    return (
+      <div className="space-y-8">
+        <motion.div
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5 }}
+          className="relative overflow-hidden bg-gradient-to-r from-orange-500/20 via-amber-500/20 to-transparent rounded-3xl p-8 border border-orange-500/20"
+        >
+          <div className="absolute top-0 right-0 w-64 h-64 bg-orange-500/10 rounded-full blur-3xl" />
+          <div className="relative">
+            <div className="flex items-start justify-between flex-wrap gap-4">
+              <div>
+                <h2 className="text-3xl font-bold text-white">
+                  Welcome back, {parentData?.parentName || 'Parent'}! 
+                </h2>
+                <p className="text-gray-300 mt-2 text-lg">
+                  Find the best {parentData?.institutionType || 'Schools'} for your child
+                </p>
+                <div className="flex items-center gap-4 mt-4 flex-wrap">
+                  <span className="px-3 py-1 bg-orange-500/20 rounded-full text-xs text-orange-300">
+                    Looking for: {parentData?.institutionType || 'Schools'}
                   </span>
-                )}
+                  <span className="px-3 py-1 bg-green-500/20 rounded-full text-xs text-green-300">
+                    {institutions.length} {parentData?.institutionType || 'Schools'} available
+                  </span>
+                  {parentData?.studentName && (
+                    <span className="px-3 py-1 bg-blue-500/20 rounded-full text-xs text-blue-300">
+                      Student: {parentData.studentName}
+                    </span>
+                  )}
+                  {enquiries.length > 0 && (
+                    <span className="px-3 py-1 bg-purple-500/20 rounded-full text-xs text-purple-300">
+                      {enquiries.length} Enquiries
+                    </span>
+                  )}
+                </div>
               </div>
             </div>
           </div>
-        </div>
-      </motion.div>
+        </motion.div>
 
-      {/* Debug Section */}
-      {/* <div className="bg-yellow-500/10 border border-yellow-500/20 rounded-xl p-4">
-        <h4 className="text-yellow-300 text-sm font-semibold mb-2 flex items-center gap-2">
-          <FiAlertCircle className="w-4 h-4" />
-          Debug Info
-        </h4>
-        <div className="flex flex-wrap gap-4 text-xs">
-          <div>
-            <span className="text-gray-400">Type:</span>
-            <span className="text-white ml-1">"{parentData?.institutionType}"</span>
-          </div>
-          <div>
-            <span className="text-gray-400">Is "All Teachers":</span>
-            <span className="text-white ml-1">{parentData?.institutionType === 'All Teachers' ? '✅' : '❌'}</span>
-          </div>
-          <div>
-            <span className="text-gray-400">Institutions:</span>
-            <span className="text-white ml-1">{institutions.length}</span>
-          </div>
-          <button
-            onClick={() => {
-              console.log('🔄 Force fetching teachers...');
-              fetchCalledRef.current = false;
-              currentTypeRef.current = '';
-              fetchInstitutions('All Teachers');
-            }}
-            className="px-3 py-1 bg-orange-500/20 text-orange-300 rounded-lg hover:bg-orange-500/30 transition-all"
+        {/* Stats Grid */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, delay: 0.1 }}
+          className="grid grid-cols-2 md:grid-cols-4 gap-4"
+        >
+          <StatsCard 
+            icon={FiBookOpen}
+            label={`Available ${parentData?.institutionType || 'Schools'}`}
+            value={stats.totalAvailable}
+            color="text-blue-400"
+            bgColor="bg-blue-500/20"
+          />
+          <StatsCard 
+            icon={FiHeart}
+            label="Bookmarks"
+            value={stats.bookmarksCount}
+            color="text-red-400"
+            bgColor="bg-red-500/20"
+          />
+          <StatsCard 
+            icon={FiMessageSquare}
+            label="Total Enquiries"
+            value={enquiries.length}
+            color="text-purple-400"
+            bgColor="bg-purple-500/20"
+          />
+          <StatsCard 
+            icon={FiCheckCircle}
+            label="Responses Received"
+            value={respondedEnquiries}
+            color="text-green-400"
+            bgColor="bg-green-500/20"
+          />
+        </motion.div>
+
+        {/* Recent Enquiries Quick View */}
+        {enquiries.length > 0 && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, delay: 0.2 }}
           >
-            Force Fetch Teachers
-          </button>
-          <button
-            onClick={() => {
-              console.log('📊 Current state:', {
-                parentData,
-                institutions: institutions.length,
-                filteredInstitutions: filteredInstitutions.length,
-                bookmarks: bookmarkedInstitutions.length
-              });
-            }}
-            className="px-3 py-1 bg-blue-500/20 text-blue-300 rounded-lg hover:bg-blue-500/30 transition-all"
-          >
-            Log State
-          </button>
-        </div>
-      </div> */}
+            <div className="flex items-center justify-between mb-6">
+              <div>
+                <h3 className="text-2xl font-bold text-white">Recent Enquiries</h3>
+                <p className="text-sm text-gray-400">Track your recent enquiries</p>
+              </div>
+              <button 
+                onClick={() => setActiveTab('enquiries')}
+                className="text-purple-400 text-sm hover:text-purple-300 transition-colors flex items-center gap-1 bg-purple-500/10 px-4 py-2 rounded-xl"
+              >
+                View All
+                <FiArrowRight className="w-4 h-4" />
+              </button>
+            </div>
 
-      {/* Stats Grid */}
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5, delay: 0.1 }}
-        className="grid grid-cols-2 gap-4"
-      >
-        <StatsCard 
-          icon={FiBookOpen}
-          label={`Available ${parentData?.institutionType || 'Schools'}`}
-          value={stats.totalAvailable}
-          color="text-blue-400"
-          bgColor="bg-blue-500/20"
-        />
-        <StatsCard 
-          icon={FiHeart}
-          label="Bookmarks"
-          value={stats.bookmarksCount}
-          color="text-red-400"
-          bgColor="bg-red-500/20"
-        />
-      </motion.div>
-
-      {/* Top Picks Section */}
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5, delay: 0.2 }}
-      >
-        <div className="flex items-center justify-between mb-6">
-          <div>
-            <h3 className="text-2xl font-bold text-white">Top {parentData?.institutionType || 'Schools'} Picks</h3>
-            <p className="text-sm text-gray-400">Highest rated {parentData?.institutionType?.toLowerCase() || 'schools'} for your child</p>
-          </div>
-          <button 
-            onClick={() => setActiveTab('search')}
-            className="text-orange-400 text-sm hover:text-orange-300 transition-colors flex items-center gap-1 bg-orange-500/10 px-4 py-2 rounded-xl"
-          >
-            View All
-            <FiArrowRight className="w-4 h-4" />
-          </button>
-        </div>
-
-        {isLoading ? (
-          <LoadingSpinner />
-        ) : error ? (
-          <ErrorDisplay message={error} />
-        ) : institutions.length === 0 ? (
-          <EmptyState />
-        ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {[...institutions]
-              .sort((a, b) => b.rating - a.rating)
-              .slice(0, 3)
-              .map((inst, index) => (
-                <motion.div
-                  key={inst.id}
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.3, delay: index * 0.1 }}
-                >
-                  <InstitutionCard institution={inst} />
-                </motion.div>
-              ))}
-          </div>
+            <div className="space-y-3">
+              {enquiries.slice(0, 3).map((enquiry) => {
+                const StatusIcon = getStatusIcon(enquiry.status);
+                return (
+                  <div key={enquiry.id} className="bg-white/5 backdrop-blur-lg rounded-xl p-4 border border-white/10 flex items-center justify-between">
+                    <div className="flex items-center gap-3 min-w-0">
+                      <div className="w-10 h-10 rounded-xl bg-purple-500/20 flex items-center justify-center flex-shrink-0">
+                        <FiMessageSquare className="w-5 h-5 text-purple-400" />
+                      </div>
+                      <div className="min-w-0">
+                        <p className="text-white font-medium truncate">{enquiry.subject}</p>
+                        <p className="text-sm text-gray-400 truncate">
+                          To: {enquiry.institutionName} • {new Date(enquiry.createdAt).toLocaleDateString()}
+                        </p>
+                        {enquiry.parentEmail && (
+                          <p className="text-xs text-gray-500 truncate">
+                            <FiMail className="inline w-3 h-3 mr-1" />
+                            {enquiry.parentEmail}
+                            {enquiry.parentPhone && ` • ${enquiry.parentPhone}`}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-3 flex-shrink-0">
+                      <span className={`px-3 py-1 rounded-full text-xs font-medium ${getStatusColor(enquiry.status)} flex items-center gap-1`}>
+                        <StatusIcon className="w-3 h-3" />
+                        {enquiry.status.charAt(0).toUpperCase() + enquiry.status.slice(1)}
+                      </span>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </motion.div>
         )}
-      </motion.div>
-    </div>
-  );
+
+        {/* Top Picks Section */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, delay: 0.3 }}
+        >
+          <div className="flex items-center justify-between mb-6">
+            <div>
+              <h3 className="text-2xl font-bold text-white">Top {parentData?.institutionType || 'Schools'} Picks</h3>
+              <p className="text-sm text-gray-400">Highest rated {parentData?.institutionType?.toLowerCase() || 'schools'} for your child</p>
+            </div>
+            <button 
+              onClick={() => setActiveTab('search')}
+              className="text-orange-400 text-sm hover:text-orange-300 transition-colors flex items-center gap-1 bg-orange-500/10 px-4 py-2 rounded-xl"
+            >
+              View All
+              <FiArrowRight className="w-4 h-4" />
+            </button>
+          </div>
+
+          {isLoading ? (
+            <LoadingSpinner />
+          ) : error ? (
+            <ErrorDisplay message={error} />
+          ) : institutions.length === 0 ? (
+            <EmptyState />
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {[...institutions]
+                .sort((a, b) => b.rating - a.rating)
+                .slice(0, 3)
+                .map((inst, index) => (
+                  <motion.div
+                    key={inst.id}
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.3, delay: index * 0.1 }}
+                  >
+                    <InstitutionCard institution={inst} />
+                  </motion.div>                ))}
+            </div>
+          )}
+        </motion.div>
+      </div>
+    );
+  };
 
   // ============ SEARCH ============
   const renderSearch = () => (
@@ -1069,12 +1501,177 @@ const ParentDashboard = () => {
     );
   };
 
+  // ============ ENQUIRIES ============
+  const renderEnquiries = () => {
+    const pendingEnquiries = enquiries.filter(enq => enq.status === 'pending');
+    const respondedEnquiries = enquiries.filter(enq => enq.status === 'responded');
+    const closedEnquiries = enquiries.filter(enq => enq.status === 'closed');
+
+    return (
+      <div className="space-y-6">
+        <div>
+          <h2 className="text-2xl font-bold text-white">Your Enquiries</h2>
+          <p className="text-gray-400">Track all your enquiries and responses</p>
+        </div>
+
+        {/* Enquiry Stats */}
+        <div className="grid grid-cols-3 gap-4">
+          <div className="bg-white/5 backdrop-blur-lg rounded-xl p-4 border border-white/10 text-center">
+            <p className="text-2xl font-bold text-yellow-400">{pendingEnquiries.length}</p>
+            <p className="text-xs text-gray-400">Pending</p>
+          </div>
+          <div className="bg-white/5 backdrop-blur-lg rounded-xl p-4 border border-white/10 text-center">
+            <p className="text-2xl font-bold text-green-400">{respondedEnquiries.length}</p>
+            <p className="text-xs text-gray-400">Responded</p>
+          </div>
+          <div className="bg-white/5 backdrop-blur-lg rounded-xl p-4 border border-white/10 text-center">
+            <p className="text-2xl font-bold text-gray-400">{closedEnquiries.length}</p>
+            <p className="text-xs text-gray-400">Closed</p>
+          </div>
+        </div>
+
+        {enquiries.length === 0 ? (
+          <div className="text-center py-16 bg-white/5 rounded-2xl border border-white/10">
+            <FiMessageSquare className="w-16 h-16 text-gray-600 mx-auto mb-4" />
+            <h3 className="text-xl font-semibold text-white">No enquiries yet</h3>
+            <p className="text-gray-400">Start enquiring about {parentData?.institutionType || 'Schools'} you're interested in</p>
+            <button
+              onClick={() => setActiveTab('search')}
+              className="mt-4 px-6 py-2.5 bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-xl hover:from-purple-600 hover:to-pink-600 transition-all shadow-lg shadow-purple-500/20"
+            >
+              Browse {parentData?.institutionType || 'Schools'}
+            </button>
+          </div>
+        ) : (
+          <div className="space-y-4">
+            {enquiries.map((enquiry) => {
+              const StatusIcon = getStatusIcon(enquiry.status);
+              return (
+                <motion.div
+                  key={enquiry.id}
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="bg-white/5 backdrop-blur-lg rounded-2xl p-6 border border-white/10 hover:border-purple-500/30 transition-all"
+                >
+                  <div className="flex flex-col md:flex-row md:items-start justify-between gap-4">
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-3 flex-wrap mb-2">
+                        <h4 className="text-lg font-semibold text-white">{enquiry.subject}</h4>
+                        <span className={`px-3 py-1 rounded-full text-xs font-medium ${getStatusColor(enquiry.status)} flex items-center gap-1`}>
+                          <StatusIcon className="w-3 h-3" />
+                          {enquiry.status.charAt(0).toUpperCase() + enquiry.status.slice(1)}
+                        </span>
+                      </div>
+                      
+                      <p className="text-gray-300 text-sm mb-3">{enquiry.message}</p>
+                      
+                      <div className="flex flex-wrap items-center gap-4 text-sm text-gray-400">
+                        <span className="flex items-center gap-1">
+                          <FiBookOpen className="w-3 h-3" />
+                          {enquiry.institutionName}
+                        </span>
+                        <span className="flex items-center gap-1">
+                          <FiCalendar className="w-3 h-3" />
+                          {new Date(enquiry.createdAt).toLocaleDateString()}
+                        </span>
+                        <span className="flex items-center gap-1">
+                          <FiClock className="w-3 h-3" />
+                          {new Date(enquiry.createdAt).toLocaleTimeString()}
+                        </span>
+                        <span className="flex items-center gap-1">
+                          <FiUser className="w-3 h-3" />
+                          Student: {enquiry.studentName}
+                        </span>
+                      </div>
+
+                      {/* Contact Info */}
+                      {(enquiry.parentEmail || enquiry.parentPhone) && (
+                        <div className="mt-3 flex flex-wrap items-center gap-4 text-sm">
+                          {enquiry.parentEmail && (
+                            <span className="flex items-center gap-1 text-gray-400">
+                              <FiMail className="w-3 h-3 text-purple-400" />
+                              <a href={`mailto:${enquiry.parentEmail}`} className="hover:text-purple-400 transition-colors">
+                                {enquiry.parentEmail}
+                              </a>
+                            </span>
+                          )}
+                          {enquiry.parentPhone && (
+                            <span className="flex items-center gap-1 text-gray-400">
+                              <FiPhone className="w-3 h-3 text-purple-400" />
+                              <a href={`tel:${enquiry.parentPhone}`} className="hover:text-purple-400 transition-colors">
+                                {enquiry.parentPhone}
+                              </a>
+                            </span>
+                          )}
+                          <span className="flex items-center gap-1 text-gray-500">
+                            <FiAtSign className="w-3 h-3" />
+                            Prefers: {enquiry.preferredContact}
+                          </span>
+                        </div>
+                      )}
+
+                      {/* Institution Contact Info */}
+                      {(enquiry.institutionEmail || enquiry.institutionPhone) && (
+                        <div className="mt-2 flex flex-wrap items-center gap-4 text-xs text-gray-500">
+                          <span className="text-gray-500">Institution contact:</span>
+                          {enquiry.institutionEmail && (
+                            <span className="flex items-center gap-1">
+                              <FiMail className="w-3 h-3 text-orange-400" />
+                              <a href={`mailto:${enquiry.institutionEmail}`} className="hover:text-orange-400 transition-colors">
+                                {enquiry.institutionEmail}
+                              </a>
+                            </span>
+                          )}
+                          {enquiry.institutionPhone && (
+                            <span className="flex items-center gap-1">
+                              <FiPhone className="w-3 h-3 text-orange-400" />
+                              <a href={`tel:${enquiry.institutionPhone}`} className="hover:text-orange-400 transition-colors">
+                                {enquiry.institutionPhone}
+                              </a>
+                            </span>
+                          )}
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="flex flex-col items-end gap-2 flex-shrink-0">
+                      {enquiry.status === 'pending' && (
+                        <button
+                          onClick={() => updateEnquiryStatus(enquiry.id, 'responded')}
+                          className="px-4 py-2 bg-green-500/20 text-green-400 rounded-xl text-sm hover:bg-green-500/30 transition-all"
+                        >
+                          Mark as Responded
+                        </button>
+                      )}
+                      {enquiry.status === 'responded' && (
+                        <button
+                          onClick={() => updateEnquiryStatus(enquiry.id, 'closed')}
+                          className="px-4 py-2 bg-gray-500/20 text-gray-400 rounded-xl text-sm hover:bg-gray-500/30 transition-all"
+                        >
+                          Mark as Closed
+                        </button>
+                      )}
+                      <div className="text-xs text-gray-500">
+                        Updated: {new Date(enquiry.updatedAt).toLocaleDateString()}
+                      </div>
+                    </div>
+                  </div>
+                </motion.div>
+              );
+            })}
+          </div>
+        )}
+      </div>
+    );
+  };
+
   // ============ RENDER CONTENT ============
   const renderContent = () => {
     switch(activeTab) {
       case 'dashboard': return renderDashboard();
       case 'search': return renderSearch();
       case 'bookmarks': return renderBookmarks();
+      case 'enquiries': return renderEnquiries();
       default: return renderDashboard();
     }
   };
@@ -1140,6 +1737,11 @@ const ParentDashboard = () => {
                     {bookmarkedInstitutions.length}
                   </span>
                 )}
+                {item.id === 'enquiries' && enquiries.filter(e => e.status === 'pending').length > 0 && (
+                  <span className="px-2 py-0.5 bg-purple-500/20 text-purple-300 text-xs rounded-full flex-shrink-0 animate-pulse">
+                    {enquiries.filter(e => e.status === 'pending').length}
+                  </span>
+                )}
               </motion.button>
             );
           })}
@@ -1153,6 +1755,9 @@ const ParentDashboard = () => {
             <div className="flex-1 min-w-0">
               <p className="text-sm font-medium text-white truncate">{parentData?.parentName || 'Parent'}</p>
               <p className="text-xs text-gray-400 truncate">{parentData?.email || ''}</p>
+              {parentData?.phone && (
+                <p className="text-xs text-gray-500 truncate">{parentData.phone}</p>
+              )}
             </div>
           </div>
           <button
@@ -1214,6 +1819,11 @@ const ParentDashboard = () => {
                         {bookmarkedInstitutions.length}
                       </span>
                     )}
+                    {item.id === 'enquiries' && enquiries.filter(e => e.status === 'pending').length > 0 && (
+                      <span className="px-2 py-0.5 bg-purple-500/20 text-purple-300 text-xs rounded-full flex-shrink-0 animate-pulse">
+                        {enquiries.filter(e => e.status === 'pending').length}
+                      </span>
+                    )}
                   </button>
                 );
               })}
@@ -1227,6 +1837,9 @@ const ParentDashboard = () => {
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-medium text-white truncate">{parentData?.parentName || 'Parent'}</p>
                   <p className="text-xs text-gray-400 truncate">{parentData?.email || ''}</p>
+                  {parentData?.phone && (
+                    <p className="text-xs text-gray-500 truncate">{parentData.phone}</p>
+                  )}
                 </div>
               </div>
               <button
@@ -1247,6 +1860,9 @@ const ParentDashboard = () => {
           {renderContent()}
         </div>
       </main>
+
+      {/* Enquiry Modal */}
+      <EnquiryModal />
     </div>
   );
 };

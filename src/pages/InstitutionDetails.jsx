@@ -1047,7 +1047,7 @@ const InstitutionDetails = () => {
             {/* Tabs */}
             <div className="border-t border-white/10 px-6 md:px-8">
               <div className="flex gap-1 overflow-x-auto">
-                {['overview', 'details', 'reviews', 'photos'].map((tab) => (
+                {['overview', 'details', 'photos'].map((tab) => (
                   <button
                     key={tab}
                     onClick={() => setActiveTab(tab)}
