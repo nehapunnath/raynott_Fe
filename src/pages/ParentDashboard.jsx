@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback, useRef, memo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   FiHome, FiUser, FiSearch, FiBookOpen, FiMessageSquare, 
@@ -15,6 +15,293 @@ import collegeApi from '../services/collegeApi';
 import puCollegeApi from '../services/pucollegeApi';
 import TuitionCoachingApi from '../services/TuitionCoachingApi';
 import teacherApi from '../services/TeacherApi';
+import enquiryApi from '../services/EnquiryApi';
+
+// ============ ENQUIRY MODAL COMPONENT (Extracted for performance) ============
+const EnquiryModal = memo(({ 
+  isOpen, 
+  onClose, 
+  institution, 
+  parentData,
+  onSubmit,
+  isSubmitting,
+  error,
+  success 
+}) => {
+  const [formData, setFormData] = useState({
+    subject: '',
+    message: '',
+    studentName: '',
+    studentClass: '',
+    parentEmail: '',
+    parentPhone: '',
+    preferredContact: 'email'
+  });
+
+  // Reset form when institution changes or modal opens
+  useEffect(() => {
+    if (isOpen && institution) {
+      setFormData({
+        subject: `Enquiry about ${institution.name}`,
+        message: '',
+        studentName: parentData?.studentName || '',
+        studentClass: parentData?.studentClass || '',
+        parentEmail: parentData?.email || '',
+        parentPhone: parentData?.phone || '',
+        preferredContact: 'email'
+      });
+    }
+  }, [isOpen, institution, parentData]);
+
+  if (!isOpen || !institution) return null;
+
+  const handleChange = (e) => {
+    const { name, value, type, checked } = e.target;
+    setFormData(prev => ({
+      ...prev,
+      [name]: type === 'radio' ? (checked ? value : prev[name]) : value
+    }));
+  };
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    onSubmit(formData);
+  };
+
+  return (
+    <AnimatePresence>
+      {isOpen && (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm"
+          onClick={onClose}
+        >
+          <motion.div
+            initial={{ scale: 0.9, y: 20 }}
+            animate={{ scale: 1, y: 0 }}
+            exit={{ scale: 0.9, y: 20 }}
+            className="w-full max-w-lg bg-gray-900 rounded-3xl border border-white/10 shadow-2xl overflow-hidden max-h-[110vh] overflow-y-auto"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="p-6 border-b border-white/10 sticky top-0 bg-gray-900 z-10">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h3 className="text-xl font-bold text-white">Send Enquiry</h3>
+                  <p className="text-sm text-gray-400 mt-1">
+                    To: <span className="text-orange-300">{institution.name}</span>
+                  </p>
+                </div>
+                <button
+                  onClick={onClose}
+                  className="p-2 hover:bg-white/10 rounded-xl transition-colors"
+                  disabled={isSubmitting}
+                >
+                  <FiX className="w-5 h-5 text-gray-400" />
+                </button>
+              </div>
+            </div>
+
+            {success ? (
+              <div className="p-8 text-center">
+                <div className="w-20 h-20 bg-green-500/20 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <FiCheckCircle className="w-10 h-10 text-green-400" />
+                </div>
+                <h4 className="text-xl font-bold text-white mb-2">Enquiry Sent!</h4>
+                <p className="text-gray-400">
+                  Your enquiry has been sent to {institution.name}. 
+                  They will get back to you shortly.
+                </p>
+              </div>
+            ) : (
+              <form onSubmit={handleSubmit} className="p-6 space-y-4">
+                {error && (
+                  <div className="p-3 bg-red-500/20 border border-red-500/30 rounded-xl text-red-400 text-sm flex items-center gap-2">
+                    <FiAlertCircle className="w-4 h-4 flex-shrink-0" />
+                    {error}
+                  </div>
+                )}
+
+                <div>
+                  <label className="text-sm text-gray-400 block mb-1.5">Subject <span className="text-red-400">*</span></label>
+                  <input
+                    type="text"
+                    name="subject"
+                    className="w-full px-4 py-2.5 bg-gray-800/80 border border-white/10 rounded-xl text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500"
+                    value={formData.subject}
+                    onChange={handleChange}
+                    required
+                    disabled={isSubmitting}
+                  />
+                </div>
+
+                <div>
+                  <label className="text-sm text-gray-400 block mb-1.5">Message <span className="text-red-400">*</span></label>
+                  <textarea
+                    name="message"
+                    rows={4}
+                    className="w-full px-4 py-2.5 bg-gray-800/80 border border-white/10 rounded-xl text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 resize-none"
+                    placeholder="Write your enquiry details here..."
+                    value={formData.message}
+                    onChange={handleChange}
+                    required
+                    disabled={isSubmitting}
+                  />
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="text-sm text-gray-400 block mb-1.5">Student Name <span className="text-red-400">*</span></label>
+                    <input
+                      type="text"
+                      name="studentName"
+                      className="w-full px-4 py-2.5 bg-gray-800/80 border border-white/10 rounded-xl text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500"
+                      value={formData.studentName}
+                      onChange={handleChange}
+                      required
+                      disabled={isSubmitting}
+                    />
+                  </div>
+                  <div>
+                    <label className="text-sm text-gray-400 block mb-1.5">Student Class <span className="text-red-400">*</span></label>
+                    <input
+                      type="text"
+                      name="studentClass"
+                      className="w-full px-4 py-2.5 bg-gray-800/80 border border-white/10 rounded-xl text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500"
+                      value={formData.studentClass}
+                      onChange={handleChange}
+                      required
+                      disabled={isSubmitting}
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="text-sm text-gray-400 block mb-1.5">
+                      <FiMail className="inline w-3 h-3 mr-1" />
+                      Your Email
+                    </label>
+                    <input
+                      type="email"
+                      name="parentEmail"
+                      className="w-full px-4 py-2.5 bg-gray-800/80 border border-white/10 rounded-xl text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500"
+                      placeholder="your@email.com"
+                      value={formData.parentEmail}
+                      onChange={handleChange}
+                      disabled={isSubmitting}
+                    />
+                  </div>
+                  <div>
+                    <label className="text-sm text-gray-400 block mb-1.5">
+                      <FiPhone className="inline w-3 h-3 mr-1" />
+                      Your Phone
+                    </label>
+                    <input
+                      type="tel"
+                      name="parentPhone"
+                      className="w-full px-4 py-2.5 bg-gray-800/80 border border-white/10 rounded-xl text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500"
+                      placeholder="+91 9876543210"
+                      value={formData.parentPhone}
+                      onChange={handleChange}
+                      disabled={isSubmitting}
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="text-sm text-gray-400 block mb-1.5">Preferred Contact <span className="text-red-400">*</span></label>
+                  <div className="flex gap-4 flex-wrap">
+                    <label className="flex items-center gap-2 text-white cursor-pointer">
+                      <input
+                        type="radio"
+                        name="preferredContact"
+                        value="email"
+                        checked={formData.preferredContact === 'email'}
+                        onChange={handleChange}
+                        disabled={isSubmitting}
+                        className="text-purple-500 focus:ring-purple-500"
+                      />
+                      <FiMail className="w-3 h-3" />
+                      Email
+                    </label>
+                    <label className="flex items-center gap-2 text-white cursor-pointer">
+                      <input
+                        type="radio"
+                        name="preferredContact"
+                        value="phone"
+                        checked={formData.preferredContact === 'phone'}
+                        onChange={handleChange}
+                        disabled={isSubmitting}
+                        className="text-purple-500 focus:ring-purple-500"
+                      />
+                      <FiPhone className="w-3 h-3" />
+                      Phone
+                    </label>
+                    <label className="flex items-center gap-2 text-white cursor-pointer">
+                      <input
+                        type="radio"
+                        name="preferredContact"
+                        value="both"
+                        checked={formData.preferredContact === 'both'}
+                        onChange={handleChange}
+                        disabled={isSubmitting}
+                        className="text-purple-500 focus:ring-purple-500"
+                      />
+                      Both
+                    </label>
+                  </div>
+                </div>
+
+                {/* Institution Contact Info Display */}
+                {(institution.email || institution.phone) && (
+                  <div className="p-3 bg-white/5 rounded-xl border border-white/10">
+                    <p className="text-xs text-gray-400 mb-1">Institution Contact:</p>
+                    <div className="flex flex-wrap gap-3 text-sm">
+                      {institution.email && (
+                        <span className="text-gray-300 flex items-center gap-1">
+                          <FiMail className="w-3 h-3 text-orange-400" />
+                          {institution.email}
+                        </span>
+                      )}
+                      {institution.phone && (
+                        <span className="text-gray-300 flex items-center gap-1">
+                          <FiPhone className="w-3 h-3 text-orange-400" />
+                          {institution.phone}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                <button
+                  type="submit"
+                  disabled={isSubmitting}
+                  className="w-full py-3 bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-xl hover:from-purple-600 hover:to-pink-600 transition-all shadow-lg shadow-purple-500/20 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {isSubmitting ? (
+                    <>
+                      <FiLoader className="w-4 h-4 animate-spin" />
+                      Sending...
+                    </>
+                  ) : (
+                    <>
+                      <FiSend className="w-4 h-4" />
+                      Send Enquiry
+                    </>
+                  )}
+                </button>
+              </form>
+            )}
+          </motion.div>
+        </motion.div>
+      )}
+    </AnimatePresence>
+  );
+});
+
+EnquiryModal.displayName = 'EnquiryModal';
 
 const ParentDashboard = () => {
   const navigate = useNavigate();
@@ -29,7 +316,7 @@ const ParentDashboard = () => {
     sortBy: 'rating'
   });
 
-  // Parent data from localStorage - initialize with null to track loading state
+  // Parent data from localStorage
   const [parentData, setParentData] = useState(null);
   const [isParentDataLoaded, setIsParentDataLoaded] = useState(false);
 
@@ -46,26 +333,17 @@ const ParentDashboard = () => {
   const [enquiries, setEnquiries] = useState([]);
   const [showEnquiryModal, setShowEnquiryModal] = useState(false);
   const [selectedInstitution, setSelectedInstitution] = useState(null);
-  const [enquiryForm, setEnquiryForm] = useState({
-    subject: '',
-    message: '',
-    studentName: '',
-    studentClass: '',
-    parentEmail: '',
-    parentPhone: '',
-    preferredContact: 'email'
-  });
   const [isSubmittingEnquiry, setIsSubmittingEnquiry] = useState(false);
   const [enquirySuccess, setEnquirySuccess] = useState(false);
   const [enquiryError, setEnquiryError] = useState(null);
+  const [isLoadingEnquiries, setIsLoadingEnquiries] = useState(true);
 
-  // Add ref to prevent duplicate API calls
+  // Add refs to prevent duplicate API calls
   const fetchCalledRef = useRef(false);
   const currentTypeRef = useRef('');
-  const isDataLoadedRef = useRef(false);
   const initialFetchDoneRef = useRef(false);
 
-  // Load parent data from localStorage on mount - ONLY ONCE
+  // Load parent data from localStorage
   useEffect(() => {
     const loadParentData = () => {
       try {
@@ -74,13 +352,9 @@ const ParentDashboard = () => {
         
         if (storedData) {
           const data = JSON.parse(storedData);
-          console.log('📋 Parsed parent data:', data);
-          console.log('📋 Institution Type from storage:', data.institutionType);
           
-          // Ensure institutionType is properly set
           let institutionType = data.institutionType || 'Schools';
           
-          // Normalize the type
           if (typeof institutionType === 'string') {
             const trimmed = institutionType.trim();
             if (trimmed.toLowerCase() === 'all teachers' || 
@@ -135,31 +409,66 @@ const ParentDashboard = () => {
     loadParentData();
   }, []);
 
-  // Load enquiries from localStorage
+  // Load enquiries from API or localStorage
   useEffect(() => {
-    const loadEnquiries = () => {
+    const loadEnquiries = async () => {
+      setIsLoadingEnquiries(true);
       try {
+        // Check if parent token exists
+        const token = localStorage.getItem('parentToken');
+        if (token) {
+          console.log('🔍 Fetching enquiries from API...');
+          const response = await enquiryApi.getParentEnquiries();
+          if (response.success && response.data) {
+            console.log(`✅ Loaded ${response.data.length} enquiries from API`);
+            setEnquiries(response.data);
+            setIsLoadingEnquiries(false);
+            return;
+          }
+        }
+        
+        // Fallback to localStorage
+        console.log('📂 Loading enquiries from localStorage...');
         const stored = localStorage.getItem('parentEnquiries');
         if (stored) {
-          setEnquiries(JSON.parse(stored));
+          const localEnquiries = JSON.parse(stored);
+          setEnquiries(localEnquiries);
+          console.log(`✅ Loaded ${localEnquiries.length} enquiries from localStorage`);
+        } else {
+          setEnquiries([]);
         }
       } catch (error) {
-        console.error('Error loading enquiries:', error);
+        console.error('❌ Error loading enquiries:', error);
+        // Try localStorage as fallback
+        try {
+          const stored = localStorage.getItem('parentEnquiries');
+          if (stored) {
+            setEnquiries(JSON.parse(stored));
+          }
+        } catch (localError) {
+          console.error('Error loading from localStorage:', localError);
+          setEnquiries([]);
+        }
+      } finally {
+        setIsLoadingEnquiries(false);
       }
     };
+    
     loadEnquiries();
   }, []);
 
-  // Save enquiries to localStorage
+  // Save enquiries to localStorage as backup
   useEffect(() => {
-    try {
-      localStorage.setItem('parentEnquiries', JSON.stringify(enquiries));
-    } catch (error) {
-      console.error('Error saving enquiries:', error);
+    if (enquiries.length > 0) {
+      try {
+        localStorage.setItem('parentEnquiries', JSON.stringify(enquiries));
+      } catch (error) {
+        console.error('Error saving enquiries to localStorage:', error);
+      }
     }
   }, [enquiries]);
 
-  // ============ FIXED DATA EXTRACTION ============
+  // ============ DATA EXTRACTION ============
   const extractDataFromResponse = (response, type) => {
     console.log(`📥 Extracting ${type} data from response:`, response);
     
@@ -174,14 +483,10 @@ const ParentDashboard = () => {
     }
 
     if (response.success === true) {
-      console.log('🔍 Response has success: true');
-      
       const possibleDataKeys = ['data', 'teachers', 'users', 'items', 'results', 'records'];
       
       for (const key of possibleDataKeys) {
         if (response[key]) {
-          console.log(`🔍 Found response.${key}:`, response[key]);
-          
           if (Array.isArray(response[key])) {
             console.log(`✅ response.${key} is an array with ${response[key].length} items`);
             return response[key];
@@ -205,8 +510,6 @@ const ParentDashboard = () => {
     }
 
     if (response.data) {
-      console.log('🔍 Found response.data:', response.data);
-      
       if (Array.isArray(response.data)) {
         console.log(`✅ response.data is an array with ${response.data.length} items`);
         return response.data;
@@ -228,7 +531,6 @@ const ParentDashboard = () => {
     }
 
     if (type === 'All Teachers' && response.teachers) {
-      console.log('🔍 Found response.teachers:', response.teachers);
       if (Array.isArray(response.teachers)) {
         console.log(`✅ response.teachers is an array with ${response.teachers.length} items`);
         return response.teachers;
@@ -249,7 +551,7 @@ const ParentDashboard = () => {
     return [];
   };
 
-  // ============ IMPROVED DATA TRANSFORMATION ============
+  // ============ DATA TRANSFORMATION ============
   const transformInstitutionData = (item, index, type) => {
     const fieldMappings = {
       'Schools': {
@@ -465,8 +767,6 @@ const ParentDashboard = () => {
       
       if (transformedData.length > 0) {
         console.log('📋 First transformed item:', transformedData[0]);
-      } else {
-        console.warn(`⚠️ No data transformed for ${type}!`);
       }
 
       setInstitutions(transformedData);
@@ -477,8 +777,6 @@ const ParentDashboard = () => {
         bookmarksCount: bookmarkedInstitutions.length
       });
 
-      isDataLoadedRef.current = true;
-
     } catch (error) {
       console.error('❌ Error fetching institutions:', error);
       setError(error.message || 'Failed to load institutions');
@@ -487,7 +785,7 @@ const ParentDashboard = () => {
     } finally {
       setIsLoading(false);
     }
-  }, [parentData]);
+  }, [parentData, bookmarkedInstitutions]);
 
   // Load bookmarks from localStorage
   useEffect(() => {
@@ -529,10 +827,8 @@ const ParentDashboard = () => {
         initialFetchDoneRef.current = true;
         fetchInstitutions();
       }
-    } else if (isParentDataLoaded) {
-      console.warn('⚠️ Parent data loaded but no institution type set');
     }
-  }, [isParentDataLoaded, parentData]);
+  }, [isParentDataLoaded, parentData, fetchInstitutions]);
 
   // Filter institutions
   useEffect(() => {
@@ -575,94 +871,94 @@ const ParentDashboard = () => {
   // ============ ENQUIRY FUNCTIONS ============
   const openEnquiryModal = (institution) => {
     setSelectedInstitution(institution);
-    setEnquiryForm({
-      subject: `Enquiry about ${institution.name}`,
-      message: '',
-      studentName: parentData?.studentName || '',
-      studentClass: parentData?.studentClass || '',
-      parentEmail: parentData?.email || '',
-      parentPhone: parentData?.phone || '',
-      preferredContact: 'email'
-    });
     setEnquirySuccess(false);
     setEnquiryError(null);
     setShowEnquiryModal(true);
   };
 
-  const handleEnquirySubmit = async (e) => {
-    e.preventDefault();
+  const handleEnquirySubmit = async (formData) => {
     setIsSubmittingEnquiry(true);
     setEnquiryError(null);
 
-    // Validate email
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (enquiryForm.parentEmail && !emailRegex.test(enquiryForm.parentEmail)) {
-      setEnquiryError('Please enter a valid email address');
-      setIsSubmittingEnquiry(false);
-      return;
-    }
-
-    // Validate phone 
-    const phoneRegex = /^[0-9+\-\s()]{10,15}$/;
-    if (enquiryForm.parentPhone && !phoneRegex.test(enquiryForm.parentPhone)) {
-      setEnquiryError('Please enter a valid phone number (10-15 digits)');
-      setIsSubmittingEnquiry(false);
-      return;
-    }
-
     try {
-      // Create enquiry object
-      const newEnquiry = {
-        id: `enq_${Date.now()}`,
+      // Prepare data for API
+      const enquiryData = {
         institutionId: selectedInstitution.id,
         institutionName: selectedInstitution.name,
         institutionType: selectedInstitution.type,
         institutionEmail: selectedInstitution.email || null,
         institutionPhone: selectedInstitution.phone || null,
         parentName: parentData?.parentName || 'Parent',
-        parentEmail: enquiryForm.parentEmail || parentData?.email || '',
-        parentPhone: enquiryForm.parentPhone || parentData?.phone || '',
-        studentName: enquiryForm.studentName,
-        studentClass: enquiryForm.studentClass,
-        subject: enquiryForm.subject,
-        message: enquiryForm.message,
-        preferredContact: enquiryForm.preferredContact,
-        status: 'pending', // pending, responded, closed
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-        responses: []
+        parentEmail: formData.parentEmail || parentData?.email || '',
+        parentPhone: formData.parentPhone || parentData?.phone || '',
+        studentName: formData.studentName,
+        studentClass: formData.studentClass,
+        subject: formData.subject,
+        message: formData.message,
+        preferredContact: formData.preferredContact,
       };
 
-      // In a real app, you would send this to your backend
-      // await api.sendEnquiry(newEnquiry);
+      console.log('📤 Submitting enquiry:', enquiryData);
+
+      // Submit to backend
+      const response = await enquiryApi.submitEnquiry(enquiryData);
       
-      // For demo, save to localStorage
-      setEnquiries(prev => [newEnquiry, ...prev]);
-      
-      setEnquirySuccess(true);
-      setIsSubmittingEnquiry(false);
-      
-      // Close modal after success
-      setTimeout(() => {
-        setShowEnquiryModal(false);
-        setEnquirySuccess(false);
-      }, 2000);
+      if (response.success) {
+        console.log('✅ Enquiry submitted successfully:', response.data);
+        
+        // Add to local state
+        setEnquiries(prev => [response.data, ...prev]);
+        
+        setEnquirySuccess(true);
+        setIsSubmittingEnquiry(false);
+        
+        // Close modal after success
+        setTimeout(() => {
+          setShowEnquiryModal(false);
+          setEnquirySuccess(false);
+          setSelectedInstitution(null);
+        }, 2000);
+      } else {
+        throw new Error(response.message || 'Failed to submit enquiry');
+      }
       
     } catch (error) {
-      console.error('Error submitting enquiry:', error);
+      console.error('❌ Error submitting enquiry:', error);
       setEnquiryError(error.message || 'Failed to send enquiry. Please try again.');
       setIsSubmittingEnquiry(false);
     }
   };
 
-  const updateEnquiryStatus = (enquiryId, newStatus) => {
-    setEnquiries(prev => 
-      prev.map(enq => 
-        enq.id === enquiryId 
-          ? { ...enq, status: newStatus, updatedAt: new Date().toISOString() }
-          : enq
-      )
-    );
+  const updateEnquiryStatus = async (enquiryId, newStatus) => {
+    try {
+      console.log(`🔄 Updating enquiry ${enquiryId} to ${newStatus}`);
+      
+      // Update in backend
+      const response = await enquiryApi.updateEnquiryStatus(enquiryId, newStatus);
+      
+      if (response.success) {
+        // Update local state
+        setEnquiries(prev => 
+          prev.map(enq => 
+            enq.id === enquiryId 
+              ? { ...enq, status: newStatus, updatedAt: new Date().toISOString() }
+              : enq
+          )
+        );
+        console.log('✅ Enquiry status updated successfully');
+      }
+    } catch (error) {
+      console.error('❌ Error updating enquiry status:', error);
+      
+      // Fallback to local update
+      setEnquiries(prev => 
+        prev.map(enq => 
+          enq.id === enquiryId 
+            ? { ...enq, status: newStatus, updatedAt: new Date().toISOString() }
+            : enq
+        )
+      );
+    }
   };
 
   const getStatusColor = (status) => {
@@ -934,234 +1230,6 @@ const ParentDashboard = () => {
     </div>
   );
 
-  // ============ ENQUIRY MODAL ============
-  const EnquiryModal = () => {
-    if (!selectedInstitution) return null;
-
-    return (
-      <AnimatePresence>
-        {showEnquiryModal && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm"
-            onClick={() => !isSubmittingEnquiry && setShowEnquiryModal(false)}
-          >
-            <motion.div
-              initial={{ scale: 0.9, y: 20 }}
-              animate={{ scale: 1, y: 0 }}
-              exit={{ scale: 0.9, y: 20 }}
-              className="w-full max-w-lg bg-gray-900 rounded-3xl border border-white/10 shadow-2xl overflow-hidden max-h-[100vh] overflow-y-auto"
-              onClick={(e) => e.stopPropagation()}
-            >
-              <div className="p-6 border-b border-white/10 sticky top-0 bg-gray-900 z-10">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <h3 className="text-xl font-bold text-white">Send Enquiry</h3>
-                    <p className="text-sm text-gray-400 mt-1">
-                      To: <span className="text-orange-300">{selectedInstitution.name}</span>
-                    </p>
-                  </div>
-                  <button
-                    onClick={() => setShowEnquiryModal(false)}
-                    className="p-2 hover:bg-white/10 rounded-xl transition-colors"
-                    disabled={isSubmittingEnquiry}
-                  >
-                    <FiX className="w-5 h-5 text-gray-400" />
-                  </button>
-                </div>
-              </div>
-
-              {enquirySuccess ? (
-                <div className="p-8 text-center">
-                  <div className="w-20 h-20 bg-green-500/20 rounded-full flex items-center justify-center mx-auto mb-4">
-                    <FiCheckCircle className="w-10 h-10 text-green-400" />
-                  </div>
-                  <h4 className="text-xl font-bold text-white mb-2">Enquiry Sent!</h4>
-                  <p className="text-gray-400">
-                    Your enquiry has been sent to {selectedInstitution.name}. 
-                    They will get back to you shortly.
-                  </p>
-                </div>
-              ) : (
-                <form onSubmit={handleEnquirySubmit} className="p-6 space-y-4">
-                  {enquiryError && (
-                    <div className="p-3 bg-red-500/20 border border-red-500/30 rounded-xl text-red-400 text-sm flex items-center gap-2">
-                      <FiAlertCircle className="w-4 h-4 flex-shrink-0" />
-                      {enquiryError}
-                    </div>
-                  )}
-
-                  <div>
-                    <label className="text-sm text-gray-400 block mb-1.5">Subject <span className="text-red-400">*</span></label>
-                    <input
-                      type="text"
-                      className="w-full px-4 py-2.5 bg-gray-800/80 border border-white/10 rounded-xl text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500"
-                      value={enquiryForm.subject}
-                      onChange={(e) => setEnquiryForm({...enquiryForm, subject: e.target.value})}
-                      required
-                      disabled={isSubmittingEnquiry}
-                    />
-                  </div>
-
-                  <div>
-                    <label className="text-sm text-gray-400 block mb-1.5">Message <span className="text-red-400">*</span></label>
-                    <textarea
-                      rows={4}
-                      className="w-full px-4 py-2.5 bg-gray-800/80 border border-white/10 rounded-xl text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 resize-none"
-                      placeholder="Write your enquiry details here..."
-                      value={enquiryForm.message}
-                      onChange={(e) => setEnquiryForm({...enquiryForm, message: e.target.value})}
-                      required
-                      disabled={isSubmittingEnquiry}
-                    />
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <label className="text-sm text-gray-400 block mb-1.5">Student Name <span className="text-red-400">*</span></label>
-                      <input
-                        type="text"
-                        className="w-full px-4 py-2.5 bg-gray-800/80 border border-white/10 rounded-xl text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500"
-                        value={enquiryForm.studentName}
-                        onChange={(e) => setEnquiryForm({...enquiryForm, studentName: e.target.value})}
-                        required
-                        disabled={isSubmittingEnquiry}
-                      />
-                    </div>
-                    <div>
-                      <label className="text-sm text-gray-400 block mb-1.5">Student Class <span className="text-red-400">*</span></label>
-                      <input
-                        type="text"
-                        className="w-full px-4 py-2.5 bg-gray-800/80 border border-white/10 rounded-xl text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500"
-                        value={enquiryForm.studentClass}
-                        onChange={(e) => setEnquiryForm({...enquiryForm, studentClass: e.target.value})}
-                        required
-                        disabled={isSubmittingEnquiry}
-                      />
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <label className="text-sm text-gray-400 block mb-1.5">
-                        <FiMail className="inline w-3 h-3 mr-1" />
-                        Your Email
-                      </label>
-                      <input
-                        type="email"
-                        className="w-full px-4 py-2.5 bg-gray-800/80 border border-white/10 rounded-xl text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500"
-                        placeholder="your@email.com"
-                        value={enquiryForm.parentEmail}
-                        onChange={(e) => setEnquiryForm({...enquiryForm, parentEmail: e.target.value})}
-                        disabled={isSubmittingEnquiry}
-                      />
-                    </div>
-                    <div>
-                      <label className="text-sm text-gray-400 block mb-1.5">
-                        <FiPhone className="inline w-3 h-3 mr-1" />
-                        Your Phone
-                      </label>
-                      <input
-                        type="tel"
-                        className="w-full px-4 py-2.5 bg-gray-800/80 border border-white/10 rounded-xl text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500"
-                        placeholder="+91 9876543210"
-                        value={enquiryForm.parentPhone}
-                        onChange={(e) => setEnquiryForm({...enquiryForm, parentPhone: e.target.value})}
-                        disabled={isSubmittingEnquiry}
-                      />
-                    </div>
-                  </div>
-
-                  <div>
-                    <label className="text-sm text-gray-400 block mb-1.5">Preferred Contact <span className="text-red-400">*</span></label>
-                    <div className="flex gap-4 flex-wrap">
-                      <label className="flex items-center gap-2 text-white cursor-pointer">
-                        <input
-                          type="radio"
-                          value="email"
-                          checked={enquiryForm.preferredContact === 'email'}
-                          onChange={(e) => setEnquiryForm({...enquiryForm, preferredContact: e.target.value})}
-                          disabled={isSubmittingEnquiry}
-                          className="text-purple-500 focus:ring-purple-500"
-                        />
-                        <FiMail className="w-3 h-3" />
-                        Email
-                      </label>
-                      <label className="flex items-center gap-2 text-white cursor-pointer">
-                        <input
-                          type="radio"
-                          value="phone"
-                          checked={enquiryForm.preferredContact === 'phone'}
-                          onChange={(e) => setEnquiryForm({...enquiryForm, preferredContact: e.target.value})}
-                          disabled={isSubmittingEnquiry}
-                          className="text-purple-500 focus:ring-purple-500"
-                        />
-                        <FiPhone className="w-3 h-3" />
-                        Phone
-                      </label>
-                      <label className="flex items-center gap-2 text-white cursor-pointer">
-                        <input
-                          type="radio"
-                          value="both"
-                          checked={enquiryForm.preferredContact === 'both'}
-                          onChange={(e) => setEnquiryForm({...enquiryForm, preferredContact: e.target.value})}
-                          disabled={isSubmittingEnquiry}
-                          className="text-purple-500 focus:ring-purple-500"
-                        />
-                        Both
-                      </label>
-                    </div>
-                  </div>
-
-                  {/* Institution Contact Info Display */}
-                  {(selectedInstitution.email || selectedInstitution.phone) && (
-                    <div className="p-3 bg-white/5 rounded-xl border border-white/10">
-                      <p className="text-xs text-gray-400 mb-1">Institution Contact:</p>
-                      <div className="flex flex-wrap gap-3 text-sm">
-                        {selectedInstitution.email && (
-                          <span className="text-gray-300 flex items-center gap-1">
-                            <FiMail className="w-3 h-3 text-orange-400" />
-                            {selectedInstitution.email}
-                          </span>
-                        )}
-                        {selectedInstitution.phone && (
-                          <span className="text-gray-300 flex items-center gap-1">
-                            <FiPhone className="w-3 h-3 text-orange-400" />
-                            {selectedInstitution.phone}
-                          </span>
-                        )}
-                      </div>
-                    </div>
-                  )}
-
-                  <button
-                    type="submit"
-                    disabled={isSubmittingEnquiry}
-                    className="w-full py-3 bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-xl hover:from-purple-600 hover:to-pink-600 transition-all shadow-lg shadow-purple-500/20 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    {isSubmittingEnquiry ? (
-                      <>
-                        <FiLoader className="w-4 h-4 animate-spin" />
-                        Sending...
-                      </>
-                    ) : (
-                      <>
-                        <FiSend className="w-4 h-4" />
-                        Send Enquiry
-                      </>
-                    )}
-                  </button>
-                </form>
-              )}
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-    );
-  };
-
   // ============ DASHBOARD ============
   const renderDashboard = () => {
     const pendingEnquiries = enquiries.filter(enq => enq.status === 'pending').length;
@@ -1280,13 +1348,6 @@ const ParentDashboard = () => {
                         <p className="text-sm text-gray-400 truncate">
                           To: {enquiry.institutionName} • {new Date(enquiry.createdAt).toLocaleDateString()}
                         </p>
-                        {enquiry.parentEmail && (
-                          <p className="text-xs text-gray-500 truncate">
-                            <FiMail className="inline w-3 h-3 mr-1" />
-                            {enquiry.parentEmail}
-                            {enquiry.parentPhone && ` • ${enquiry.parentPhone}`}
-                          </p>
-                        )}
                       </div>
                     </div>
                     <div className="flex items-center gap-3 flex-shrink-0">
@@ -1341,7 +1402,8 @@ const ParentDashboard = () => {
                     transition={{ duration: 0.3, delay: index * 0.1 }}
                   >
                     <InstitutionCard institution={inst} />
-                  </motion.div>                ))}
+                  </motion.div>
+                ))}
             </div>
           )}
         </motion.div>
@@ -1506,6 +1568,17 @@ const ParentDashboard = () => {
     const pendingEnquiries = enquiries.filter(enq => enq.status === 'pending');
     const respondedEnquiries = enquiries.filter(enq => enq.status === 'responded');
     const closedEnquiries = enquiries.filter(enq => enq.status === 'closed');
+
+    if (isLoadingEnquiries) {
+      return (
+        <div className="flex items-center justify-center min-h-[400px]">
+          <div className="text-center">
+            <FiLoader className="w-12 h-12 text-purple-500 animate-spin mx-auto mb-4" />
+            <p className="text-gray-400">Loading your enquiries...</p>
+          </div>
+        </div>
+      );
+    }
 
     return (
       <div className="space-y-6">
@@ -1862,7 +1935,21 @@ const ParentDashboard = () => {
       </main>
 
       {/* Enquiry Modal */}
-      <EnquiryModal />
+      <EnquiryModal
+        isOpen={showEnquiryModal}
+        onClose={() => {
+          if (!isSubmittingEnquiry) {
+            setShowEnquiryModal(false);
+            setSelectedInstitution(null);
+          }
+        }}
+        institution={selectedInstitution}
+        parentData={parentData}
+        onSubmit={handleEnquirySubmit}
+        isSubmitting={isSubmittingEnquiry}
+        error={enquiryError}
+        success={enquirySuccess}
+      />
     </div>
   );
 };
