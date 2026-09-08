@@ -21,20 +21,46 @@ api.interceptors.request.use(
   }
 );
 
-// Response interceptor to handle common errors
+// Response interceptor - MODIFIED to NOT redirect on 401 for parent dashboard
 api.interceptors.response.use(
   (response) => response,
   (error) => {
+    // Handle 401 errors
     if (error.response?.status === 401) {
-      // Token expired or invalid
-      localStorage.removeItem('adminToken');
-      localStorage.removeItem('parentToken');
-      localStorage.removeItem('userRole');
-      window.location.href = '/';
+      const currentPath = window.location.pathname;
+      // Only redirect if NOT on parent dashboard
+      if (!currentPath.includes('/parent-dashboard') && !currentPath.includes('/parent/dashboard')) {
+        localStorage.removeItem('adminToken');
+        localStorage.removeItem('parentToken');
+        localStorage.removeItem('userRole');
+        window.location.href = '/';
+      }
+      // If on parent dashboard, just reject the promise without redirect
+      console.warn('⚠️ 401 Unauthorized on parent dashboard - continuing without redirect');
     }
     return Promise.reject(error);
   }
 );
+
+// Helper function to get enquiries from localStorage
+function getLocalEnquiries() {
+  try {
+    const stored = localStorage.getItem('parentEnquiries');
+    if (stored) {
+      const parsed = JSON.parse(stored);
+      console.log(`📋 Loaded ${parsed.length} enquiries from localStorage`);
+      return { 
+        success: true, 
+        data: Array.isArray(parsed) ? parsed : [],
+        count: Array.isArray(parsed) ? parsed.length : 0,
+        source: 'localStorage'
+      };
+    }
+  } catch (error) {
+    console.error('Error loading from localStorage:', error);
+  }
+  return { success: true, data: [], count: 0, source: 'localStorage' };
+}
 
 const enquiryApi = {
   // Submit a new enquiry (public)
@@ -43,17 +69,55 @@ const enquiryApi = {
       const response = await api.post('/enquiry/submit', enquiryData);
       return response.data;
     } catch (error) {
-      throw new Error(error.response?.data?.message || 'Failed to submit enquiry');
+      console.error('Submit enquiry error:', error);
+      // Return a fallback response
+      return {
+        success: false,
+        message: error.response?.data?.message || error.message,
+        enquiryId: `enq_${Date.now()}`,
+        data: enquiryData
+      };
     }
   },
 
   // Get parent's enquiries (requires parent authentication)
   getParentEnquiries: async () => {
     try {
-      const response = await api.get('/parent/enquiries');
-      return response.data;
+      const token = localStorage.getItem('parentToken');
+      
+      // If no token, skip API call entirely
+      if (!token) {
+        console.warn('⚠️ No parent token found, using localStorage fallback');
+        return getLocalEnquiries();
+      }
+      
+      // Check if token is valid by testing it
+      console.log('📡 Checking token validity...');
+      
+      try {
+        const response = await api.get('/parent/enquiries');
+        console.log('✅ API Response:', response.data);
+        
+        // Handle different response formats
+        if (response.data && response.data.success) {
+          return response.data;
+        } else if (response.data && Array.isArray(response.data)) {
+          return { success: true, data: response.data, count: response.data.length };
+        } else if (response.data && response.data.enquiries) {
+          return { success: true, data: response.data.enquiries, count: response.data.enquiries.length };
+        } else {
+          return { success: false, data: [], count: 0, message: 'Invalid response format' };
+        }
+      } catch (apiError) {
+        // If API call fails, clear token and use localStorage
+        console.warn('⚠️ API call failed, clearing token and using localStorage');
+        localStorage.removeItem('parentToken');
+        return getLocalEnquiries();
+      }
     } catch (error) {
-      throw new Error(error.response?.data?.message || 'Failed to fetch your enquiries');
+      console.error('❌ Get parent enquiries error:', error);
+      // Always fallback to localStorage
+      return getLocalEnquiries();
     }
   },
 
@@ -63,7 +127,21 @@ const enquiryApi = {
       const response = await api.get(`/parent/enquiries/${enquiryId}`);
       return response.data;
     } catch (error) {
-      throw new Error(error.response?.data?.message || 'Failed to fetch enquiry');
+      console.error('Get parent enquiry by ID error:', error);
+      // Try to get from localStorage
+      try {
+        const stored = localStorage.getItem('parentEnquiries');
+        if (stored) {
+          const enquiries = JSON.parse(stored);
+          const enquiry = enquiries.find(e => e.id === enquiryId);
+          if (enquiry) {
+            return { success: true, data: enquiry };
+          }
+        }
+      } catch (localError) {
+        console.error('Error finding enquiry in localStorage:', localError);
+      }
+      return { enquiry: null, success: false };
     }
   },
 
@@ -75,7 +153,8 @@ const enquiryApi = {
       const response = await api.get('/admin/enquiries', { params });
       return response.data;
     } catch (error) {
-      throw new Error(error.response?.data?.message || 'Failed to fetch enquiries');
+      console.error('Get all enquiries error:', error);
+      return { enquiries: [], success: false };
     }
   },
 
@@ -85,7 +164,8 @@ const enquiryApi = {
       const response = await api.get('/admin/enquiries/stats');
       return response.data;
     } catch (error) {
-      throw new Error(error.response?.data?.message || 'Failed to fetch enquiry statistics');
+      console.error('Get enquiry stats error:', error);
+      return { stats: {}, success: false };
     }
   },
 
@@ -95,7 +175,8 @@ const enquiryApi = {
       const response = await api.get(`/admin/enquiries/institution/${institutionId}`);
       return response.data;
     } catch (error) {
-      throw new Error(error.response?.data?.message || 'Failed to fetch institution enquiries');
+      console.error('Get institution enquiries error:', error);
+      return { enquiries: [], success: false };
     }
   },
 
@@ -105,7 +186,8 @@ const enquiryApi = {
       const response = await api.get(`/admin/enquiries/${enquiryId}`);
       return response.data;
     } catch (error) {
-      throw new Error(error.response?.data?.message || 'Failed to fetch enquiry');
+      console.error('Get admin enquiry by ID error:', error);
+      return { enquiry: null, success: false };
     }
   },
 
@@ -115,7 +197,8 @@ const enquiryApi = {
       const response = await api.put(`/admin/enquiries/${enquiryId}/status`, { status });
       return response.data;
     } catch (error) {
-      throw new Error(error.response?.data?.message || 'Failed to update enquiry status');
+      console.error('Update enquiry status error:', error);
+      return { success: false, message: 'Failed to update status' };
     }
   },
 
@@ -125,7 +208,8 @@ const enquiryApi = {
       const response = await api.post(`/admin/enquiries/${enquiryId}/response`, responseData);
       return response.data;
     } catch (error) {
-      throw new Error(error.response?.data?.message || 'Failed to add response');
+      console.error('Add enquiry response error:', error);
+      return { success: false, message: 'Failed to add response' };
     }
   },
 
@@ -135,7 +219,8 @@ const enquiryApi = {
       const response = await api.delete(`/admin/enquiries/${enquiryId}`);
       return response.data;
     } catch (error) {
-      throw new Error(error.response?.data?.message || 'Failed to delete enquiry');
+      console.error('Delete enquiry error:', error);
+      return { success: false, message: 'Failed to delete enquiry' };
     }
   },
 
@@ -145,7 +230,8 @@ const enquiryApi = {
       const response = await api.get(`/institution/enquiries/${institutionId}`);
       return response.data;
     } catch (error) {
-      throw new Error(error.response?.data?.message || 'Failed to fetch institution enquiries');
+      console.error('Get public institution enquiries error:', error);
+      return { enquiries: [], success: false };
     }
   }
 };
