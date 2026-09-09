@@ -1,8 +1,14 @@
-// Dashboard.jsx
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
-import { FiLogOut, FiUser, FiHome, FiPlus, FiUsers, FiCalendar, FiClock, FiBarChart2, FiMenu, FiX, FiCheckCircle, FiXCircle, FiAlertCircle, FiLoader,FiFileText, FiMail, FiPhone, FiMapPin, FiBookOpen,FiAward, FiBriefcase, FiFlag, FiCheck, FiClipboard,FiInfo, FiDownload, FiArrowRight, FiRefreshCw} from 'react-icons/fi';
+import { 
+  FiLogOut, FiUser, FiHome, FiPlus, FiUsers, FiCalendar, FiClock, 
+  FiMenu, FiX, FiCheckCircle, FiXCircle, FiAlertCircle, 
+  FiLoader, FiFileText, FiMail, FiPhone, FiMapPin, FiBookOpen, 
+  FiAward, FiBriefcase, FiFlag, FiCheck, FiClipboard, FiInfo, 
+  FiArrowRight, FiRefreshCw, FiMessageSquare, FiInbox,
+  FiEye, FiCopy, FiAtSign, FiSearch
+} from 'react-icons/fi';
 import { authApis } from '../services/allApis';
 import registerApi from '../services/RegisterApi';
 import { schoolApi } from '../services/schoolApi';
@@ -11,8 +17,10 @@ import { puCollegeApi } from '../services/pucollegeApi';
 import { TuitionCoachingApi } from '../services/TuitionCoachingApi';
 import { teacherApi } from '../services/TeacherApi';
 import { toast } from 'react-toastify';
+import enquiryApi from '../services/EnquiryApi';
 
 const Dashboard = () => {
+  // ============ BASIC STATE ============
   const [institutionName, setInstitutionName] = useState('');
   const [institutionType, setInstitutionType] = useState('');
   const [userEmail, setUserEmail] = useState('');
@@ -24,7 +32,25 @@ const Dashboard = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState('');
   const [pollingInterval, setPollingInterval] = useState(null);
+  
+  // ============ ENQUIRY STATE ============
+  const [enquiries, setEnquiries] = useState([]);
+  const [enquiriesLoading, setEnquiriesLoading] = useState(false);
+  const [enquiryStats, setEnquiryStats] = useState({
+    total: 0,
+    pending: 0,
+    responded: 0,
+    closed: 0
+  });
+  const [selectedEnquiry, setSelectedEnquiry] = useState(null);
+  const [showEnquiryDetail, setShowEnquiryDetail] = useState(false);
+  const [filterStatus, setFilterStatus] = useState('all');
+  const [searchTerm, setSearchTerm] = useState('');
+  const [copySuccess, setCopySuccess] = useState('');
+
   const navigate = useNavigate();
+
+  // ============ HELPER FUNCTIONS ============
 
   // Function to find institution by email across all types
   const findInstitutionByEmail = async (email) => {
@@ -78,67 +104,110 @@ const Dashboard = () => {
     }
   };
 
-  useEffect(() => {
-    const token = authApis.getAdminToken();
-    console.log('🔍 Dashboard - Token:', token ? 'Present' : 'Missing');
+  // ============ ENQUIRY FUNCTIONS ============
+
+  // Fetch enquiries for the institution
+  const fetchInstitutionEnquiries = async () => {
+    const id = institutionId || localStorage.getItem('institutionId');
     
-    if (!token) {
-      console.log('🔍 No token found, redirecting to login');
-      navigate('/login', { replace: true });
+    if (!id) {
+      console.log('⚠️ No institution ID found for fetching enquiries');
       return;
     }
 
-    // Get user data from localStorage
-    const name = localStorage.getItem('institutionName');
-    const type = localStorage.getItem('institutionType');
-    const email = localStorage.getItem('userEmail');
-    const role = localStorage.getItem('userRole');
-    
-    // Use email-specific keys for registration data
-    const registrationKey = email ? `registrationId_${email}` : 'registrationId';
-    const institutionKey = email ? `institutionId_${email}` : 'institutionId';
-    
-    const regId = localStorage.getItem(registrationKey);
-    const storedInstitutionId = localStorage.getItem(institutionKey);
-
-    console.log('📋 Dashboard - User Data:', { 
-      name, type, email, role, regId, storedInstitutionId 
-    });
-
-    // If user is admin, redirect to admin dashboard
-    if (role === 'admin') {
-      console.log('🔍 User is admin, redirecting to /admin/dashboard');
-      navigate('/admin/dashboard', { replace: true });
-      return;
+    setEnquiriesLoading(true);
+    try {
+      console.log('📡 Fetching enquiries for institution:', id);
+      
+      const result = await enquiryApi.getPublicInstitutionEnquiries(id);
+      
+      console.log('📋 Enquiries response:', result);
+      
+      let enquiriesData = [];
+      
+      if (result && result.success && result.data) {
+        enquiriesData = Array.isArray(result.data) ? result.data : 
+                       result.data.enquiries || Object.values(result.data);
+      } else if (result && result.enquiries) {
+        enquiriesData = result.enquiries;
+      }
+      
+      if (!Array.isArray(enquiriesData)) {
+        enquiriesData = [];
+      }
+      
+      console.log(`📋 Setting ${enquiriesData.length} enquiries`);
+      setEnquiries(enquiriesData);
+      
+      const stats = {
+        total: enquiriesData.length,
+        pending: enquiriesData.filter(e => e.status === 'pending').length,
+        responded: enquiriesData.filter(e => e.status === 'responded').length,
+        closed: enquiriesData.filter(e => e.status === 'closed').length
+      };
+      setEnquiryStats(stats);
+      
+    } catch (error) {
+      console.error('❌ Error fetching enquiries:', error);
+      toast.error('Failed to load enquiries');
+    } finally {
+      setEnquiriesLoading(false);
     }
+  };
 
-    if (name) setInstitutionName(name);
-    if (type) {
-      setInstitutionType(type);
-    }
-    if (email) {
-      setUserEmail(email);
-      // Check if there's registration data for this specific user
-      if (regId) {
-        setRegistrationId(regId);
-        fetchRegistrationStatus(regId);
-      } else if (email) {
-        checkExistingRegistration(email);
+  // Update enquiry status
+  const handleUpdateStatus = async (enquiryId, newStatus) => {
+    try {
+      const result = await enquiryApi.updateEnquiryStatus(enquiryId, newStatus);
+      
+      if (result && result.success) {
+        toast.success(`Enquiry ${newStatus}`);
+        await fetchInstitutionEnquiries();
       } else {
-        setRegistrationStatus('not_started');
-        setIsLoading(false);
+        toast.error(result.message || 'Failed to update status');
       }
-    } else {
-      setRegistrationStatus('not_started');
-      setIsLoading(false);
+    } catch (error) {
+      console.error('Error updating status:', error);
+      toast.error('Failed to update status');
     }
+  };
 
-    return () => {
-      if (pollingInterval) {
-        clearInterval(pollingInterval);
-      }
-    };
-  }, [navigate]);
+  // Copy text to clipboard
+  const copyToClipboard = (text) => {
+    navigator.clipboard.writeText(text).then(() => {
+      setCopySuccess('Copied!');
+      toast.success('Copied to clipboard!');
+      setTimeout(() => setCopySuccess(''), 3000);
+    }).catch(() => {
+      toast.error('Failed to copy');
+    });
+  };
+
+  // Get filtered enquiries
+  const getFilteredEnquiries = () => {
+    let filtered = [...enquiries];
+    
+    if (filterStatus !== 'all') {
+      filtered = filtered.filter(e => e.status === filterStatus);
+    }
+    
+    if (searchTerm.trim()) {
+      const term = searchTerm.toLowerCase().trim();
+      filtered = filtered.filter(e => 
+        e.parentName?.toLowerCase().includes(term) ||
+        e.subject?.toLowerCase().includes(term) ||
+        e.message?.toLowerCase().includes(term) ||
+        e.parentEmail?.toLowerCase().includes(term) ||
+        e.parentPhone?.toLowerCase().includes(term) ||
+        e.institutionName?.toLowerCase().includes(term)
+      );
+    }
+    
+    filtered.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+    return filtered;
+  };
+
+  // ============ REGISTRATION FUNCTIONS ============
 
   // Check existing registration using registerApi
   const checkExistingRegistration = async (email) => {
@@ -166,7 +235,6 @@ const Dashboard = () => {
         setRegistrationData(regData);
         setRegistrationStatus(regData.status);
         
-        // Store institution type from registration
         if (regData.institutionType) {
           localStorage.setItem('institutionType', regData.institutionType);
           setInstitutionType(regData.institutionType);
@@ -175,9 +243,7 @@ const Dashboard = () => {
           setInstitutionType(regData.type);
         }
         
-        // If registration is approved, get the institution ID
         if (regData.status === 'approved') {
-          // First try to get ID from registration
           let id = regData.schoolId || regData.institutionId || regData.id;
           
           if (id) {
@@ -185,7 +251,6 @@ const Dashboard = () => {
             localStorage.setItem('institutionId', id);
             console.log('✅ Institution ID found in registration:', id);
             
-            // Try to find the full institution data
             const type = regData.institutionType || regData.type || localStorage.getItem('institutionType');
             if (type) {
               const foundInstitution = await findInstitutionByEmail(email);
@@ -200,8 +265,9 @@ const Dashboard = () => {
                 setInstitutionType(instType);
               }
             }
+            
+            await fetchInstitutionEnquiries();
           } else {
-            // Try to find institution by email
             console.log('⚠️ No institutionId in registration, trying to find by email');
             const foundInstitution = await findInstitutionByEmail(email);
             if (foundInstitution) {
@@ -213,6 +279,7 @@ const Dashboard = () => {
               const type = foundInstitution.institutionType;
               localStorage.setItem(`${type}Data`, JSON.stringify(foundInstitution));
               setInstitutionType(type);
+              await fetchInstitutionEnquiries();
             } else {
               console.log('❌ No institution found with email:', email);
               toast.warning('Institution profile not found. Please contact support.');
@@ -222,7 +289,6 @@ const Dashboard = () => {
         
         console.log('📋 Found existing registration:', regData);
         
-        // Start polling if pending
         if (regData.status === 'pending') {
           startStatusPolling(regData.id);
         }
@@ -270,7 +336,6 @@ const Dashboard = () => {
         setRegistrationData(regData);
         setRegistrationStatus(regData.status);
         
-        // Store institution type
         if (regData.institutionType) {
           localStorage.setItem('institutionType', regData.institutionType);
           setInstitutionType(regData.institutionType);
@@ -279,7 +344,6 @@ const Dashboard = () => {
           setInstitutionType(regData.type);
         }
         
-        // If registration is approved, get the institution ID
         if (regData.status === 'approved') {
           let id = regData.schoolId || regData.institutionId || regData.id;
           
@@ -288,7 +352,6 @@ const Dashboard = () => {
             localStorage.setItem('institutionId', id);
             console.log('✅ Institution ID found in registration:', id);
             
-            // Try to get full data
             const type = regData.institutionType || regData.type || localStorage.getItem('institutionType');
             if (type) {
               const email = regData.email || userEmail;
@@ -306,8 +369,9 @@ const Dashboard = () => {
                 }
               }
             }
+            
+            await fetchInstitutionEnquiries();
           } else {
-            // Try to find institution by email
             const email = regData.email || userEmail;
             if (email) {
               console.log('⚠️ No institutionId in registration, trying to find by email');
@@ -321,6 +385,7 @@ const Dashboard = () => {
                 const type = foundInstitution.institutionType;
                 localStorage.setItem(`${type}Data`, JSON.stringify(foundInstitution));
                 setInstitutionType(type);
+                await fetchInstitutionEnquiries();
               }
             }
           }
@@ -328,7 +393,6 @@ const Dashboard = () => {
         
         console.log('✅ Registration status set to:', regData.status);
         
-        // Start polling if pending
         if (regData.status === 'pending') {
           startStatusPolling(id);
         }
@@ -374,6 +438,7 @@ const Dashboard = () => {
                 const id = result.data.schoolId || result.data.institutionId;
                 setInstitutionId(id);
                 localStorage.setItem('institutionId', id);
+                await fetchInstitutionEnquiries();
               } else {
                 const email = result.data.email || userEmail;
                 if (email) {
@@ -386,6 +451,7 @@ const Dashboard = () => {
                     const type = foundInstitution.institutionType;
                     localStorage.setItem(`${type}Data`, JSON.stringify(foundInstitution));
                     setInstitutionType(type);
+                    await fetchInstitutionEnquiries();
                   }
                 }
               }
@@ -417,6 +483,8 @@ const Dashboard = () => {
     setPollingInterval(interval);
   };
 
+  // ============ UI HANDLERS ============
+
   const handleLogout = () => {
     if (pollingInterval) {
       clearInterval(pollingInterval);
@@ -442,25 +510,24 @@ const Dashboard = () => {
         navigate('/login', { replace: true });
       }
     }
+    if (registrationStatus === 'approved') {
+      await fetchInstitutionEnquiries();
+    }
   };
 
-  // Handle view profile navigation based on institution type
+  // Handle view profile navigation
   const handleViewProfile = () => {
-    // Try multiple ways to get the institution type
     let type = localStorage.getItem('institutionType');
     
-    // If not found, try to get from user data
     if (!type) {
       const userData = JSON.parse(localStorage.getItem('userData') || '{}');
       type = userData.institutionType || userData.type;
     }
     
-    // If still not found, try to determine from registration data
     if (!type && registrationData) {
       type = registrationData.institutionType || registrationData.type;
     }
     
-    // If still not found, try to determine from stored data
     if (!type) {
       if (localStorage.getItem('collegeData')) {
         type = 'college';
@@ -475,9 +542,7 @@ const Dashboard = () => {
       }
     }
     
-    // If still not found, check what's in the registration data from the API
     if (!type && registrationData) {
-      // Check if registration data has institution type
       if (registrationData.institutionType) {
         type = registrationData.institutionType;
       } else if (registrationData.type) {
@@ -485,7 +550,6 @@ const Dashboard = () => {
       }
     }
     
-    // Get the institution ID
     const id = institutionId || localStorage.getItem('institutionId');
     
     if (!id) {
@@ -495,7 +559,6 @@ const Dashboard = () => {
 
     console.log('🔍 Navigating to profile - Type:', type, 'ID:', id);
 
-    // Navigate to the correct profile page based on institution type
     switch(type?.toLowerCase()) {
       case 'college':
         navigate('/college-profile');
@@ -515,10 +578,7 @@ const Dashboard = () => {
         navigate('/teacher-profile');
         break;
       default:
-        // If type is still unknown, try to determine from email or registration
         console.log('⚠️ Unknown institution type, trying to determine from data');
-        
-        // Check if we have any stored data
         if (localStorage.getItem('collegeData')) {
           navigate('/college-profile');
         } else if (localStorage.getItem('schoolData')) {
@@ -535,7 +595,7 @@ const Dashboard = () => {
     }
   };
 
-  // Get status configuration
+  // ============ GET STATUS CONFIG ============
   const getStatusConfig = (status) => {
     const configs = {
       'not_started': {
@@ -590,6 +650,451 @@ const Dashboard = () => {
     return configs[status] || configs['not_started'];
   };
 
+  // ============ RENDER ENQUIRY DETAIL MODAL ============
+  const renderEnquiryDetailModal = () => {
+    if (!showEnquiryDetail || !selectedEnquiry) return null;
+
+    const enquiry = selectedEnquiry;
+
+    return (
+      <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4" onClick={() => setShowEnquiryDetail(false)}>
+        <div className="bg-gray-800 rounded-2xl max-w-3xl w-full max-h-[90vh] overflow-y-auto p-6 border border-gray-700" onClick={(e) => e.stopPropagation()}>
+          <div className="flex justify-between items-start mb-4">
+            <div>
+              <h3 className="text-xl font-bold text-white">{enquiry.subject}</h3>
+              <div className="flex items-center gap-2 mt-1 flex-wrap">
+                <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                  enquiry.status === 'pending' ? 'bg-yellow-500/20 text-yellow-400' :
+                  enquiry.status === 'responded' ? 'bg-blue-500/20 text-blue-400' :
+                  'bg-green-500/20 text-green-400'
+                }`}>
+                  {enquiry.status.charAt(0).toUpperCase() + enquiry.status.slice(1)}
+                </span>
+                <span className="text-xs text-gray-500">
+                  {new Date(enquiry.createdAt).toLocaleString()}
+                </span>
+                {enquiry.preferredContact && (
+                  <span className="px-2 py-1 bg-purple-500/20 text-purple-400 rounded-full text-xs flex items-center gap-1">
+                    <FiAtSign className="w-3 h-3" />
+                    Prefers: {enquiry.preferredContact}
+                  </span>
+                )}
+              </div>
+            </div>
+            <button
+              onClick={() => setShowEnquiryDetail(false)}
+              className="text-gray-400 hover:text-white"
+            >
+              <FiX className="w-6 h-6" />
+            </button>
+          </div>
+
+          <div className="space-y-4">
+            {/* Parent Information */}
+            <div className="bg-gray-700/30 rounded-lg p-4">
+              <h4 className="text-sm text-gray-400 mb-2">Parent Information</h4>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <p className="text-xs text-gray-500">Name</p>
+                  <p className="text-white font-medium">{enquiry.parentName}</p>
+                </div>
+                <div>
+                  <p className="text-xs text-gray-500">Email</p>
+                  <div className="flex items-center gap-2">
+                    <a 
+                      href={`mailto:${enquiry.parentEmail}?subject=Re: ${enquiry.subject}`}
+                      className="text-blue-400 hover:underline text-sm truncate"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
+                      {enquiry.parentEmail}
+                    </a>
+                    <button
+                      onClick={() => {
+                        navigator.clipboard.writeText(enquiry.parentEmail);
+                        toast.success('Email copied!');
+                      }}
+                      className="text-gray-400 hover:text-white text-xs"
+                    >
+                      <FiCopy className="w-3 h-3" />
+                    </button>
+                  </div>
+                </div>
+                {enquiry.parentPhone && (
+                  <div className="col-span-2">
+                    <p className="text-xs text-gray-500">Phone</p>
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <a 
+                        href={`tel:${enquiry.parentPhone}`}
+                        className="text-green-400 hover:underline"
+                      >
+                        {enquiry.parentPhone}
+                      </a>
+                      <button
+                        onClick={() => copyToClipboard(enquiry.parentPhone)}
+                        className="text-gray-400 hover:text-white text-xs"
+                      >
+                        <FiCopy className="w-3 h-3" />
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Student Information */}
+            {enquiry.studentName && (
+              <div className="bg-gray-700/30 rounded-lg p-4">
+                <h4 className="text-sm text-gray-400 mb-2">Student Information</h4>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <p className="text-xs text-gray-500">Name</p>
+                    <p className="text-white">{enquiry.studentName}</p>
+                  </div>
+                  {enquiry.studentClass && (
+                    <div>
+                      <p className="text-xs text-gray-500">Class</p>
+                      <p className="text-white">{enquiry.studentClass}</p>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* Message */}
+            <div className="bg-gray-700/30 rounded-lg p-4">
+              <h4 className="text-sm text-gray-400 mb-2">Message</h4>
+              <p className="text-white whitespace-pre-wrap leading-relaxed">{enquiry.message}</p>
+            </div>
+
+            {/* Responses */}
+            {enquiry.responses && enquiry.responses.length > 0 && (
+              <div className="bg-gray-700/30 rounded-lg p-4">
+                <h4 className="text-sm text-gray-400 mb-2">Responses</h4>
+                {enquiry.responses.map((response, idx) => (
+                  <div key={idx} className="bg-gray-700/20 rounded-lg p-3 mb-2">
+                    <div className="flex justify-between text-xs">
+                      <span className="text-gray-300 font-medium">{response.responseBy}</span>
+                      <span className="text-gray-500">{new Date(response.createdAt).toLocaleString()}</span>
+                    </div>
+                    <p className="text-gray-300 text-sm mt-1">{response.message}</p>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* Action Buttons */}
+            <div className="flex flex-wrap gap-3 pt-2 border-t border-gray-700">
+              <select
+                value={enquiry.status}
+                onChange={(e) => {
+                  handleUpdateStatus(enquiry.id || enquiry.enquiryId, e.target.value);
+                  setShowEnquiryDetail(false);
+                }}
+                className="px-4 py-2 bg-gray-700 text-gray-300 rounded-lg border border-gray-600 focus:outline-none focus:border-orange-500"
+              >
+                <option value="pending">Pending</option>
+                <option value="responded">Responded</option>
+                <option value="closed">Closed</option>
+              </select>
+              
+              {enquiry.parentEmail && (
+                <a
+                  href={`mailto:${enquiry.parentEmail}?subject=Re: ${enquiry.subject}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="px-4 py-2 bg-blue-500/20 text-blue-400 rounded-lg hover:bg-blue-500/30 transition-all flex items-center gap-2"
+                >
+                  <FiMail className="w-4 h-4" />
+                  Email Parent
+                </a>
+              )}
+
+              {enquiry.parentPhone && (
+                <a
+                  href={`tel:${enquiry.parentPhone}`}
+                  className="px-4 py-2 bg-green-500/20 text-green-400 rounded-lg hover:bg-green-500/30 transition-all flex items-center gap-2"
+                >
+                  <FiPhone className="w-4 h-4" />
+                  Call Parent
+                </a>
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  // ============ RENDER ENQUIRIES SECTION ============
+  const renderEnquiriesSection = () => {
+    if (registrationStatus !== 'approved') return null;
+
+    const filteredEnquiries = getFilteredEnquiries();
+    const pendingCount = enquiries.filter(e => e.status === 'pending').length;
+
+    return (
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.3 }}
+        className="bg-gray-800/50 backdrop-blur-lg rounded-xl p-6 border border-gray-700/50 mt-6"
+        id="enquiries-section"
+      >
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
+          <div>
+            <h2 className="text-2xl font-bold text-white flex items-center gap-2">
+              <FiInbox className="text-orange-400" />
+              Enquiries
+            </h2>
+            <p className="text-gray-400 text-sm">
+              {pendingCount > 0 ? (
+                <span className="text-yellow-400">{pendingCount} pending enquiries need your response</span>
+              ) : (
+                'Manage enquiries from parents'
+              )}
+            </p>
+          </div>
+          <div className="flex flex-wrap items-center gap-3">
+            <button
+              onClick={fetchInstitutionEnquiries}
+              className="px-4 py-2 bg-gray-700/50 text-gray-300 rounded-lg hover:bg-gray-700 hover:text-white transition-all flex items-center gap-2"
+            >
+              <FiRefreshCw className={`w-4 h-4 ${enquiriesLoading ? 'animate-spin' : ''}`} />
+              Refresh
+            </button>
+          </div>
+        </div>
+
+        {/* Stats Cards */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+          <div 
+            className={`bg-gray-700/30 rounded-lg p-4 text-center cursor-pointer transition-all hover:bg-gray-700/50 ${
+              filterStatus === 'all' ? 'ring-2 ring-orange-500' : ''
+            }`} 
+            onClick={() => setFilterStatus('all')}
+          >
+            <div className="text-3xl font-bold text-white">{enquiryStats.total}</div>
+            <div className="text-sm text-gray-400">Total</div>
+          </div>
+          <div 
+            className={`bg-yellow-500/10 rounded-lg p-4 text-center border border-yellow-500/20 cursor-pointer transition-all hover:bg-yellow-500/20 ${
+              filterStatus === 'pending' ? 'ring-2 ring-yellow-500' : ''
+            }`} 
+            onClick={() => setFilterStatus('pending')}
+          >
+            <div className="text-3xl font-bold text-yellow-400">{enquiryStats.pending}</div>
+            <div className="text-sm text-yellow-400">Pending</div>
+          </div>
+          <div 
+            className={`bg-blue-500/10 rounded-lg p-4 text-center border border-blue-500/20 cursor-pointer transition-all hover:bg-blue-500/20 ${
+              filterStatus === 'responded' ? 'ring-2 ring-blue-500' : ''
+            }`} 
+            onClick={() => setFilterStatus('responded')}
+          >
+            <div className="text-3xl font-bold text-blue-400">{enquiryStats.responded}</div>
+            <div className="text-sm text-blue-400">Responded</div>
+          </div>
+          <div 
+            className={`bg-green-500/10 rounded-lg p-4 text-center border border-green-500/20 cursor-pointer transition-all hover:bg-green-500/20 ${
+              filterStatus === 'closed' ? 'ring-2 ring-green-500' : ''
+            }`} 
+            onClick={() => setFilterStatus('closed')}
+          >
+            <div className="text-3xl font-bold text-green-400">{enquiryStats.closed}</div>
+            <div className="text-sm text-green-400">Closed</div>
+          </div>
+        </div>
+
+        {/* Search */}
+        <div className="mb-4">
+          <div className="relative">
+            <FiSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+            <input
+              type="text"
+              placeholder="Search by parent name, email, phone, subject..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="w-full pl-10 pr-4 py-2.5 bg-gray-700/50 text-white rounded-lg border border-gray-600 focus:outline-none focus:border-orange-500 placeholder-gray-400"
+            />
+            {searchTerm && (
+              <button
+                onClick={() => setSearchTerm('')}
+                className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-white"
+              >
+                <FiX className="w-4 h-4" />
+              </button>
+            )}
+          </div>
+        </div>
+
+        {/* Enquiries List */}
+        {enquiriesLoading ? (
+          <div className="text-center py-8">
+            <FiLoader className="w-8 h-8 text-orange-400 animate-spin mx-auto mb-2" />
+            <p className="text-gray-400">Loading enquiries...</p>
+          </div>
+        ) : filteredEnquiries.length === 0 ? (
+          <div className="text-center py-12 bg-gray-700/20 rounded-lg">
+            {searchTerm || filterStatus !== 'all' ? (
+              <>
+                <FiSearch className="w-12 h-12 text-gray-500 mx-auto mb-2" />
+                <p className="text-gray-400">No enquiries match your filters</p>
+                <button
+                  onClick={() => { setSearchTerm(''); setFilterStatus('all'); }}
+                  className="mt-2 text-orange-400 text-sm hover:underline"
+                >
+                  Clear filters
+                </button>
+              </>
+            ) : (
+              <>
+                <FiInbox className="w-12 h-12 text-gray-500 mx-auto mb-2" />
+                <p className="text-gray-400">No enquiries yet</p>
+                <p className="text-sm text-gray-500">Parents will contact you here</p>
+              </>
+            )}
+          </div>
+        ) : (
+          <div className="space-y-4">
+            {filteredEnquiries.map((enquiry) => {
+              const StatusIcon = enquiry.status === 'pending' ? FiClock : 
+                                enquiry.status === 'responded' ? FiCheckCircle : FiXCircle;
+              const statusColor = enquiry.status === 'pending' ? 'bg-yellow-500/20 text-yellow-400' :
+                                  enquiry.status === 'responded' ? 'bg-blue-500/20 text-blue-400' :
+                                  'bg-green-500/20 text-green-400';
+
+              return (
+                <div
+                  key={enquiry.id || enquiry.enquiryId}
+                  className={`bg-gray-700/30 rounded-lg p-4 border ${
+                    enquiry.status === 'pending' ? 'border-yellow-500/30 hover:border-yellow-500/50' :
+                    enquiry.status === 'responded' ? 'border-blue-500/30 hover:border-blue-500/50' :
+                    'border-green-500/30 hover:border-green-500/50'
+                  } transition-all`}
+                >
+                  <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-3">
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 flex-wrap mb-1">
+                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${statusColor} flex items-center gap-1`}>
+                          <StatusIcon className="w-3 h-3" />
+                          {enquiry.status.charAt(0).toUpperCase() + enquiry.status.slice(1)}
+                        </span>
+                        {enquiry.status === 'pending' && (
+                          <span className="px-2 py-0.5 bg-red-500/20 text-red-400 text-xs rounded-full animate-pulse">
+                            Needs Response
+                          </span>
+                        )}
+                        <span className="text-xs text-gray-500">
+                          {new Date(enquiry.createdAt).toLocaleDateString('en-IN', {
+                            day: '2-digit',
+                            month: 'short',
+                            year: 'numeric'
+                          })}
+                        </span>
+                      </div>
+                      <h3 className="text-white font-medium truncate">{enquiry.subject}</h3>
+                      <div className="flex flex-wrap items-center gap-3 text-sm text-gray-400 mt-1">
+                        <span className="flex items-center gap-1">
+                          <FiUser className="w-3 h-3 text-purple-400" />
+                          {enquiry.parentName}
+                        </span>
+                        <span className="flex items-center gap-1">
+                          <FiMail className="w-3 h-3 text-blue-400" />
+                          <a href={`mailto:${enquiry.parentEmail}`} className="hover:text-blue-400 transition-colors truncate max-w-[150px]">
+                            {enquiry.parentEmail}
+                          </a>
+                        </span>
+                        {enquiry.parentPhone && (
+                          <span className="flex items-center gap-1">
+                            <FiPhone className="w-3 h-3 text-green-400" />
+                            <a href={`tel:${enquiry.parentPhone}`} className="hover:text-green-400 transition-colors">
+                              {enquiry.parentPhone}
+                            </a>
+                          </span>
+                        )}
+                        {enquiry.studentClass && (
+                          <span className="flex items-center gap-1">
+                            <FiBookOpen className="w-3 h-3 text-orange-400" />
+                            Class {enquiry.studentClass}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="flex flex-wrap items-center gap-2 flex-shrink-0">
+                      <button
+                        onClick={() => {
+                          setSelectedEnquiry(enquiry);
+                          setShowEnquiryDetail(true);
+                        }}
+                        className="px-3 py-1.5 bg-blue-500/20 text-blue-400 rounded-lg hover:bg-blue-500/30 transition-all text-sm flex items-center gap-1"
+                      >
+                        <FiEye className="w-3 h-3" />
+                        View
+                      </button>
+                      
+                      {enquiry.parentEmail && (
+                        <a
+                          href={`mailto:${enquiry.parentEmail}?subject=Re: ${enquiry.subject}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="px-3 py-1.5 bg-blue-500/20 text-blue-400 rounded-lg hover:bg-blue-500/30 transition-all text-sm flex items-center gap-1"
+                          title="Send email"
+                        >
+                          <FiMail className="w-3 h-3" />
+                          Email
+                        </a>
+                      )}
+
+                      {enquiry.parentPhone && (
+                        <a
+                          href={`tel:${enquiry.parentPhone}`}
+                          className="px-3 py-1.5 bg-green-500/20 text-green-400 rounded-lg hover:bg-green-500/30 transition-all text-sm flex items-center gap-1"
+                          title="Call parent"
+                        >
+                          <FiPhone className="w-3 h-3" />
+                          Call
+                        </a>
+                      )}
+
+                      <select
+                        value={enquiry.status}
+                        onChange={(e) => handleUpdateStatus(enquiry.id || enquiry.enquiryId, e.target.value)}
+                        className="px-2 py-1.5 bg-gray-900 text-gray-300 rounded-lg border border-gray-600 text-sm focus:outline-none focus:border-orange-500"
+                      >
+                        <option value="pending">Pending</option>
+                        <option value="responded">Responded</option>
+                        <option value="closed">Closed</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  {/* Show existing responses */}
+                  {enquiry.responses && enquiry.responses.length > 0 && (
+                    <div className="mt-3 border-t border-gray-600 pt-3">
+                      <p className="text-xs text-gray-400 mb-2">Responses:</p>
+                      {enquiry.responses.map((response, idx) => (
+                        <div key={idx} className="bg-gray-700/20 rounded-lg p-2 mb-2">
+                          <div className="flex justify-between text-xs">
+                            <span className="text-gray-300 font-medium">{response.responseBy}</span>
+                            <span className="text-gray-500">{new Date(response.createdAt).toLocaleString()}</span>
+                          </div>
+                          <p className="text-gray-300 text-sm mt-1">{response.message}</p>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </motion.div>
+    );
+  };
+
+  // ============ RENDER REGISTRATION STATUS CARD ============
   const renderRegistrationStatusCard = () => {
     if (isLoading) {
       return (
@@ -638,7 +1143,11 @@ const Dashboard = () => {
               <div className="mt-3 flex items-center gap-2">
                 <FiClock className="text-yellow-400 w-4 h-4" />
                 <span className="text-yellow-400 text-sm">
-                  Submitted: {new Date(registrationData.submittedAt).toLocaleString()}
+                  Submitted: {new Date(registrationData.submittedAt).toLocaleDateString('en-IN', {
+                    day: '2-digit',
+                    month: 'short',
+                    year: 'numeric'
+                  })}
                 </span>
               </div>
             )}
@@ -646,7 +1155,11 @@ const Dashboard = () => {
               <div className="mt-3 flex items-center gap-2">
                 <FiCheck className="text-green-400 w-4 h-4" />
                 <span className="text-green-400 text-sm">
-                  Approved: {new Date(registrationData.approvedAt).toLocaleString()}
+                  Approved: {new Date(registrationData.approvedAt).toLocaleString('en-IN', {
+                    day: '2-digit',
+                    month: 'short',
+                    year: 'numeric'
+                  })}
                 </span>
               </div>
             )}
@@ -674,6 +1187,7 @@ const Dashboard = () => {
     );
   };
 
+  // ============ RENDER REGISTRATION DETAILS ============
   const renderRegistrationDetails = () => {
     if (!registrationData || registrationStatus === 'not_started' || registrationStatus === 'pending') return null;
 
@@ -728,6 +1242,7 @@ const Dashboard = () => {
     );
   };
 
+  // ============ RENDER WELCOME MESSAGE ============
   const renderWelcomeMessage = () => {
     if (registrationStatus === 'approved') {
       return (
@@ -752,6 +1267,66 @@ const Dashboard = () => {
     return null;
   };
 
+  // ============ INITIALIZATION ============
+  useEffect(() => {
+    const token = authApis.getAdminToken();
+    console.log('🔍 Dashboard - Token:', token ? 'Present' : 'Missing');
+    
+    if (!token) {
+      console.log('🔍 No token found, redirecting to login');
+      navigate('/login', { replace: true });
+      return;
+    }
+
+    const name = localStorage.getItem('institutionName');
+    const type = localStorage.getItem('institutionType');
+    const email = localStorage.getItem('userEmail');
+    const role = localStorage.getItem('userRole');
+    
+    const registrationKey = email ? `registrationId_${email}` : 'registrationId';
+    const institutionKey = email ? `institutionId_${email}` : 'institutionId';
+    
+    const regId = localStorage.getItem(registrationKey);
+    const storedInstitutionId = localStorage.getItem(institutionKey);
+
+    console.log('📋 Dashboard - User Data:', { 
+      name, type, email, role, regId, storedInstitutionId 
+    });
+
+    if (role === 'admin') {
+      console.log('🔍 User is admin, redirecting to /admin/dashboard');
+      navigate('/admin/dashboard', { replace: true });
+      return;
+    }
+
+    if (name) setInstitutionName(name);
+    if (type) {
+      setInstitutionType(type);
+    }
+    if (email) {
+      setUserEmail(email);
+      if (regId) {
+        setRegistrationId(regId);
+        fetchRegistrationStatus(regId);
+      } else if (email) {
+        checkExistingRegistration(email);
+      } else {
+        setRegistrationStatus('not_started');
+        setIsLoading(false);
+      }
+    } else {
+      setRegistrationStatus('not_started');
+      setIsLoading(false);
+    }
+
+    return () => {
+      if (pollingInterval) {
+        clearInterval(pollingInterval);
+      }
+    };
+  }, [navigate]);
+
+  // ============ MAIN RENDER ============
   return (
     <div className="min-h-screen bg-gray-900">
       {/* Mobile Sidebar Toggle */}
@@ -799,13 +1374,27 @@ const Dashboard = () => {
               </button>
             )}
             {registrationStatus === 'approved' && (
-              <button
-                onClick={handleViewProfile}
-                className="w-full flex items-center gap-3 px-4 py-3 text-gray-300 hover:text-white hover:bg-gray-700/50 rounded-lg transition-all group"
-              >
-                <FiUsers className="w-5 h-5" />
-                <span className="flex-1 text-left">View Profile</span>
-              </button>
+              <>
+                <button
+                  onClick={handleViewProfile}
+                  className="w-full flex items-center gap-3 px-4 py-3 text-gray-300 hover:text-white hover:bg-gray-700/50 rounded-lg transition-all group"
+                >
+                  <FiUsers className="w-5 h-5" />
+                  <span className="flex-1 text-left">View Profile</span>
+                </button>
+                <button
+                  onClick={() => document.getElementById('enquiries-section')?.scrollIntoView({ behavior: 'smooth' })}
+                  className="w-full flex items-center gap-3 px-4 py-3 text-gray-300 hover:text-white hover:bg-gray-700/50 rounded-lg transition-all group"
+                >
+                  <FiMessageSquare className="w-5 h-5" />
+                  <span className="flex-1 text-left">Enquiries</span>
+                  {enquiryStats.pending > 0 && (
+                    <span className="px-2 py-0.5 bg-red-500 text-white text-xs rounded-full">
+                      {enquiryStats.pending}
+                    </span>
+                  )}
+                </button>
+              </>
             )}
           </nav>
 
@@ -853,8 +1442,12 @@ const Dashboard = () => {
           {renderWelcomeMessage()}
           {renderRegistrationStatusCard()}
           {registrationStatus === 'approved' && renderRegistrationDetails()}
+          {registrationStatus === 'approved' && renderEnquiriesSection()}
         </div>
       </div>
+
+      {/* Enquiry Detail Modal */}
+      {renderEnquiryDetailModal()}
     </div>
   );
 };

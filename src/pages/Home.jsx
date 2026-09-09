@@ -182,7 +182,7 @@ function Home() {
       {/* Scrolling Announcement */}
       <div className="w-full overflow-hidden bg-gradient-to-r from-orange-600 via-amber-500 to-orange-600 py-4 shadow-xl bg-[length:200%_auto] animate-gradient-x">
         <div className="whitespace-nowrap animate-marquee text-white text-lg md:text-xl font-extrabold tracking-wide">
-          🎓 Admissions Open for 2025 – Apply Now! &nbsp;&nbsp;&nbsp; 📢 New Coaching Centers Launched in Your City &nbsp;&nbsp;&nbsp; 🏫 Explore Top Schools, Colleges & Tuitions Near You!
+          🎓 Admissions Open – Apply Now! &nbsp;&nbsp;&nbsp; 📢 New Coaching Centers Launched in Your City &nbsp;&nbsp;&nbsp; 🏫 Explore Top Schools, Colleges & Tuitions Near You!
         </div>
       </div>
 

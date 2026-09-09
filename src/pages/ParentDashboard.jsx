@@ -17,7 +17,7 @@ import TuitionCoachingApi from '../services/TuitionCoachingApi';
 import teacherApi from '../services/TeacherApi';
 import enquiryApi from '../services/EnquiryApi';
 
-// ============ STATS CARD COMPONENT (Memoized) ============
+// ============ STATS CARD COMPONENT  ============
 const StatsCard = memo(({ icon: Icon, label, value, color, bgColor }) => (
   <motion.div
     whileHover={{ scale: 1.02, y: -4 }}
@@ -685,12 +685,9 @@ useEffect(() => {
       if (enquiriesData.length > 0) {
         console.log(`📋 Setting ${enquiriesData.length} enquiries from API`);
         setEnquiries(enquiriesData);
-        // Update localStorage with API data
         localStorage.setItem('parentEnquiries', JSON.stringify(enquiriesData));
       } else if (localEnquiries.length > 0) {
-        // If API returned empty but we have local data, keep local data
         console.log(`📋 Keeping ${localEnquiries.length} enquiries from localStorage`);
-        // Already set above
       }
       
     } catch (error) {
@@ -702,7 +699,6 @@ useEffect(() => {
         localStorage.removeItem('parentToken');
       }
       
-      // Keep whatever we have in localStorage
       try {
         const stored = localStorage.getItem('parentEnquiries');
         if (stored) {
@@ -1357,14 +1353,14 @@ useEffect(() => {
                   Welcome back, {parentData?.parentName || 'Parent'}! 
                 </h2>
                 <p className="text-gray-300 mt-2 text-lg">
-                  Find the best {parentData?.institutionType || 'Schools'} for your child
+                  Find the best {parentData?.institutionType || 'Institute'} for your child
                 </p>
                 <div className="flex items-center gap-4 mt-4 flex-wrap">
                   <span className="px-3 py-1 bg-orange-500/20 rounded-full text-xs text-orange-300">
-                    Looking for: {parentData?.institutionType || 'Schools'}
+                    Looking for: {parentData?.institutionType || 'Institute'}
                   </span>
                   <span className="px-3 py-1 bg-green-500/20 rounded-full text-xs text-green-300">
-                    {institutions.length} {parentData?.institutionType || 'Schools'} available
+                    {institutions.length} {parentData?.institutionType || 'Institute'} available
                   </span>
                   {parentData?.studentName && (
                     <span className="px-3 py-1 bg-blue-500/20 rounded-full text-xs text-blue-300">
@@ -1857,15 +1853,7 @@ useEffect(() => {
                           Mark as Closed
                         </button>
                       )}
-                      {/* <div className="text-xs text-gray-500">
-                        Updated: {new Date(enquiry.updatedAt).toLocaleDateString(
-                          'en-IN',{
-                            day:'2-digit',
-                            month:'short',
-                            year:'numeric'
-                          }
-                        )}
-                      </div> */}
+                      
                     </div>
                   </div>
                 </motion.div>

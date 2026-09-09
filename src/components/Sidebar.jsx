@@ -1,5 +1,6 @@
 import { motion } from 'framer-motion';
 import { FaHome, FaUsers, FaSchool, FaChalkboardTeacher, FaCog, FaSignOutAlt, FaGraduationCap } from 'react-icons/fa';
+import { FiMessageSquare } from 'react-icons/fi';
 import "tailwindcss";
 
 const NavItem = ({ icon, text, active, onClick, sidebarOpen }) => {
@@ -47,6 +48,13 @@ const Sidebar = ({ sidebarOpen, setSidebarOpen, activeTab, setActiveTab }) => {
           text="Registered" 
           active={activeTab === 'Registered'} 
           onClick={() => setActiveTab('Registered')}
+          sidebarOpen={sidebarOpen}
+        />
+        <NavItem 
+          icon={<FiMessageSquare />} 
+          text="Enquiries" 
+          active={activeTab === 'Enquiries'} 
+          onClick={() => setActiveTab('Enquiries')}
           sidebarOpen={sidebarOpen}
         />
         <NavItem 

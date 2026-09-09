@@ -17,6 +17,7 @@ import TeacherList from './TeacherList';
 import "tailwindcss";
 import AdminReg from './AdminReg';
 import AdminBookings from './AdminBookings';
+import AdminEnquiries from './AdminEnquiries';
 
 
 
@@ -28,6 +29,8 @@ const AdminDashboard = () => {
     switch (activeTab) {
       case ('Registered'):
         return <AdminReg />;
+        case ('Enquiries'):
+        return <AdminEnquiries />;
       case 'schools':
         return (
           <div className="p-6">
