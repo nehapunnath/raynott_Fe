@@ -7,7 +7,9 @@ import {
   FiLoader, FiFileText, FiMail, FiPhone, FiMapPin, FiBookOpen, 
   FiAward, FiBriefcase, FiFlag, FiCheck, FiClipboard, FiInfo, 
   FiArrowRight, FiRefreshCw, FiMessageSquare, FiInbox,
-  FiEye, FiCopy, FiAtSign, FiSearch
+  FiEye, FiCopy, FiAtSign, FiSearch, FiLock, FiUnlock,
+  FiPackage, FiStar, FiChevronDown, FiChevronUp,
+  FiDollarSign, FiCreditCard
 } from 'react-icons/fi';
 import { authApis } from '../services/allApis';
 import registerApi from '../services/RegisterApi';
@@ -18,6 +20,39 @@ import { TuitionCoachingApi } from '../services/TuitionCoachingApi';
 import { teacherApi } from '../services/TeacherApi';
 import { toast } from 'react-toastify';
 import enquiryApi from '../services/EnquiryApi';
+
+const DEFAULT_FREE_LIMIT = 5;
+
+// Pricing plans
+const PRICING_PLANS = [
+  {
+    id: 'basic',
+    name: 'Basic',
+    enquiries: 10,
+    price: 500,
+    originalPrice: 700,
+    popular: false,
+    features: ['10 additional enquiries', 'Email & phone access', 'Priority support']
+  },
+  {
+    id: 'standard',
+    name: 'Standard',
+    enquiries: 25,
+    price: 1000,
+    originalPrice: 1500,
+    popular: true,
+    features: ['25 additional enquiries', 'Email & phone access', 'Priority support', 'Better visibility']
+  },
+  {
+    id: 'premium',
+    name: 'Premium',
+    enquiries: 50,
+    price: 1800,
+    originalPrice: 2800,
+    popular: false,
+    features: ['50 additional enquiries', 'Email & phone access', 'Priority support', 'Better visibility', 'Featured badge']
+  }
+];
 
 const Dashboard = () => {
   // ============ BASIC STATE ============
@@ -34,10 +69,14 @@ const Dashboard = () => {
   const [pollingInterval, setPollingInterval] = useState(null);
   
   // ============ ENQUIRY STATE ============
-  const [enquiries, setEnquiries] = useState([]);
+  const [allEnquiries, setAllEnquiries] = useState([]);
+  const [visibleEnquiries, setVisibleEnquiries] = useState([]);
+  const [lockedEnquiries, setLockedEnquiries] = useState([]);
   const [enquiriesLoading, setEnquiriesLoading] = useState(false);
   const [enquiryStats, setEnquiryStats] = useState({
     total: 0,
+    visible: 0,
+    locked: 0,
     pending: 0,
     responded: 0,
     closed: 0
@@ -47,16 +86,22 @@ const Dashboard = () => {
   const [filterStatus, setFilterStatus] = useState('all');
   const [searchTerm, setSearchTerm] = useState('');
   const [copySuccess, setCopySuccess] = useState('');
+  const [showPlansExpanded, setShowPlansExpanded] = useState(false);
+  
+  // ============ LIMIT STATE (from backend) ============
+  const [institutionLimit, setInstitutionLimit] = useState({
+    freeLimit: DEFAULT_FREE_LIMIT,
+    customLimit: 0,
+    totalLimit: DEFAULT_FREE_LIMIT,
+    lastUpdatedAt: null
+  });
 
   const navigate = useNavigate();
 
   // ============ HELPER FUNCTIONS ============
 
-  // Function to find institution by email across all types
   const findInstitutionByEmail = async (email) => {
     try {
-      console.log('🔍 Looking for institution with email:', email);
-      
       const apis = [
         { type: 'school', api: schoolApi, method: 'getSchools' },
         { type: 'college', api: collegeApi, method: 'getColleges' },
@@ -67,7 +112,6 @@ const Dashboard = () => {
 
       for (const item of apis) {
         try {
-          console.log(`📡 Checking ${item.type}...`);
           const response = await item.api[item.method]();
           
           if (response && response.success && response.data) {
@@ -81,13 +125,12 @@ const Dashboard = () => {
               }));
             }
             
-            const found = institutions.find(item => 
-              item.email === email || 
-              item.email?.toLowerCase() === email?.toLowerCase()
+            const found = institutions.find(inst => 
+              inst.email === email || 
+              inst.email?.toLowerCase() === email?.toLowerCase()
             );
             
             if (found) {
-              console.log(`✅ Found institution in ${item.type}:`, found);
               return { ...found, institutionType: item.type };
             }
           }
@@ -96,7 +139,6 @@ const Dashboard = () => {
         }
       }
       
-      console.log('❌ No institution found with email:', email);
       return null;
     } catch (error) {
       console.error('Error finding institution by email:', error);
@@ -104,48 +146,121 @@ const Dashboard = () => {
     }
   };
 
+  // ============ FETCH INSTITUTION LIMIT FROM BACKEND ============
+  const fetchInstitutionLimit = async () => {
+    const id = institutionId || localStorage.getItem('institutionId');
+    if (!id) return;
+
+    try {
+      console.log('📡 Fetching institution limit from backend:', id);
+      const result = await enquiryApi.getInstitutionLimit(id);
+      
+      if (result && result.success && result.data) {
+        const limitData = {
+          freeLimit: result.data.freeLimit || DEFAULT_FREE_LIMIT,
+          customLimit: result.data.customLimit || 0,
+          totalLimit: result.data.totalLimit || (DEFAULT_FREE_LIMIT + (result.data.customLimit || 0)),
+          lastUpdatedAt: result.data.lastUpdatedAt || null
+        };
+        
+        console.log('✅ Fetched limit:', limitData);
+        setInstitutionLimit(limitData);
+        return limitData;
+      }
+    } catch (error) {
+      console.warn('⚠️ Failed to fetch limit from backend, using localStorage');
+      
+      // Fallback to localStorage
+      const savedLimits = JSON.parse(localStorage.getItem('institutionLimits') || '{}');
+      const localLimit = savedLimits[id];
+      
+      const fallbackLimit = {
+        freeLimit: DEFAULT_FREE_LIMIT,
+        customLimit: localLimit?.customLimit || 0,
+        totalLimit: DEFAULT_FREE_LIMIT + (localLimit?.customLimit || 0),
+        lastUpdatedAt: localLimit?.updatedAt || null
+      };
+      
+      setInstitutionLimit(fallbackLimit);
+      return fallbackLimit;
+    }
+  };
+
+  // Get current limit (from state)
+  const getEnquiryLimit = () => {
+    return institutionLimit;
+  };
+
   // ============ ENQUIRY FUNCTIONS ============
 
-  // Fetch enquiries for the institution
   const fetchInstitutionEnquiries = async () => {
     const id = institutionId || localStorage.getItem('institutionId');
     
-    if (!id) {
-      console.log('⚠️ No institution ID found for fetching enquiries');
-      return;
-    }
+    if (!id) return;
 
     setEnquiriesLoading(true);
     try {
-      console.log('📡 Fetching enquiries for institution:', id);
-      
+      console.log('📡 Fetching institution enquiries from backend:', id);
       const result = await enquiryApi.getPublicInstitutionEnquiries(id);
       
       console.log('📋 Enquiries response:', result);
       
       let enquiriesData = [];
-      
-      if (result && result.success && result.data) {
-        enquiriesData = Array.isArray(result.data) ? result.data : 
-                       result.data.enquiries || Object.values(result.data);
-      } else if (result && result.enquiries) {
-        enquiriesData = result.enquiries;
+      let visible = [];
+      let lockedCount = 0;
+      let limitData = institutionLimit;
+
+      // New backend format (with limit already applied)
+      if (result && result.success && result.visibleEnquiries) {
+        enquiriesData = result.data || result.visibleEnquiries || [];
+        visible = result.visibleEnquiries || [];
+        lockedCount = result.lockedCount || 0;
+        
+        if (result.limit) {
+          limitData = {
+            freeLimit: result.limit.freeLimit || DEFAULT_FREE_LIMIT,
+            customLimit: result.limit.customLimit || 0,
+            totalLimit: result.limit.totalLimit || DEFAULT_FREE_LIMIT,
+            lastUpdatedAt: result.limit.lastUpdatedAt || null
+          };
+          setInstitutionLimit(limitData);
+        }
+      } else {
+        // Fallback: apply limit locally
+        if (result && result.success && result.data) {
+          enquiriesData = Array.isArray(result.data) ? result.data : [];
+        } else if (result && result.enquiries) {
+          enquiriesData = result.enquiries;
+        }
+        
+        if (!Array.isArray(enquiriesData)) {
+          enquiriesData = [];
+        }
+
+        const { totalLimit } = limitData;
+        visible = enquiriesData.slice(0, totalLimit);
+        lockedCount = Math.max(0, enquiriesData.length - totalLimit);
       }
+
+      // Sort by newest
+      visible.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+      enquiriesData.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+
+      // Get locked enquiries (hidden from institution)
+      const locked = enquiriesData.slice(limitData.totalLimit);
+
+      setAllEnquiries(enquiriesData);
+      setVisibleEnquiries(visible);
+      setLockedEnquiries(locked);
       
-      if (!Array.isArray(enquiriesData)) {
-        enquiriesData = [];
-      }
-      
-      console.log(`📋 Setting ${enquiriesData.length} enquiries`);
-      setEnquiries(enquiriesData);
-      
-      const stats = {
+      setEnquiryStats({
         total: enquiriesData.length,
-        pending: enquiriesData.filter(e => e.status === 'pending').length,
-        responded: enquiriesData.filter(e => e.status === 'responded').length,
-        closed: enquiriesData.filter(e => e.status === 'closed').length
-      };
-      setEnquiryStats(stats);
+        visible: visible.length,
+        locked: lockedCount,
+        pending: visible.filter(e => e.status === 'pending').length,
+        responded: visible.filter(e => e.status === 'responded').length,
+        closed: visible.filter(e => e.status === 'closed').length
+      });
       
     } catch (error) {
       console.error('❌ Error fetching enquiries:', error);
@@ -155,7 +270,6 @@ const Dashboard = () => {
     }
   };
 
-  // Update enquiry status
   const handleUpdateStatus = async (enquiryId, newStatus) => {
     try {
       const result = await enquiryApi.updateEnquiryStatus(enquiryId, newStatus);
@@ -172,7 +286,6 @@ const Dashboard = () => {
     }
   };
 
-  // Copy text to clipboard
   const copyToClipboard = (text) => {
     navigator.clipboard.writeText(text).then(() => {
       setCopySuccess('Copied!');
@@ -183,9 +296,8 @@ const Dashboard = () => {
     });
   };
 
-  // Get filtered enquiries
   const getFilteredEnquiries = () => {
-    let filtered = [...enquiries];
+    let filtered = [...visibleEnquiries];
     
     if (filterStatus !== 'all') {
       filtered = filtered.filter(e => e.status === filterStatus);
@@ -198,8 +310,7 @@ const Dashboard = () => {
         e.subject?.toLowerCase().includes(term) ||
         e.message?.toLowerCase().includes(term) ||
         e.parentEmail?.toLowerCase().includes(term) ||
-        e.parentPhone?.toLowerCase().includes(term) ||
-        e.institutionName?.toLowerCase().includes(term)
+        e.parentPhone?.toLowerCase().includes(term)
       );
     }
     
@@ -209,10 +320,8 @@ const Dashboard = () => {
 
   // ============ REGISTRATION FUNCTIONS ============
 
-  // Check existing registration using registerApi
   const checkExistingRegistration = async (email) => {
     if (!email) {
-      console.log('⚠️ No email provided for registration check');
       setRegistrationStatus('not_started');
       setIsLoading(false);
       return;
@@ -222,11 +331,7 @@ const Dashboard = () => {
     setError('');
     
     try {
-      console.log('📡 Checking registration for email:', email);
-      
       const result = await registerApi.checkRegistrationByEmail(email);
-      
-      console.log('📡 Registration check result:', result);
 
       if (result && result.success && result.data) {
         const regData = result.data;
@@ -249,13 +354,11 @@ const Dashboard = () => {
           if (id) {
             setInstitutionId(id);
             localStorage.setItem('institutionId', id);
-            console.log('✅ Institution ID found in registration:', id);
             
             const type = regData.institutionType || regData.type || localStorage.getItem('institutionType');
             if (type) {
               const foundInstitution = await findInstitutionByEmail(email);
               if (foundInstitution) {
-                console.log('✅ Found full institution data:', foundInstitution);
                 const foundId = foundInstitution.id || foundInstitution._id;
                 setInstitutionId(foundId);
                 localStorage.setItem('institutionId', foundId);
@@ -266,12 +369,12 @@ const Dashboard = () => {
               }
             }
             
+            // Fetch limit + enquiries
+            await fetchInstitutionLimit();
             await fetchInstitutionEnquiries();
           } else {
-            console.log('⚠️ No institutionId in registration, trying to find by email');
             const foundInstitution = await findInstitutionByEmail(email);
             if (foundInstitution) {
-              console.log('✅ Found institution by email:', foundInstitution);
               const foundId = foundInstitution.id || foundInstitution._id;
               setInstitutionId(foundId);
               localStorage.setItem('institutionId', foundId);
@@ -279,22 +382,17 @@ const Dashboard = () => {
               const type = foundInstitution.institutionType;
               localStorage.setItem(`${type}Data`, JSON.stringify(foundInstitution));
               setInstitutionType(type);
+              await fetchInstitutionLimit();
               await fetchInstitutionEnquiries();
-            } else {
-              console.log('❌ No institution found with email:', email);
-              toast.warning('Institution profile not found. Please contact support.');
             }
           }
         }
-        
-        console.log('📋 Found existing registration:', regData);
         
         if (regData.status === 'pending') {
           startStatusPolling(regData.id);
         }
       } else {
         setRegistrationStatus('not_started');
-        console.log('📋 No existing registration found');
       }
     } catch (error) {
       console.error('❌ Error checking registration:', error);
@@ -312,10 +410,8 @@ const Dashboard = () => {
     }
   };
 
-  // Fetch registration status using registerApi
   const fetchRegistrationStatus = async (id) => {
     if (!id) {
-      console.log('⚠️ No registration ID provided');
       setRegistrationStatus('not_started');
       setIsLoading(false);
       return;
@@ -325,11 +421,7 @@ const Dashboard = () => {
     setError('');
     
     try {
-      console.log('🔍 Fetching registration status for ID:', id);
-      
       const result = await registerApi.getRegistrationStatus(id);
-
-      console.log('📋 Registration Status Response:', result);
 
       if (result && result.success && result.data) {
         const regData = result.data;
@@ -350,7 +442,6 @@ const Dashboard = () => {
           if (id) {
             setInstitutionId(id);
             localStorage.setItem('institutionId', id);
-            console.log('✅ Institution ID found in registration:', id);
             
             const type = regData.institutionType || regData.type || localStorage.getItem('institutionType');
             if (type) {
@@ -358,7 +449,6 @@ const Dashboard = () => {
               if (email) {
                 const foundInstitution = await findInstitutionByEmail(email);
                 if (foundInstitution) {
-                  console.log('✅ Found full institution data:', foundInstitution);
                   const foundId = foundInstitution.id || foundInstitution._id;
                   setInstitutionId(foundId);
                   localStorage.setItem('institutionId', foundId);
@@ -370,14 +460,13 @@ const Dashboard = () => {
               }
             }
             
+            await fetchInstitutionLimit();
             await fetchInstitutionEnquiries();
           } else {
             const email = regData.email || userEmail;
             if (email) {
-              console.log('⚠️ No institutionId in registration, trying to find by email');
               const foundInstitution = await findInstitutionByEmail(email);
               if (foundInstitution) {
-                console.log('✅ Found institution by email:', foundInstitution);
                 const foundId = foundInstitution.id || foundInstitution._id;
                 setInstitutionId(foundId);
                 localStorage.setItem('institutionId', foundId);
@@ -385,19 +474,17 @@ const Dashboard = () => {
                 const type = foundInstitution.institutionType;
                 localStorage.setItem(`${type}Data`, JSON.stringify(foundInstitution));
                 setInstitutionType(type);
+                await fetchInstitutionLimit();
                 await fetchInstitutionEnquiries();
               }
             }
           }
         }
         
-        console.log('✅ Registration status set to:', regData.status);
-        
         if (regData.status === 'pending') {
           startStatusPolling(id);
         }
       } else {
-        console.log('❌ No registration data found');
         setRegistrationStatus('not_started');
         localStorage.removeItem('registrationId');
         localStorage.removeItem('institutionId');
@@ -417,11 +504,8 @@ const Dashboard = () => {
     }
   };
 
-  // Start polling for status updates
   const startStatusPolling = (id) => {
-    if (pollingInterval) {
-      clearInterval(pollingInterval);
-    }
+    if (pollingInterval) clearInterval(pollingInterval);
     
     const interval = setInterval(async () => {
       try {
@@ -438,6 +522,7 @@ const Dashboard = () => {
                 const id = result.data.schoolId || result.data.institutionId;
                 setInstitutionId(id);
                 localStorage.setItem('institutionId', id);
+                await fetchInstitutionLimit();
                 await fetchInstitutionEnquiries();
               } else {
                 const email = result.data.email || userEmail;
@@ -451,6 +536,7 @@ const Dashboard = () => {
                     const type = foundInstitution.institutionType;
                     localStorage.setItem(`${type}Data`, JSON.stringify(foundInstitution));
                     setInstitutionType(type);
+                    await fetchInstitutionLimit();
                     await fetchInstitutionEnquiries();
                   }
                 }
@@ -510,12 +596,14 @@ const Dashboard = () => {
         navigate('/login', { replace: true });
       }
     }
+    
     if (registrationStatus === 'approved') {
+      // Refresh limit first, then enquiries
+      await fetchInstitutionLimit();
       await fetchInstitutionEnquiries();
     }
   };
 
-  // Handle view profile navigation
   const handleViewProfile = () => {
     let type = localStorage.getItem('institutionType');
     
@@ -529,25 +617,11 @@ const Dashboard = () => {
     }
     
     if (!type) {
-      if (localStorage.getItem('collegeData')) {
-        type = 'college';
-      } else if (localStorage.getItem('schoolData')) {
-        type = 'school';
-      } else if (localStorage.getItem('puCollegeData')) {
-        type = 'pu_college';
-      } else if (localStorage.getItem('coachingData')) {
-        type = 'coaching';
-      } else if (localStorage.getItem('teacherData')) {
-        type = 'teacher';
-      }
-    }
-    
-    if (!type && registrationData) {
-      if (registrationData.institutionType) {
-        type = registrationData.institutionType;
-      } else if (registrationData.type) {
-        type = registrationData.type;
-      }
+      if (localStorage.getItem('collegeData')) type = 'college';
+      else if (localStorage.getItem('schoolData')) type = 'school';
+      else if (localStorage.getItem('puCollegeData')) type = 'pu_college';
+      else if (localStorage.getItem('coachingData')) type = 'coaching';
+      else if (localStorage.getItem('teacherData')) type = 'teacher';
     }
     
     const id = institutionId || localStorage.getItem('institutionId');
@@ -557,97 +631,258 @@ const Dashboard = () => {
       return;
     }
 
-    console.log('🔍 Navigating to profile - Type:', type, 'ID:', id);
-
     switch(type?.toLowerCase()) {
-      case 'college':
-        navigate('/college-profile');
-        break;
-      case 'school':
-        navigate('/school-profile');
-        break;
+      case 'college': navigate('/college-profile'); break;
+      case 'school': navigate('/school-profile'); break;
       case 'pu_college':
-      case 'pucollege':
-        navigate('/pu-college-profile');
-        break;
+      case 'pucollege': navigate('/pu-college-profile'); break;
       case 'coaching':
-      case 'tuition':
-        navigate('/coaching-profile');
-        break;
-      case 'teacher':
-        navigate('/teacher-profile');
-        break;
+      case 'tuition': navigate('/coaching-profile'); break;
+      case 'teacher': navigate('/teacher-profile'); break;
       default:
-        console.log('⚠️ Unknown institution type, trying to determine from data');
-        if (localStorage.getItem('collegeData')) {
-          navigate('/college-profile');
-        } else if (localStorage.getItem('schoolData')) {
-          navigate('/school-profile');
-        } else if (localStorage.getItem('puCollegeData')) {
-          navigate('/pu-college-profile');
-        } else if (localStorage.getItem('coachingData')) {
-          navigate('/coaching-profile');
-        } else if (localStorage.getItem('teacherData')) {
-          navigate('/teacher-profile');
-        } else {
-          toast.warning('Profile type not found. Please contact support.');
-        }
+        if (localStorage.getItem('collegeData')) navigate('/college-profile');
+        else if (localStorage.getItem('schoolData')) navigate('/school-profile');
+        else if (localStorage.getItem('puCollegeData')) navigate('/pu-college-profile');
+        else if (localStorage.getItem('coachingData')) navigate('/coaching-profile');
+        else if (localStorage.getItem('teacherData')) navigate('/teacher-profile');
+        else toast.warning('Profile type not found. Please contact support.');
     }
   };
 
-  // ============ GET STATUS CONFIG ============
+  const handleBuyPlan = (plan) => {
+    const subject = encodeURIComponent(`Enquiry Plan Purchase - ${plan.name} Plan`);
+    const body = encodeURIComponent(
+      `Hello Raynott Support Team,\n\n` +
+      `I would like to purchase the following plan for my institution:\n\n` +
+      `Institution: ${institutionName || 'N/A'}\n` +
+      `Email: ${userEmail || 'N/A'}\n\n` +
+      `Selected Plan: ${plan.name}\n` +
+      `Enquiries: ${plan.enquiries}\n` +
+      `Price: ₹${plan.price.toLocaleString()}\n\n` +
+      `Please guide me through the payment process.\n\n` +
+      `Thank you.`
+    );
+    window.location.href = `mailto:support@raynott.com?subject=${subject}&body=${body}`;
+    toast.success('Opening email client...');
+  };
+
   const getStatusConfig = (status) => {
     const configs = {
       'not_started': {
-        icon: FiClipboard,
-        color: 'text-gray-400',
-        bgColor: 'bg-gray-500/10',
-        borderColor: 'border-gray-500/20',
-        title: 'Complete Your Registration',
+        icon: FiClipboard, color: 'text-gray-400', bgColor: 'bg-gray-500/10',
+        borderColor: 'border-gray-500/20', title: 'Complete Your Registration',
         message: 'Start your institution registration process to access all features.',
-        buttonText: 'Start Registration',
-        buttonAction: handleRegisterForm,
-        showButton: true,
-        details: 'Click the button below to begin the registration process.'
+        buttonText: 'Start Registration', buttonAction: handleRegisterForm,
+        showButton: true, details: 'Click the button below to begin the registration process.'
       },
       'pending': {
-        icon: FiLoader,
-        color: 'text-yellow-400',
-        bgColor: 'bg-yellow-500/10',
-        borderColor: 'border-yellow-500/20',
-        title: 'Registration Under Review',
+        icon: FiLoader, color: 'text-yellow-400', bgColor: 'bg-yellow-500/10',
+        borderColor: 'border-yellow-500/20', title: 'Registration Under Review',
         message: 'Your registration has been submitted and is currently being reviewed by our admin team.',
-        buttonText: 'Refresh Status',
-        buttonAction: handleRefreshStatus,
-        showButton: true,
-        details: 'Please wait for admin approval. This process usually takes 24-48 hours.'
+        buttonText: 'Refresh Status', buttonAction: handleRefreshStatus,
+        showButton: true, details: 'Please wait for admin approval. This process usually takes 24-48 hours.'
       },
       'approved': {
-        icon: FiCheckCircle,
-        color: 'text-green-400',
-        bgColor: 'bg-green-500/10',
-        borderColor: 'border-green-500/20',
-        title: 'Registration Approved! 🎉',
+        icon: FiCheckCircle, color: 'text-green-400', bgColor: 'bg-green-500/10',
+        borderColor: 'border-green-500/20', title: 'Registration Approved! 🎉',
         message: 'Congratulations! Your institution has been verified and approved. You now have full access to all features.',
-        buttonText: 'View Full Profile',
-        buttonAction: handleViewProfile,
-        showButton: true,
-        details: 'Your institution is now active.'
+        buttonText: 'View Full Profile', buttonAction: handleViewProfile,
+        showButton: true, details: 'Your institution is now active.'
       },
       'rejected': {
-        icon: FiXCircle,
-        color: 'text-red-400',
-        bgColor: 'bg-red-500/10',
-        borderColor: 'border-red-500/20',
-        title: 'Registration Rejected',
+        icon: FiXCircle, color: 'text-red-400', bgColor: 'bg-red-500/10',
+        borderColor: 'border-red-500/20', title: 'Registration Rejected',
         message: 'Your registration was not approved. Please review the reason and contact support.',
-        buttonText: 'Contact Support',
-        buttonAction: () => window.location.href = 'mailto:support@raynott.com',
-        showButton: true,
-        details: 'Our team will help you resolve any issues with your registration.'
+        buttonText: 'Contact Support', buttonAction: () => window.location.href = 'mailto:support@raynott.com',
+        showButton: true, details: 'Our team will help you resolve any issues with your registration.'
       }
     };
     return configs[status] || configs['not_started'];
+  };
+
+  // ============ RENDER INFO BANNER ============
+  const renderInfoBanner = () => {
+    if (registrationStatus !== 'approved') return null;
+
+    const { freeLimit, customLimit, totalLimit } = institutionLimit;
+
+    return (
+      <motion.div
+        initial={{ opacity: 0, y: -10 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="bg-gradient-to-r from-blue-500/10 via-purple-500/10 to-orange-500/10 rounded-xl border border-blue-500/20 mb-6 overflow-hidden"
+      >
+        <div className="p-5">
+          <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4">
+            <div className="flex items-start gap-4 flex-1">
+              <div className="p-3 bg-blue-500/20 rounded-xl flex-shrink-0">
+                <FiInfo className="w-6 h-6 text-blue-400" />
+              </div>
+              <div className="flex-1">
+                <h3 className="text-white font-bold text-lg flex items-center gap-2 flex-wrap">
+                  Enquiry Access Plan
+                  <span className="px-2 py-0.5 bg-blue-500/20 text-blue-300 rounded-full text-xs font-medium">
+                    Free Tier
+                  </span>
+                </h3>
+                <p className="text-gray-300 text-sm mt-1">
+                  You have <strong className="text-blue-400">{freeLimit} free enquiries</strong>
+                  {customLimit > 0 && (
+                    <> + <strong className="text-green-400">{customLimit} unlocked</strong></>
+                  )}
+                  {' '}= <strong className="text-white">{totalLimit} total</strong> visible
+                </p>
+                <p className="text-xs text-gray-400 mt-1">
+                  Need more? Check the plans below or contact support.
+                </p>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-3 flex-shrink-0">
+              <div className="bg-black/20 backdrop-blur-sm rounded-xl px-4 py-3 border border-white/10 text-center min-w-[100px]">
+                <p className="text-xl font-bold text-white">{enquiryStats.visible}<span className="text-gray-400 text-sm">/{enquiryStats.total}</span></p>
+                <p className="text-xs text-gray-400">Used</p>
+              </div>
+              <button
+                onClick={() => setShowPlansExpanded(!showPlansExpanded)}
+                className="px-4 py-3 bg-gradient-to-r from-orange-500 to-amber-500 text-white rounded-xl hover:from-orange-600 hover:to-amber-600 transition-all text-sm font-semibold flex items-center gap-2 shadow-lg shadow-orange-500/20 whitespace-nowrap"
+              >
+                <FiPackage className="w-4 h-4" />
+                {showPlansExpanded ? 'Hide Plans' : 'View Plans'}
+                {showPlansExpanded ? <FiChevronUp className="w-4 h-4" /> : <FiChevronDown className="w-4 h-4" />}
+              </button>
+            </div>
+          </div>
+        </div>
+
+        {showPlansExpanded && (
+          <motion.div
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: 'auto', opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            className="border-t border-blue-500/20 bg-gray-900/30"
+          >
+            <div className="p-6">
+              <div className="bg-blue-500/10 border border-blue-500/20 rounded-lg p-3 mb-5">
+                <p className="text-xs text-blue-300 flex items-start gap-2">
+                  <FiInfo className="w-4 h-4 mt-0.5 flex-shrink-0" />
+                  <span>
+                    Additional enquiries can be unlocked by contacting our support team. 
+                    Click <strong className="text-white">"Buy Plan"</strong> on any plan to get started.
+                  </span>
+                </p>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                {PRICING_PLANS.map((plan) => {
+                  const discount = Math.round(((plan.originalPrice - plan.price) / plan.originalPrice) * 100);
+                  
+                  return (
+                    <motion.div
+                      key={plan.id}
+                      whileHover={{ y: -4 }}
+                      className={`relative rounded-xl p-5 transition-all border-2 ${
+                        plan.popular
+                          ? 'bg-gradient-to-br from-purple-500/10 to-pink-500/10 border-purple-500/40 hover:border-purple-500/70'
+                          : 'bg-gray-800/50 border-gray-600/50 hover:border-orange-500/50'
+                      }`}
+                    >
+                      {plan.popular && (
+                        <div className="absolute -top-2.5 left-1/2 transform -translate-x-1/2">
+                          <span className="px-3 py-0.5 bg-gradient-to-r from-purple-500 to-pink-500 text-white text-[10px] font-bold rounded-full shadow-lg flex items-center gap-1 whitespace-nowrap">
+                            <FiStar className="w-2.5 h-2.5 fill-white" />
+                            MOST POPULAR
+                          </span>
+                        </div>
+                      )}
+
+                      {discount > 0 && (
+                        <div className="absolute top-3 right-3">
+                          <span className="px-2 py-0.5 bg-red-500 text-white text-[10px] font-bold rounded-full">
+                            -{discount}%
+                          </span>
+                        </div>
+                      )}
+
+                      <div className="mb-3 mt-2">
+                        <h5 className="text-lg font-bold text-white">{plan.name}</h5>
+                        <div className="flex items-center gap-1.5 mt-1">
+                          <FiPackage className="w-3.5 h-3.5 text-orange-400" />
+                          <span className="text-xs text-gray-300">{plan.enquiries} enquiries</span>
+                        </div>
+                      </div>
+
+                      <div className="mb-4">
+                        <div className="flex items-baseline gap-2">
+                          <span className="text-2xl font-bold text-white">₹{plan.price.toLocaleString()}</span>
+                          {plan.originalPrice > plan.price && (
+                            <span className="text-xs text-gray-500 line-through">
+                              ₹{plan.originalPrice.toLocaleString()}
+                            </span>
+                          )}
+                        </div>
+                        <p className="text-[10px] text-gray-400 mt-0.5">
+                          ₹{Math.round(plan.price / plan.enquiries)}/enquiry
+                        </p>
+                      </div>
+
+                      <ul className="space-y-1.5 mb-4">
+                        {plan.features.map((feature, idx) => (
+                          <li key={idx} className="flex items-start gap-1.5 text-[11px] text-gray-300">
+                            <FiCheck className="w-3 h-3 text-green-400 flex-shrink-0 mt-0.5" />
+                            <span>{feature}</span>
+                          </li>
+                        ))}
+                      </ul>
+
+                      <button
+                        onClick={() => handleBuyPlan(plan)}
+                        className={`w-full px-4 py-2.5 rounded-lg font-semibold text-sm transition-all flex items-center justify-center gap-2 ${
+                          plan.popular
+                            ? 'bg-gradient-to-r from-purple-500 to-pink-500 text-white hover:from-purple-600 hover:to-pink-600 shadow-lg shadow-purple-500/30'
+                            : 'bg-gradient-to-r from-orange-500 to-amber-500 text-white hover:from-orange-600 hover:to-amber-600 shadow-lg shadow-orange-500/30'
+                        }`}
+                      >
+                        <FiCreditCard className="w-4 h-4" />
+                        Buy Plan
+                      </button>
+                    </motion.div>
+                  );
+                })}
+              </div>
+
+              <div className="mt-5 flex flex-col sm:flex-row items-center justify-between gap-3 p-4 bg-gray-800/50 rounded-xl border border-gray-700">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 bg-blue-500/20 rounded-lg">
+                    <FiMail className="w-4 h-4 text-blue-400" />
+                  </div>
+                  <div>
+                    <p className="text-sm text-white font-medium">Need help choosing?</p>
+                    <p className="text-xs text-gray-400">Our team is here to help</p>
+                  </div>
+                </div>
+                <div className="flex gap-2">
+                  <a
+                    href="mailto:support@raynott.com?subject=Enquiry%20Plan%20Inquiry"
+                    className="px-4 py-2 bg-blue-500/20 text-blue-300 rounded-lg hover:bg-blue-500/30 transition-all text-sm flex items-center gap-2"
+                  >
+                    <FiMail className="w-3.5 h-3.5" />
+                    Email Support
+                  </a>
+                  <a
+                    href="tel:+919876543210"
+                    className="px-4 py-2 bg-green-500/20 text-green-300 rounded-lg hover:bg-green-500/30 transition-all text-sm flex items-center gap-2"
+                  >
+                    <FiPhone className="w-3.5 h-3.5" />
+                    Call Us
+                  </a>
+                </div>
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </motion.div>
+    );
   };
 
   // ============ RENDER ENQUIRY DETAIL MODAL ============
@@ -681,16 +916,12 @@ const Dashboard = () => {
                 )}
               </div>
             </div>
-            <button
-              onClick={() => setShowEnquiryDetail(false)}
-              className="text-gray-400 hover:text-white"
-            >
+            <button onClick={() => setShowEnquiryDetail(false)} className="text-gray-400 hover:text-white">
               <FiX className="w-6 h-6" />
             </button>
           </div>
 
           <div className="space-y-4">
-            {/* Parent Information */}
             <div className="bg-gray-700/30 rounded-lg p-4">
               <h4 className="text-sm text-gray-400 mb-2">Parent Information</h4>
               <div className="grid grid-cols-2 gap-3">
@@ -701,21 +932,10 @@ const Dashboard = () => {
                 <div>
                   <p className="text-xs text-gray-500">Email</p>
                   <div className="flex items-center gap-2">
-                    <a 
-                      href={`mailto:${enquiry.parentEmail}?subject=Re: ${enquiry.subject}`}
-                      className="text-blue-400 hover:underline text-sm truncate"
-                      target="_blank"
-                      rel="noopener noreferrer"
-                    >
+                    <a href={`mailto:${enquiry.parentEmail}?subject=Re: ${enquiry.subject}`} className="text-blue-400 hover:underline text-sm truncate" target="_blank" rel="noopener noreferrer">
                       {enquiry.parentEmail}
                     </a>
-                    <button
-                      onClick={() => {
-                        navigator.clipboard.writeText(enquiry.parentEmail);
-                        toast.success('Email copied!');
-                      }}
-                      className="text-gray-400 hover:text-white text-xs"
-                    >
+                    <button onClick={() => { navigator.clipboard.writeText(enquiry.parentEmail); toast.success('Email copied!'); }} className="text-gray-400 hover:text-white text-xs">
                       <FiCopy className="w-3 h-3" />
                     </button>
                   </div>
@@ -724,16 +944,10 @@ const Dashboard = () => {
                   <div className="col-span-2">
                     <p className="text-xs text-gray-500">Phone</p>
                     <div className="flex items-center gap-2 flex-wrap">
-                      <a 
-                        href={`tel:${enquiry.parentPhone}`}
-                        className="text-green-400 hover:underline"
-                      >
+                      <a href={`tel:${enquiry.parentPhone}`} className="text-green-400 hover:underline">
                         {enquiry.parentPhone}
                       </a>
-                      <button
-                        onClick={() => copyToClipboard(enquiry.parentPhone)}
-                        className="text-gray-400 hover:text-white text-xs"
-                      >
+                      <button onClick={() => copyToClipboard(enquiry.parentPhone)} className="text-gray-400 hover:text-white text-xs">
                         <FiCopy className="w-3 h-3" />
                       </button>
                     </div>
@@ -742,7 +956,6 @@ const Dashboard = () => {
               </div>
             </div>
 
-            {/* Student Information */}
             {enquiry.studentName && (
               <div className="bg-gray-700/30 rounded-lg p-4">
                 <h4 className="text-sm text-gray-400 mb-2">Student Information</h4>
@@ -761,13 +974,11 @@ const Dashboard = () => {
               </div>
             )}
 
-            {/* Message */}
             <div className="bg-gray-700/30 rounded-lg p-4">
               <h4 className="text-sm text-gray-400 mb-2">Message</h4>
               <p className="text-white whitespace-pre-wrap leading-relaxed">{enquiry.message}</p>
             </div>
 
-            {/* Responses */}
             {enquiry.responses && enquiry.responses.length > 0 && (
               <div className="bg-gray-700/30 rounded-lg p-4">
                 <h4 className="text-sm text-gray-400 mb-2">Responses</h4>
@@ -783,7 +994,6 @@ const Dashboard = () => {
               </div>
             )}
 
-            {/* Action Buttons */}
             <div className="flex flex-wrap gap-3 pt-2 border-t border-gray-700">
               <select
                 value={enquiry.status}
@@ -799,22 +1009,14 @@ const Dashboard = () => {
               </select>
               
               {enquiry.parentEmail && (
-                <a
-                  href={`mailto:${enquiry.parentEmail}?subject=Re: ${enquiry.subject}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="px-4 py-2 bg-blue-500/20 text-blue-400 rounded-lg hover:bg-blue-500/30 transition-all flex items-center gap-2"
-                >
+                <a href={`mailto:${enquiry.parentEmail}?subject=Re: ${enquiry.subject}`} target="_blank" rel="noopener noreferrer" className="px-4 py-2 bg-blue-500/20 text-blue-400 rounded-lg hover:bg-blue-500/30 transition-all flex items-center gap-2">
                   <FiMail className="w-4 h-4" />
                   Email Parent
                 </a>
               )}
 
               {enquiry.parentPhone && (
-                <a
-                  href={`tel:${enquiry.parentPhone}`}
-                  className="px-4 py-2 bg-green-500/20 text-green-400 rounded-lg hover:bg-green-500/30 transition-all flex items-center gap-2"
-                >
+                <a href={`tel:${enquiry.parentPhone}`} className="px-4 py-2 bg-green-500/20 text-green-400 rounded-lg hover:bg-green-500/30 transition-all flex items-center gap-2">
                   <FiPhone className="w-4 h-4" />
                   Call Parent
                 </a>
@@ -831,7 +1033,8 @@ const Dashboard = () => {
     if (registrationStatus !== 'approved') return null;
 
     const filteredEnquiries = getFilteredEnquiries();
-    const pendingCount = enquiries.filter(e => e.status === 'pending').length;
+    const pendingCount = visibleEnquiries.filter(e => e.status === 'pending').length;
+    const hasLocked = lockedEnquiries.length > 0;
 
     return (
       <motion.div
@@ -855,18 +1058,40 @@ const Dashboard = () => {
               )}
             </p>
           </div>
-          <div className="flex flex-wrap items-center gap-3">
-            <button
-              onClick={fetchInstitutionEnquiries}
-              className="px-4 py-2 bg-gray-700/50 text-gray-300 rounded-lg hover:bg-gray-700 hover:text-white transition-all flex items-center gap-2"
-            >
-              <FiRefreshCw className={`w-4 h-4 ${enquiriesLoading ? 'animate-spin' : ''}`} />
-              Refresh
-            </button>
-          </div>
+          <button
+            onClick={async () => {
+              await fetchInstitutionLimit();
+              await fetchInstitutionEnquiries();
+            }}
+            className="px-4 py-2 bg-gray-700/50 text-gray-300 rounded-lg hover:bg-gray-700 hover:text-white transition-all flex items-center gap-2"
+          >
+            <FiRefreshCw className={`w-4 h-4 ${enquiriesLoading ? 'animate-spin' : ''}`} />
+            Refresh
+          </button>
         </div>
 
-        {/* Stats Cards */}
+        {hasLocked && (
+          <div className="mb-6 p-3 rounded-lg bg-orange-500/10 border border-orange-500/20">
+            <div className="flex items-center gap-3 flex-wrap">
+              <FiLock className="w-4 h-4 text-orange-400 flex-shrink-0" />
+              <p className="text-sm text-orange-300 flex-1">
+                <strong>{lockedEnquiries.length} enquiries</strong> are not visible with your current plan.
+                Scroll to the top to see upgrade plans.
+              </p>
+              <button
+                onClick={() => {
+                  window.scrollTo({ top: 0, behavior: 'smooth' });
+                  setTimeout(() => setShowPlansExpanded(true), 500);
+                }}
+                className="px-3 py-1.5 bg-orange-500/20 text-orange-300 rounded-lg hover:bg-orange-500/30 transition-all text-xs font-medium flex items-center gap-1"
+              >
+                <FiPackage className="w-3 h-3" />
+                View Plans
+              </button>
+            </div>
+          </div>
+        )}
+
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
           <div 
             className={`bg-gray-700/30 rounded-lg p-4 text-center cursor-pointer transition-all hover:bg-gray-700/50 ${
@@ -874,8 +1099,8 @@ const Dashboard = () => {
             }`} 
             onClick={() => setFilterStatus('all')}
           >
-            <div className="text-3xl font-bold text-white">{enquiryStats.total}</div>
-            <div className="text-sm text-gray-400">Total</div>
+            <div className="text-3xl font-bold text-white">{enquiryStats.visible}</div>
+            <div className="text-sm text-gray-400">Visible</div>
           </div>
           <div 
             className={`bg-yellow-500/10 rounded-lg p-4 text-center border border-yellow-500/20 cursor-pointer transition-all hover:bg-yellow-500/20 ${
@@ -906,7 +1131,6 @@ const Dashboard = () => {
           </div>
         </div>
 
-        {/* Search */}
         <div className="mb-4">
           <div className="relative">
             <FiSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
@@ -918,17 +1142,13 @@ const Dashboard = () => {
               className="w-full pl-10 pr-4 py-2.5 bg-gray-700/50 text-white rounded-lg border border-gray-600 focus:outline-none focus:border-orange-500 placeholder-gray-400"
             />
             {searchTerm && (
-              <button
-                onClick={() => setSearchTerm('')}
-                className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-white"
-              >
+              <button onClick={() => setSearchTerm('')} className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-white">
                 <FiX className="w-4 h-4" />
               </button>
             )}
           </div>
         </div>
 
-        {/* Enquiries List */}
         {enquiriesLoading ? (
           <div className="text-center py-8">
             <FiLoader className="w-8 h-8 text-orange-400 animate-spin mx-auto mb-2" />
@@ -940,10 +1160,7 @@ const Dashboard = () => {
               <>
                 <FiSearch className="w-12 h-12 text-gray-500 mx-auto mb-2" />
                 <p className="text-gray-400">No enquiries match your filters</p>
-                <button
-                  onClick={() => { setSearchTerm(''); setFilterStatus('all'); }}
-                  className="mt-2 text-orange-400 text-sm hover:underline"
-                >
+                <button onClick={() => { setSearchTerm(''); setFilterStatus('all'); }} className="mt-2 text-orange-400 text-sm hover:underline">
                   Clear filters
                 </button>
               </>
@@ -986,11 +1203,7 @@ const Dashboard = () => {
                           </span>
                         )}
                         <span className="text-xs text-gray-500">
-                          {new Date(enquiry.createdAt).toLocaleDateString('en-IN', {
-                            day: '2-digit',
-                            month: 'short',
-                            year: 'numeric'
-                          })}
+                          {new Date(enquiry.createdAt).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}
                         </span>
                       </div>
                       <h3 className="text-white font-medium truncate">{enquiry.subject}</h3>
@@ -1024,10 +1237,7 @@ const Dashboard = () => {
 
                     <div className="flex flex-wrap items-center gap-2 flex-shrink-0">
                       <button
-                        onClick={() => {
-                          setSelectedEnquiry(enquiry);
-                          setShowEnquiryDetail(true);
-                        }}
+                        onClick={() => { setSelectedEnquiry(enquiry); setShowEnquiryDetail(true); }}
                         className="px-3 py-1.5 bg-blue-500/20 text-blue-400 rounded-lg hover:bg-blue-500/30 transition-all text-sm flex items-center gap-1"
                       >
                         <FiEye className="w-3 h-3" />
@@ -1040,7 +1250,6 @@ const Dashboard = () => {
                           target="_blank"
                           rel="noopener noreferrer"
                           className="px-3 py-1.5 bg-blue-500/20 text-blue-400 rounded-lg hover:bg-blue-500/30 transition-all text-sm flex items-center gap-1"
-                          title="Send email"
                         >
                           <FiMail className="w-3 h-3" />
                           Email
@@ -1051,7 +1260,6 @@ const Dashboard = () => {
                         <a
                           href={`tel:${enquiry.parentPhone}`}
                           className="px-3 py-1.5 bg-green-500/20 text-green-400 rounded-lg hover:bg-green-500/30 transition-all text-sm flex items-center gap-1"
-                          title="Call parent"
                         >
                           <FiPhone className="w-3 h-3" />
                           Call
@@ -1070,7 +1278,6 @@ const Dashboard = () => {
                     </div>
                   </div>
 
-                  {/* Show existing responses */}
                   {enquiry.responses && enquiry.responses.length > 0 && (
                     <div className="mt-3 border-t border-gray-600 pt-3">
                       <p className="text-xs text-gray-400 mb-2">Responses:</p>
@@ -1110,10 +1317,7 @@ const Dashboard = () => {
         <div className="bg-red-500/10 backdrop-blur-lg rounded-xl p-8 border border-red-500/20 text-center">
           <FiAlertCircle className="w-12 h-12 text-red-400 mx-auto mb-4" />
           <p className="text-red-300">{error}</p>
-          <button
-            onClick={handleRefreshStatus}
-            className="mt-4 px-6 py-2 bg-red-500/20 text-red-400 rounded-lg hover:bg-red-500/30 transition-all"
-          >
+          <button onClick={handleRefreshStatus} className="mt-4 px-6 py-2 bg-red-500/20 text-red-400 rounded-lg hover:bg-red-500/30 transition-all">
             Try Again
           </button>
         </div>
@@ -1134,20 +1338,14 @@ const Dashboard = () => {
             <StatusIcon className={`w-12 h-12 ${config.color}`} />
           </div>
           <div className="flex-1">
-            <h3 className={`text-2xl font-bold ${config.color} mb-2`}>
-              {config.title}
-            </h3>
+            <h3 className={`text-2xl font-bold ${config.color} mb-2`}>{config.title}</h3>
             <p className="text-gray-300 text-lg mb-2">{config.message}</p>
             <p className="text-gray-400 text-sm">{config.details}</p>
             {registrationStatus === 'pending' && registrationData?.submittedAt && (
               <div className="mt-3 flex items-center gap-2">
                 <FiClock className="text-yellow-400 w-4 h-4" />
                 <span className="text-yellow-400 text-sm">
-                  Submitted: {new Date(registrationData.submittedAt).toLocaleDateString('en-IN', {
-                    day: '2-digit',
-                    month: 'short',
-                    year: 'numeric'
-                  })}
+                  Submitted: {new Date(registrationData.submittedAt).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}
                 </span>
               </div>
             )}
@@ -1155,11 +1353,7 @@ const Dashboard = () => {
               <div className="mt-3 flex items-center gap-2">
                 <FiCheck className="text-green-400 w-4 h-4" />
                 <span className="text-green-400 text-sm">
-                  Approved: {new Date(registrationData.approvedAt).toLocaleString('en-IN', {
-                    day: '2-digit',
-                    month: 'short',
-                    year: 'numeric'
-                  })}
+                  Approved: {new Date(registrationData.approvedAt).toLocaleString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}
                 </span>
               </div>
             )}
@@ -1228,12 +1422,7 @@ const Dashboard = () => {
             <p className="text-sm text-gray-400 mb-2">Gallery Photos</p>
             <div className="grid grid-cols-3 md:grid-cols-6 gap-2">
               {registrationData.photos.slice(0, 6).map((photo, index) => (
-                <img 
-                  key={index}
-                  src={photo} 
-                  alt={`Gallery ${index + 1}`}
-                  className="w-full h-20 object-cover rounded-lg"
-                />
+                <img key={index} src={photo} alt={`Gallery ${index + 1}`} className="w-full h-20 object-cover rounded-lg" />
               ))}
             </div>
           </div>
@@ -1270,10 +1459,8 @@ const Dashboard = () => {
   // ============ INITIALIZATION ============
   useEffect(() => {
     const token = authApis.getAdminToken();
-    console.log('🔍 Dashboard - Token:', token ? 'Present' : 'Missing');
     
     if (!token) {
-      console.log('🔍 No token found, redirecting to login');
       navigate('/login', { replace: true });
       return;
     }
@@ -1284,35 +1471,22 @@ const Dashboard = () => {
     const role = localStorage.getItem('userRole');
     
     const registrationKey = email ? `registrationId_${email}` : 'registrationId';
-    const institutionKey = email ? `institutionId_${email}` : 'institutionId';
-    
     const regId = localStorage.getItem(registrationKey);
-    const storedInstitutionId = localStorage.getItem(institutionKey);
-
-    console.log('📋 Dashboard - User Data:', { 
-      name, type, email, role, regId, storedInstitutionId 
-    });
 
     if (role === 'admin') {
-      console.log('🔍 User is admin, redirecting to /admin/dashboard');
       navigate('/admin/dashboard', { replace: true });
       return;
     }
 
     if (name) setInstitutionName(name);
-    if (type) {
-      setInstitutionType(type);
-    }
+    if (type) setInstitutionType(type);
     if (email) {
       setUserEmail(email);
       if (regId) {
         setRegistrationId(regId);
         fetchRegistrationStatus(regId);
-      } else if (email) {
-        checkExistingRegistration(email);
       } else {
-        setRegistrationStatus('not_started');
-        setIsLoading(false);
+        checkExistingRegistration(email);
       }
     } else {
       setRegistrationStatus('not_started');
@@ -1320,16 +1494,13 @@ const Dashboard = () => {
     }
 
     return () => {
-      if (pollingInterval) {
-        clearInterval(pollingInterval);
-      }
+      if (pollingInterval) clearInterval(pollingInterval);
     };
   }, [navigate]);
 
   // ============ MAIN RENDER ============
   return (
     <div className="min-h-screen bg-gray-900">
-      {/* Mobile Sidebar Toggle */}
       <button
         onClick={() => setIsSidebarOpen(!isSidebarOpen)}
         className="lg:hidden fixed top-4 left-4 z-50 p-2 bg-gray-800 rounded-lg text-white"
@@ -1337,7 +1508,6 @@ const Dashboard = () => {
         {isSidebarOpen ? <FiX size={24} /> : <FiMenu size={24} />}
       </button>
 
-      {/* Sidebar */}
       <motion.div
         className={`fixed top-0 left-0 h-full w-64 bg-gray-800 border-r border-gray-700 z-40 transform transition-transform duration-300 ${
           isSidebarOpen ? 'translate-x-0' : '-translate-x-full'
@@ -1367,7 +1537,7 @@ const Dashboard = () => {
             {(registrationStatus === 'not_started' || registrationStatus === 'rejected') && (
               <button
                 onClick={handleRegisterForm}
-                className="w-full flex items-center gap-3 px-4 py-3 text-gray-300 hover:text-white hover:bg-gray-700/50 rounded-lg transition-all group"
+                className="w-full flex items-center gap-3 px-4 py-3 text-gray-300 hover:text-white hover:bg-gray-700/50 rounded-lg transition-all"
               >
                 <FiPlus className="w-5 h-5" />
                 <span className="flex-1 text-left">New Registration</span>
@@ -1377,20 +1547,26 @@ const Dashboard = () => {
               <>
                 <button
                   onClick={handleViewProfile}
-                  className="w-full flex items-center gap-3 px-4 py-3 text-gray-300 hover:text-white hover:bg-gray-700/50 rounded-lg transition-all group"
+                  className="w-full flex items-center gap-3 px-4 py-3 text-gray-300 hover:text-white hover:bg-gray-700/50 rounded-lg transition-all"
                 >
                   <FiUsers className="w-5 h-5" />
                   <span className="flex-1 text-left">View Profile</span>
                 </button>
                 <button
                   onClick={() => document.getElementById('enquiries-section')?.scrollIntoView({ behavior: 'smooth' })}
-                  className="w-full flex items-center gap-3 px-4 py-3 text-gray-300 hover:text-white hover:bg-gray-700/50 rounded-lg transition-all group"
+                  className="w-full flex items-center gap-3 px-4 py-3 text-gray-300 hover:text-white hover:bg-gray-700/50 rounded-lg transition-all"
                 >
                   <FiMessageSquare className="w-5 h-5" />
                   <span className="flex-1 text-left">Enquiries</span>
                   {enquiryStats.pending > 0 && (
                     <span className="px-2 py-0.5 bg-red-500 text-white text-xs rounded-full">
                       {enquiryStats.pending}
+                    </span>
+                  )}
+                  {lockedEnquiries.length > 0 && (
+                    <span className="px-2 py-0.5 bg-orange-500 text-white text-xs rounded-full flex items-center gap-1">
+                      <FiLock className="w-2.5 h-2.5" />
+                      {lockedEnquiries.length}
                     </span>
                   )}
                 </button>
@@ -1410,9 +1586,7 @@ const Dashboard = () => {
         </div>
       </motion.div>
 
-      {/* Main Content */}
       <div className={`lg:ml-64 transition-all duration-300 ${isSidebarOpen ? 'ml-64' : ''}`}>
-        {/* Header */}
         <div className="bg-gray-800/50 backdrop-blur-lg border-b border-gray-700 p-6">
           <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
             <div>
@@ -1427,7 +1601,7 @@ const Dashboard = () => {
                 className="px-4 py-2 bg-gray-700/50 text-gray-300 rounded-lg hover:bg-gray-700 hover:text-white transition-all flex items-center gap-2"
               >
                 <FiRefreshCw className={`w-4 h-4 ${isLoading ? 'animate-spin' : ''}`} />
-                Refresh Status
+                Refresh
               </button>
               <div className="flex items-center gap-2 text-gray-300 bg-gray-700/30 px-4 py-2 rounded-lg">
                 <FiUser className="w-4 h-4" />
@@ -1437,16 +1611,15 @@ const Dashboard = () => {
           </div>
         </div>
 
-        {/* Dashboard Content */}
         <div className="p-6 max-w-6xl mx-auto">
           {renderWelcomeMessage()}
           {renderRegistrationStatusCard()}
+          {registrationStatus === 'approved' && renderInfoBanner()}
           {registrationStatus === 'approved' && renderRegistrationDetails()}
           {registrationStatus === 'approved' && renderEnquiriesSection()}
         </div>
       </div>
 
-      {/* Enquiry Detail Modal */}
       {renderEnquiryDetailModal()}
     </div>
   );

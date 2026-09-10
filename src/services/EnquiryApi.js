@@ -1,13 +1,11 @@
 import axios from 'axios';
 import base_url from './base_urls';
 
-// Create axios instance with default config
 const api = axios.create({
   baseURL: base_url,
   timeout: 15000,
 });
 
-// Request interceptor to add auth token if available
 api.interceptors.request.use(
   (config) => {
     const token = localStorage.getItem('adminToken') || localStorage.getItem('parentToken');
@@ -16,39 +14,32 @@ api.interceptors.request.use(
     }
     return config;
   },
-  (error) => {
-    return Promise.reject(error);
-  }
+  (error) => Promise.reject(error)
 );
 
-// Response interceptor 
 api.interceptors.response.use(
   (response) => response,
   (error) => {
-    // Handle 401 errors
     if (error.response?.status === 401) {
       const currentPath = window.location.pathname;
-      // Only redirect if NOT on parent dashboard
       if (!currentPath.includes('/parent-dashboard') && !currentPath.includes('/parent/dashboard')) {
         localStorage.removeItem('adminToken');
         localStorage.removeItem('parentToken');
         localStorage.removeItem('userRole');
         window.location.href = '/';
       }
-      // If on parent dashboard, just reject the promise without redirect
       console.warn('⚠️ 401 Unauthorized on parent dashboard - continuing without redirect');
     }
     return Promise.reject(error);
   }
 );
 
-// Helper function to get enquiries from localStorage
+// ============ LOCAL STORAGE FALLBACKS ============
 function getLocalEnquiries() {
   try {
     const stored = localStorage.getItem('parentEnquiries');
     if (stored) {
       const parsed = JSON.parse(stored);
-      console.log(`📋 Loaded ${parsed.length} enquiries from localStorage`);
       return { 
         success: true, 
         data: Array.isArray(parsed) ? parsed : [],
@@ -62,15 +53,58 @@ function getLocalEnquiries() {
   return { success: true, data: [], count: 0, source: 'localStorage' };
 }
 
+// ============ LOCAL LIMIT FALLBACK ============
+function getLocalLimit(institutionId) {
+  const DEFAULT_FREE_LIMIT = 5;
+  try {
+    const savedLimits = JSON.parse(localStorage.getItem('institutionLimits') || '{}');
+    const instLimit = savedLimits[institutionId];
+    const customLimit = instLimit?.customLimit || 0;
+    
+    return {
+      institutionId,
+      freeLimit: DEFAULT_FREE_LIMIT,
+      customLimit,
+      totalLimit: DEFAULT_FREE_LIMIT + customLimit,
+      lastUpdatedAt: instLimit?.updatedAt || null,
+      source: 'localStorage'
+    };
+  } catch (error) {
+    return {
+      institutionId,
+      freeLimit: DEFAULT_FREE_LIMIT,
+      customLimit: 0,
+      totalLimit: DEFAULT_FREE_LIMIT,
+      lastUpdatedAt: null,
+      source: 'localStorage'
+    };
+  }
+}
+
+// Save limit to localStorage as cache
+function saveLocalLimit(institutionId, limitData) {
+  try {
+    const savedLimits = JSON.parse(localStorage.getItem('institutionLimits') || '{}');
+    savedLimits[institutionId] = {
+      customLimit: limitData.customLimit || 0,
+      totalLimit: limitData.totalLimit || 5,
+      updatedAt: limitData.updatedAt || new Date().toISOString()
+    };
+    localStorage.setItem('institutionLimits', JSON.stringify(savedLimits));
+  } catch (error) {
+    console.error('Error saving to localStorage:', error);
+  }
+}
+
 const enquiryApi = {
-  // Submit a new enquiry (public)
+  // ============ PUBLIC / PARENT ============
+  
   submitEnquiry: async (enquiryData) => {
     try {
       const response = await api.post('/enquiry/submit', enquiryData);
       return response.data;
     } catch (error) {
       console.error('Submit enquiry error:', error);
-      // Return a fallback response
       return {
         success: false,
         message: error.response?.data?.message || error.message,
@@ -80,74 +114,54 @@ const enquiryApi = {
     }
   },
 
-  // Get parent's enquiries (requires parent authentication)
   getParentEnquiries: async () => {
     try {
       const token = localStorage.getItem('parentToken');
-      
-      // If no token, skip API call entirely
       if (!token) {
         console.warn('⚠️ No parent token found, using localStorage fallback');
         return getLocalEnquiries();
       }
       
-      // Check if token is valid by testing it
-      console.log('📡 Checking token validity...');
-      
       try {
         const response = await api.get('/parent/enquiries');
-        console.log('✅ API Response:', response.data);
-        
-        // Handle different response formats
-        if (response.data && response.data.success) {
-          return response.data;
-        } else if (response.data && Array.isArray(response.data)) {
+        if (response.data && response.data.success) return response.data;
+        if (response.data && Array.isArray(response.data)) {
           return { success: true, data: response.data, count: response.data.length };
-        } else if (response.data && response.data.enquiries) {
-          return { success: true, data: response.data.enquiries, count: response.data.enquiries.length };
-        } else {
-          return { success: false, data: [], count: 0, message: 'Invalid response format' };
         }
+        if (response.data && response.data.enquiries) {
+          return { success: true, data: response.data.enquiries, count: response.data.enquiries.length };
+        }
+        return { success: false, data: [], count: 0 };
       } catch (apiError) {
-        // If API call fails, clear token and use localStorage
-        console.warn('⚠️ API call failed, clearing token and using localStorage');
+        console.warn('⚠️ API call failed, using localStorage');
         localStorage.removeItem('parentToken');
         return getLocalEnquiries();
       }
     } catch (error) {
       console.error('❌ Get parent enquiries error:', error);
-      // Always fallback to localStorage
       return getLocalEnquiries();
     }
   },
 
-  // Get a single enquiry by ID (parent)
   getParentEnquiryById: async (enquiryId) => {
     try {
       const response = await api.get(`/parent/enquiries/${enquiryId}`);
       return response.data;
     } catch (error) {
-      console.error('Get parent enquiry by ID error:', error);
-      // Try to get from localStorage
       try {
         const stored = localStorage.getItem('parentEnquiries');
         if (stored) {
           const enquiries = JSON.parse(stored);
           const enquiry = enquiries.find(e => e.id === enquiryId);
-          if (enquiry) {
-            return { success: true, data: enquiry };
-          }
+          if (enquiry) return { success: true, data: enquiry };
         }
-      } catch (localError) {
-        console.error('Error finding enquiry in localStorage:', localError);
-      }
+      } catch (localError) {}
       return { enquiry: null, success: false };
     }
   },
 
-  // ============ ADMIN ROUTES ============
+  // ============ ADMIN - ENQUIRIES ============
 
-  // Get all enquiries (admin only)
   getAllEnquiries: async (params = {}) => {
     try {
       const response = await api.get('/admin/enquiries', { params });
@@ -158,7 +172,6 @@ const enquiryApi = {
     }
   },
 
-  // Get enquiry statistics (admin only)
   getEnquiryStats: async () => {
     try {
       const response = await api.get('/admin/enquiries/stats');
@@ -169,7 +182,6 @@ const enquiryApi = {
     }
   },
 
-  // Get enquiries for a specific institution (admin only)
   getInstitutionEnquiries: async (institutionId) => {
     try {
       const response = await api.get(`/admin/enquiries/institution/${institutionId}`);
@@ -180,7 +192,6 @@ const enquiryApi = {
     }
   },
 
-  // Get a single enquiry by ID (admin)
   getAdminEnquiryById: async (enquiryId) => {
     try {
       const response = await api.get(`/admin/enquiries/${enquiryId}`);
@@ -191,7 +202,6 @@ const enquiryApi = {
     }
   },
 
-  // Update enquiry status (admin only)
   updateEnquiryStatus: async (enquiryId, status) => {
     try {
       const response = await api.put(`/admin/enquiries/${enquiryId}/status`, { status });
@@ -202,7 +212,6 @@ const enquiryApi = {
     }
   },
 
-  // Add a response to an enquiry (admin only)
   addEnquiryResponse: async (enquiryId, responseData) => {
     try {
       const response = await api.post(`/admin/enquiries/${enquiryId}/response`, responseData);
@@ -213,7 +222,6 @@ const enquiryApi = {
     }
   },
 
-  // Delete an enquiry (admin only)
   deleteEnquiry: async (enquiryId) => {
     try {
       const response = await api.delete(`/admin/enquiries/${enquiryId}`);
@@ -224,14 +232,175 @@ const enquiryApi = {
     }
   },
 
-  // Get enquiries for a specific institution (public)
+  // ============ PUBLIC - INSTITUTION ENQUIRIES (WITH LIMIT) ============
+
   getPublicInstitutionEnquiries: async (institutionId) => {
     try {
       const response = await api.get(`/institution/enquiries/${institutionId}`);
-      return response.data;
+      
+      // Backend returns new format with visibleEnquiries/lockedCount/limit
+      if (response.data && response.data.success) {
+        // Cache limit locally
+        if (response.data.limit) {
+          saveLocalLimit(institutionId, {
+            customLimit: response.data.limit.customLimit,
+            totalLimit: response.data.limit.totalLimit,
+            updatedAt: new Date().toISOString()
+          });
+        }
+        return response.data;
+      }
+      
+      // Fallback: apply limit locally
+      const limitData = getLocalLimit(institutionId);
+      const allEnquiries = response.data?.data || response.data?.enquiries || [];
+      
+      const visible = allEnquiries.slice(0, limitData.totalLimit);
+      const locked = allEnquiries.slice(limitData.totalLimit);
+      
+      return {
+        success: true,
+        data: allEnquiries,
+        visibleEnquiries: visible,
+        lockedCount: locked.length,
+        limit: limitData,
+        count: allEnquiries.length
+      };
     } catch (error) {
       console.error('Get public institution enquiries error:', error);
-      return { enquiries: [], success: false };
+      
+      // Full fallback to localStorage
+      const limitData = getLocalLimit(institutionId);
+      return { 
+        success: false, 
+        data: [], 
+        visibleEnquiries: [], 
+        lockedCount: 0,
+        limit: limitData,
+        enquiries: [] 
+      };
+    }
+  },
+
+  // ============ INSTITUTION LIMITS ============
+
+  // Get limit for a specific institution (public - institution dashboard uses this)
+  getInstitutionLimit: async (institutionId) => {
+    try {
+      const response = await api.get(`/institution/limits/${institutionId}`);
+      
+      if (response.data && response.data.success) {
+        // Cache locally
+        saveLocalLimit(institutionId, {
+          customLimit: response.data.data.customLimit,
+          totalLimit: response.data.data.totalLimit,
+          updatedAt: new Date().toISOString()
+        });
+        return response.data;
+      }
+      
+      return { success: false, data: getLocalLimit(institutionId) };
+    } catch (error) {
+      console.warn('⚠️ Using localStorage fallback for limit');
+      return { 
+        success: true, 
+        data: getLocalLimit(institutionId),
+        source: 'localStorage' 
+      };
+    }
+  },
+
+  // Get locked enquiries (public)
+  getLockedEnquiries: async (institutionId) => {
+    try {
+      const response = await api.get(`/institution/enquiries/${institutionId}/locked`);
+      return response.data;
+    } catch (error) {
+      console.error('Get locked enquiries error:', error);
+      return { success: false, data: { lockedCount: 0, lockedEnquiries: [] } };
+    }
+  },
+
+  // Set/Update institution limit (admin only)
+  setInstitutionLimit: async (institutionId, limitData) => {
+    try {
+      const response = await api.put(`/admin/institution-limits/${institutionId}`, limitData);
+      
+      // Cache to localStorage
+      if (response.data && response.data.success) {
+        saveLocalLimit(institutionId, {
+          customLimit: response.data.data.customLimit,
+          totalLimit: response.data.data.totalLimit,
+          updatedAt: response.data.data.updatedAt
+        });
+      }
+      
+      return response.data;
+    } catch (error) {
+      console.error('Set institution limit error:', error);
+      
+      // Fallback: save to localStorage
+      try {
+        saveLocalLimit(institutionId, {
+          customLimit: limitData.customLimit,
+          totalLimit: 5 + limitData.customLimit,
+          updatedAt: new Date().toISOString()
+        });
+        
+        return {
+          success: true,
+          message: 'Saved locally (backend unavailable)',
+          data: {
+            institutionId,
+            customLimit: limitData.customLimit,
+            totalLimit: 5 + limitData.customLimit
+          },
+          source: 'localStorage'
+        };
+      } catch (e) {
+        return { success: false, message: 'Failed to save limit' };
+      }
+    }
+  },
+
+  // Get all institution limits (admin)
+  getAllInstitutionLimits: async () => {
+    try {
+      const response = await api.get('/admin/institution-limits');
+      return response.data;
+    } catch (error) {
+      console.error('Get all limits error:', error);
+      
+      // Fallback to localStorage
+      const savedLimits = JSON.parse(localStorage.getItem('institutionLimits') || '{}');
+      const limitsArray = Object.keys(savedLimits).map(id => ({
+        institutionId: id,
+        ...savedLimits[id]
+      }));
+      
+      return { success: true, data: limitsArray, source: 'localStorage' };
+    }
+  },
+
+  // Reset institution limit (admin)
+  resetInstitutionLimit: async (institutionId) => {
+    try {
+      const response = await api.delete(`/admin/institution-limits/${institutionId}`);
+      
+      // Clear from localStorage too
+      const savedLimits = JSON.parse(localStorage.getItem('institutionLimits') || '{}');
+      delete savedLimits[institutionId];
+      localStorage.setItem('institutionLimits', JSON.stringify(savedLimits));
+      
+      return response.data;
+    } catch (error) {
+      console.error('Reset limit error:', error);
+      
+      const savedLimits = JSON.parse(localStorage.getItem('institutionLimits') || '{}');
+      delete savedLimits[institutionId];
+      localStorage.setItem('institutionLimits', JSON.stringify(savedLimits));
+      
+      return { success: true, message: 'Reset locally' };
     }
   }
 };
