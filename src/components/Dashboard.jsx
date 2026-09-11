@@ -662,7 +662,7 @@ const Dashboard = () => {
       `Please guide me through the payment process.\n\n` +
       `Thank you.`
     );
-    window.location.href = `mailto:support@raynott.com?subject=${subject}&body=${body}`;
+    window.location.href = `mailto:raynottbangalore@gmail.com?subject=${subject}&body=${body}`;
     toast.success('Opening email client...');
   };
 
@@ -693,7 +693,7 @@ const Dashboard = () => {
         icon: FiXCircle, color: 'text-red-400', bgColor: 'bg-red-500/10',
         borderColor: 'border-red-500/20', title: 'Registration Rejected',
         message: 'Your registration was not approved. Please review the reason and contact support.',
-        buttonText: 'Contact Support', buttonAction: () => window.location.href = 'mailto:support@raynott.com',
+        buttonText: 'Contact Support', buttonAction: () => window.location.href = 'mailto:raynottbangalore@gmail.com',
         showButton: true, details: 'Our team will help you resolve any issues with your registration.'
       }
     };
@@ -710,9 +710,9 @@ const Dashboard = () => {
       <motion.div
         initial={{ opacity: 0, y: -10 }}
         animate={{ opacity: 1, y: 0 }}
-        className="bg-gradient-to-r from-blue-500/10 via-purple-500/10 to-orange-500/10 rounded-xl border border-blue-500/20 mb-6 overflow-hidden"
+        className="bg-gradient-to-r from-blue-500/10 via-purple-500/10 to-orange-500/10 rounded-xl border border-blue-500/20 mb-6 overflow-hidden mt-4"
       >
-        <div className="p-5">
+        <div className="p-5 ">
           <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4">
             <div className="flex items-start gap-4 flex-1">
               <div className="p-3 bg-blue-500/20 rounded-xl flex-shrink-0">
@@ -739,10 +739,10 @@ const Dashboard = () => {
             </div>
 
             <div className="flex items-center gap-3 flex-shrink-0">
-              <div className="bg-black/20 backdrop-blur-sm rounded-xl px-4 py-3 border border-white/10 text-center min-w-[100px]">
+              {/* <div className="bg-black/20 backdrop-blur-sm rounded-xl px-4 py-3 border border-white/10 text-center min-w-[100px]">
                 <p className="text-xl font-bold text-white">{enquiryStats.visible}<span className="text-gray-400 text-sm">/{enquiryStats.total}</span></p>
                 <p className="text-xs text-gray-400">Used</p>
-              </div>
+              </div> */}
               <button
                 onClick={() => setShowPlansExpanded(!showPlansExpanded)}
                 className="px-4 py-3 bg-gradient-to-r from-orange-500 to-amber-500 text-white rounded-xl hover:from-orange-600 hover:to-amber-600 transition-all text-sm font-semibold flex items-center gap-2 shadow-lg shadow-orange-500/20 whitespace-nowrap"
@@ -863,14 +863,14 @@ const Dashboard = () => {
                 </div>
                 <div className="flex gap-2">
                   <a
-                    href="mailto:support@raynott.com?subject=Enquiry%20Plan%20Inquiry"
+                    href="mailto:raynottbangalore@gmail.com?subject=Enquiry%20Plan%20Inquiry"
                     className="px-4 py-2 bg-blue-500/20 text-blue-300 rounded-lg hover:bg-blue-500/30 transition-all text-sm flex items-center gap-2"
                   >
                     <FiMail className="w-3.5 h-3.5" />
                     Email Support
                   </a>
                   <a
-                    href="tel:+919876543210"
+                    href="tel:8618591978"
                     className="px-4 py-2 bg-green-500/20 text-green-300 rounded-lg hover:bg-green-500/30 transition-all text-sm flex items-center gap-2"
                   >
                     <FiPhone className="w-3.5 h-3.5" />
@@ -1417,16 +1417,7 @@ const Dashboard = () => {
             </div>
           ))}
         </div>
-        {registrationData.photos && registrationData.photos.length > 0 && (
-          <div className="mt-4">
-            <p className="text-sm text-gray-400 mb-2">Gallery Photos</p>
-            <div className="grid grid-cols-3 md:grid-cols-6 gap-2">
-              {registrationData.photos.slice(0, 6).map((photo, index) => (
-                <img key={index} src={photo} alt={`Gallery ${index + 1}`} className="w-full h-20 object-cover rounded-lg" />
-              ))}
-            </div>
-          </div>
-        )}
+        
       </motion.div>
     );
   };

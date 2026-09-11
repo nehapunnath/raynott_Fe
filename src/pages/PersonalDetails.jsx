@@ -232,7 +232,7 @@ const PersonalDetails = () => {
               {/* <p className="text-xl font-semibold text-white">{mentor.fees}</p> */}
             </div>
             <div className="flex space-x-4">
-              {mentor.demoAvailable && (
+              {/* {mentor.demoAvailable && (
                 <motion.button
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
@@ -240,7 +240,7 @@ const PersonalDetails = () => {
                 >
                   <FaChalkboardTeacher className="mr-2" /> Book Demo
                 </motion.button>
-              )}
+              )} */}
               <motion.a
                 href={`tel:${mentor.phone}`}
                 whileHover={{ scale: 1.05 }}

@@ -18,19 +18,26 @@ const CollegesList = () => {
     }, []);
 
     const fetchCollegeTypes = async () => {
-        try {
-            const response = await collegeTypeApi.getCollegeTypes();
-            if (response.success) {
-                const typesMap = {};
-                response.data?.forEach(type => {
-                    typesMap[type.id] = type.name;
-                });
-                setCollegeTypes(typesMap);
-            }
-        } catch (err) {
-            console.error('Error fetching college types:', err);
+    try {
+        const response = await collegeTypeApi.getCollegeTypes();
+        if (response.success) {
+            // Normalize: handle both array and object responses
+            const typesArray = Array.isArray(response.data)
+                ? response.data
+                : response.data
+                    ? Object.values(response.data)
+                    : [];
+
+            const typesMap = {};
+            typesArray.forEach(type => {
+                typesMap[type.id] = type.name;
+            });
+            setCollegeTypes(typesMap);
         }
-    };
+    } catch (err) {
+        console.error('Error fetching college types:', err);
+    }
+};
 
     const fetchColleges = async () => {
         try {

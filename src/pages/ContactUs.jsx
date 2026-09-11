@@ -78,8 +78,8 @@ const ContactUs = () => {
               <div>
                 <h3 className="text-lg font-semibold text-gray-800">Phone</h3>
                 <p className="text-gray-600">
-                  <a href="tel:+911234567890" className="hover:text-orange-600 transition">+91 12345 67890</a><br />
-                  <a href="tel:+911234567891" className="hover:text-orange-600 transition">+91 12345 67891</a>
+                  <a href="tel:8618591978" className="hover:text-orange-600 transition">8618591978</a><br />
+                  {/* <a href="tel:+911234567891" className="hover:text-orange-600 transition">+91 12345 67891</a> */}
                 </p>
               </div>
             </div>
@@ -91,8 +91,8 @@ const ContactUs = () => {
               <div>
                 <h3 className="text-lg font-semibold text-gray-800">Email</h3>
                 <p className="text-gray-600">
-                  <a href="mailto:info@raynott.com" className="hover:text-orange-600 transition">info@raynott.com</a><br />
-                  <a href="mailto:support@raynott.com" className="hover:text-orange-600 transition">support@raynott.com</a>
+                  {/* <a href="mailto:info@raynott.com" className="hover:text-orange-600 transition">info@raynott.com</a><br /> */}
+                  <a href="mailto:raynottbangalore@gmail.com" className="hover:text-orange-600 transition">raynottbangalore@gmail.com</a>
                 </p>
               </div>
             </div>

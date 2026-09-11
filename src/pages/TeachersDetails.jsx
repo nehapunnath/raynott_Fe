@@ -248,7 +248,7 @@ const TeachersDetails = () => {
             </div>
 
             <div className="flex space-x-4">
-              {teacher.demoAvailable && (
+              {/* {teacher.demoAvailable && (
                 <motion.button
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
@@ -256,7 +256,7 @@ const TeachersDetails = () => {
                 >
                   <FaChalkboardTeacher className="mr-2" /> Book Demo
                 </motion.button>
-              )}
+              )} */}
               <motion.a
                 href={`tel:${teacher.phone}`}
                 whileHover={{ scale: 1.05 }}

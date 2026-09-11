@@ -185,8 +185,8 @@ const CollegeProfile = () => {
                         </p>
                         <div className="mt-2 flex items-center gap-2">
                             <FiMailIcon className="text-blue-500" />
-                            <a href="mailto:support@raynott.com" className="text-sm text-blue-600 hover:underline">
-                                support@raynott.com
+                            <a href="raynottbangalore@gmail.com" className="text-sm text-blue-600 hover:underline">
+                                raynottbangalore@gmail.com
                             </a>
                         </div>
                     </div>

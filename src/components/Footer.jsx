@@ -36,7 +36,7 @@ function Footer() {
             </p>
             <p className="flex items-center text-sm">
               <FaPhone className="mr-3 text-orange-500" /> 
-              +91 9876543210
+              +91 8618591978
             </p>
           </div>
           

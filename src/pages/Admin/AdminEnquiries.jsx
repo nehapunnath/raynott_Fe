@@ -12,7 +12,6 @@ import { toast } from 'react-toastify';
 import enquiryApi from '../../services/EnquiryApi';
 
 const AdminEnquiries = () => {
-  // ============ STATE ============
   const [enquiries, setEnquiries] = useState([]);
   const [institutions, setInstitutions] = useState({});
   const [isLoading, setIsLoading] = useState(true);
@@ -190,7 +189,6 @@ const AdminEnquiries = () => {
     setResettingLimit(institutionId);
 
     try {
-      // ✅ CHANGED: Reset via backend API
       const result = await enquiryApi.resetInstitutionLimit(institutionId);
 
       if (result && result.success) {
@@ -653,12 +651,6 @@ const AdminEnquiries = () => {
                     >
                       {enquiry.parentEmail}
                     </a>
-                    <button
-                      onClick={() => copyToClipboard(enquiry.parentEmail, 'Email')}
-                      className="text-gray-400 hover:text-gray-600"
-                    >
-                      <FiCopy className="w-3 h-3" />
-                    </button>
                   </div>
                 </div>
                 {enquiry.parentPhone && (
@@ -668,12 +660,6 @@ const AdminEnquiries = () => {
                       <a href={`tel:${enquiry.parentPhone}`} className="text-green-600 hover:underline font-medium">
                         {enquiry.parentPhone}
                       </a>
-                      <button
-                        onClick={() => copyToClipboard(enquiry.parentPhone, 'Phone')}
-                        className="text-gray-400 hover:text-gray-600"
-                      >
-                        <FiCopy className="w-3 h-3" />
-                      </button>
                     </div>
                   </div>
                 )}
@@ -830,9 +816,6 @@ const AdminEnquiries = () => {
               <p className="text-sm text-gray-500 font-medium">Institutions</p>
               <p className="text-3xl font-bold text-gray-800 mt-1">{stats.totalInstitutions}</p>
             </div>
-            <div className="p-3 bg-orange-100 rounded-xl">
-              <FiBriefcase className="w-6 h-6 text-orange-500" />
-            </div>
           </div>
         </div>
 
@@ -841,9 +824,6 @@ const AdminEnquiries = () => {
             <div>
               <p className="text-sm text-gray-500 font-medium">Total Enquiries</p>
               <p className="text-3xl font-bold text-blue-600 mt-1">{stats.totalEnquiries}</p>
-            </div>
-            <div className="p-3 bg-blue-100 rounded-xl">
-              <FiInbox className="w-6 h-6 text-blue-600" />
             </div>
           </div>
         </div>
@@ -854,9 +834,6 @@ const AdminEnquiries = () => {
               <p className="text-sm text-gray-500 font-medium">Pending</p>
               <p className="text-3xl font-bold text-yellow-600 mt-1">{stats.pending}</p>
             </div>
-            <div className="p-3 bg-yellow-100 rounded-xl">
-              <FiClock className="w-6 h-6 text-yellow-600" />
-            </div>
           </div>
         </div>
 
@@ -865,9 +842,6 @@ const AdminEnquiries = () => {
             <div>
               <p className="text-sm text-gray-500 font-medium">Limited Institutions</p>
               <p className="text-3xl font-bold text-red-600 mt-1">{stats.limitedInstitutions}</p>
-            </div>
-            <div className="p-3 bg-red-100 rounded-xl">
-              <FiLock className="w-6 h-6 text-red-600" />
             </div>
           </div>
         </div>
@@ -1039,7 +1013,7 @@ const AdminEnquiries = () => {
                         </button>
 
                         <button
-                          // onClick={() => toggleInstitutionExpand(institution.id)}
+                          onClick={() => toggleInstitutionExpand(institution.id)}
                           className="px-4 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-all text-sm flex items-center gap-2"
                         >
                           <FiEye className="w-4 h-4" />
@@ -1240,24 +1214,6 @@ const AdminEnquiries = () => {
                       </div>
                     </div>
                     <div className="flex flex-wrap items-center gap-2 flex-shrink-0">
-                      {enquiry.parentEmail && (
-                        <a
-                          href={`mailto:${enquiry.parentEmail}?subject=Re: ${enquiry.subject}`}
-                          className="px-3 py-1.5 bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-100 transition-all text-sm flex items-center gap-1 border border-blue-200"
-                        >
-                          <FiMail className="w-3 h-3" />
-                          Email
-                        </a>
-                      )}
-                      {enquiry.parentPhone && (
-                        <a
-                          href={`tel:${enquiry.parentPhone}`}
-                          className="px-3 py-1.5 bg-green-50 text-green-600 rounded-lg hover:bg-green-100 transition-all text-sm flex items-center gap-1 border border-green-200"
-                        >
-                          <FiPhone className="w-3 h-3" />
-                          Call
-                        </a>
-                      )}
                       <button
                         onClick={() => {
                           setSelectedEnquiry(enquiry);
@@ -1278,8 +1234,8 @@ const AdminEnquiries = () => {
       )}
 
       {/* Modals */}
-      {/* {renderLimitModal()} */}
-      {/* {renderDetailModal()} */}
+      {renderLimitModal()}
+      {renderDetailModal()}
     </div>
   );
 };
