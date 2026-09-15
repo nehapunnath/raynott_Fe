@@ -1,6 +1,6 @@
 import { motion } from 'framer-motion';
 import { FaHome, FaUsers, FaSchool, FaChalkboardTeacher, FaCog, FaSignOutAlt, FaGraduationCap } from 'react-icons/fa';
-import { FiMessageSquare } from 'react-icons/fi';
+import { FiCreditCard, FiMessageSquare } from 'react-icons/fi';
 import "tailwindcss";
 
 const NavItem = ({ icon, text, active, onClick, sidebarOpen }) => {
@@ -48,6 +48,13 @@ const Sidebar = ({ sidebarOpen, setSidebarOpen, activeTab, setActiveTab }) => {
           text="Registered" 
           active={activeTab === 'Registered'} 
           onClick={() => setActiveTab('Registered')}
+          sidebarOpen={sidebarOpen}
+        />
+        <NavItem 
+          icon={<FiCreditCard />} 
+          text="Plans" 
+          active={activeTab === 'Plans'} 
+          onClick={() => setActiveTab('Plans')}
           sidebarOpen={sidebarOpen}
         />
         <NavItem 

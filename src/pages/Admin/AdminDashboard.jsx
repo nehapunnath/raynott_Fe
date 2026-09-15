@@ -18,6 +18,7 @@ import "tailwindcss";
 import AdminReg from './AdminReg';
 import AdminBookings from './AdminBookings';
 import AdminEnquiries from './AdminEnquiries';
+import AdminPlan from './AdminPlan';
 
 
 
@@ -31,6 +32,8 @@ const AdminDashboard = () => {
         return <AdminReg />;
         case ('Enquiries'):
         return <AdminEnquiries />;
+        case ('Plans'):
+        return <AdminPlan />;
       case 'schools':
         return (
           <div className="p-6">
