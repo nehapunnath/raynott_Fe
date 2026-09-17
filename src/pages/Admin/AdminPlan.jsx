@@ -1,13 +1,14 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   FiPackage, FiPlus, FiEdit2, FiTrash2, FiSave, FiX, FiCheck,
   FiStar, FiDollarSign, FiUsers, FiEye, FiEyeOff, FiLoader,
-  FiAlertCircle, FiRefreshCw, FiSearch, FiInfo, FiBriefcase,
+  FiAlertCircle, FiRefreshCw, FiSearch, FiInfo,
   FiCalendar, FiChevronDown, FiChevronUp, FiUnlock, FiLock,
-  FiRotateCcw, FiMinus, FiTrendingUp, FiAward, FiZap
+  FiTrendingUp, FiZap
 } from 'react-icons/fi';
 import { toast } from 'react-toastify';
+import enquiryApi from '../../services/EnquiryApi';
 
 const DEFAULT_PLAN = {
   id: '',
@@ -36,69 +37,10 @@ const BADGE_COLORS = [
   { name: 'Teal', value: '#14b8a6' }
 ];
 
-// ============ MOCK DATA ============
-const MOCK_PLANS = [
-  {
-    id: 'basic',
-    name: 'Basic',
-    enquiries: 10,
-    price: 500,
-    originalPrice: 700,
-    popular: false,
-    isActive: true,
-    order: 0,
-    badge: '',
-    badgeColor: '#f97316',
-    features: ['10 additional enquiries', 'Email & phone access', 'Priority support'],
-    validityDays: 365
-  },
-  {
-    id: 'standard',
-    name: 'Standard',
-    enquiries: 25,
-    price: 1000,
-    originalPrice: 1500,
-    popular: true,
-    isActive: true,
-    order: 1,
-    badge: 'MOST POPULAR',
-    badgeColor: '#8b5cf6',
-    features: ['25 additional enquiries', 'Email & phone access', 'Priority support', 'Better visibility'],
-    validityDays: 365
-  },
-  {
-    id: 'premium',
-    name: 'Premium',
-    enquiries: 50,
-    price: 1800,
-    originalPrice: 2800,
-    popular: false,
-    isActive: true,
-    order: 2,
-    badge: 'BEST VALUE',
-    badgeColor: '#22c55e',
-    features: ['50 additional enquiries', 'Email & phone access', 'Priority support', 'Better visibility', 'Featured badge'],
-    validityDays: 365
-  },
-  {
-    id: 'starter',
-    name: 'Starter',
-    enquiries: 5,
-    price: 250,
-    originalPrice: 400,
-    popular: false,
-    isActive: false,
-    order: 3,
-    badge: '',
-    badgeColor: '#3b82f6',
-    features: ['5 additional enquiries', 'Email access'],
-    validityDays: 180
-  }
-];
-
 const AdminPlan = () => {
-  const [plans, setPlans] = useState(MOCK_PLANS);
-  const [isLoading, setIsLoading] = useState(false);
+  const [plans, setPlans] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isSaving, setIsSaving] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterActive, setFilterActive] = useState('all');
   const [expandedPlan, setExpandedPlan] = useState(null);
@@ -107,6 +49,33 @@ const AdminPlan = () => {
   const [formData, setFormData] = useState(DEFAULT_PLAN);
   const [formErrors, setFormErrors] = useState({});
   const [deleteConfirm, setDeleteConfirm] = useState(null);
+  const [isDeleting, setIsDeleting] = useState(false);
+
+  // ============ FETCH PLANS ============
+  const fetchPlans = async () => {
+    setIsLoading(true);
+    try {
+      console.log('📡 Fetching plans...');
+      const result = await enquiryApi.getAllPlans();
+
+      if (result && result.success && Array.isArray(result.data)) {
+        setPlans(result.data);
+        console.log(`📋 Loaded ${result.data.length} plans`);
+      } else {
+        setPlans([]);
+      }
+    } catch (error) {
+      console.error('❌ Error fetching plans:', error);
+      toast.error('Failed to load plans');
+      setPlans([]);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchPlans();
+  }, []);
 
   // ============ STATS ============
   const stats = useMemo(() => {
@@ -159,17 +128,19 @@ const AdminPlan = () => {
     setFormData({
       ...DEFAULT_PLAN,
       ...plan,
-      features: plan.features?.length ? plan.features : ['']
+      features: plan.features?.length ? [...plan.features] : ['']
     });
     setFormErrors({});
     setShowModal(true);
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!validateForm()) {
       toast.error('Please fix the errors');
       return;
     }
+
+    setIsSaving(true);
 
     const cleanData = {
       ...formData,
@@ -178,32 +149,95 @@ const AdminPlan = () => {
       badge: formData.badge?.trim() || ''
     };
 
-    if (editingPlan) {
-      setPlans(prev => prev.map(p => p.id === editingPlan.id ? { ...cleanData, id: editingPlan.id } : p));
-      toast.success('Plan updated successfully!');
-    } else {
-      setPlans(prev => [...prev, { ...cleanData, id: `plan_${Date.now()}` }]);
-      toast.success('Plan created successfully!');
+    try {
+      let result;
+
+      if (editingPlan) {
+        console.log('📤 Updating plan:', editingPlan.id);
+        result = await enquiryApi.updatePlan(editingPlan.id, cleanData);
+      } else {
+        console.log('📤 Creating plan...');
+        result = await enquiryApi.createPlan(cleanData);
+      }
+
+      if (result && result.success) {
+        toast.success(editingPlan ? 'Plan updated successfully!' : 'Plan created successfully!');
+        setShowModal(false);
+        await fetchPlans();
+      } else {
+        const errorMsg = result?.errors?.join(', ') || result?.message || 'Failed to save plan';
+        toast.error(errorMsg);
+      }
+    } catch (error) {
+      console.error('Save error:', error);
+      toast.error('Failed to save plan');
+    } finally {
+      setIsSaving(false);
     }
-    setShowModal(false);
   };
 
-  const handleDelete = (planId) => {
-    setPlans(prev => prev.filter(p => p.id !== planId));
-    toast.success('Plan deleted');
-    setDeleteConfirm(null);
+  const handleDelete = async (planId) => {
+    setIsDeleting(true);
+    try {
+      const result = await enquiryApi.deletePlan(planId);
+      if (result && result.success) {
+        toast.success('Plan deleted');
+        setDeleteConfirm(null);
+        await fetchPlans();
+      } else {
+        toast.error(result.message || 'Failed to delete plan');
+      }
+    } catch (error) {
+      console.error('Delete error:', error);
+      toast.error('Failed to delete plan');
+    } finally {
+      setIsDeleting(false);
+    }
   };
 
-  const handleToggleActive = (plan) => {
-    setPlans(prev => prev.map(p => p.id === plan.id ? { ...p, isActive: !p.isActive } : p));
-    toast.success(`Plan ${!plan.isActive ? 'activated' : 'deactivated'}`);
+  const handleToggleActive = async (plan) => {
+    const newStatus = !plan.isActive;
+
+    // Optimistic update
+    setPlans(prev => prev.map(p => p.id === plan.id ? { ...p, isActive: newStatus } : p));
+
+    try {
+      const result = await enquiryApi.togglePlanActive(plan.id, newStatus);
+      if (result && result.success) {
+        toast.success(`Plan ${newStatus ? 'activated' : 'deactivated'}`);
+      } else {
+        // Revert
+        setPlans(prev => prev.map(p => p.id === plan.id ? { ...p, isActive: !newStatus } : p));
+        toast.error('Failed to toggle plan');
+      }
+    } catch (error) {
+      setPlans(prev => prev.map(p => p.id === plan.id ? { ...p, isActive: !newStatus } : p));
+      toast.error('Failed to toggle plan');
+    }
   };
 
-  const handleTogglePopular = (plan) => {
+  const handleTogglePopular = async (plan) => {
+    const newPopular = !plan.popular;
+
+    // Optimistic update - only one popular
     setPlans(prev => prev.map(p =>
-      p.id === plan.id ? { ...p, popular: !p.popular } : { ...p, popular: false }
+      p.id === plan.id
+        ? { ...p, popular: newPopular }
+        : { ...p, popular: false }
     ));
-    toast.success('Featured plan updated');
+
+    try {
+      const result = await enquiryApi.updatePlan(plan.id, { popular: newPopular });
+      if (result && result.success) {
+        toast.success('Featured plan updated');
+      } else {
+        await fetchPlans(); // Revert by refetching
+        toast.error('Failed to update');
+      }
+    } catch (error) {
+      await fetchPlans();
+      toast.error('Failed to update');
+    }
   };
 
   const handleFeatureChange = (index, value) => {
@@ -219,16 +253,10 @@ const AdminPlan = () => {
     setFormData({ ...formData, features: formData.features.filter((_, i) => i !== index) });
   };
 
-  // ============ STYLE HELPERS (matching AdminEnquiries) ============
   const getPlanAccentColor = (plan) => {
     if (plan.popular) return 'border-l-purple-400';
     if (!plan.isActive) return 'border-l-gray-300';
     return 'border-l-orange-400';
-  };
-
-  const getPriceColor = (plan) => {
-    if (plan.popular) return 'text-purple-600';
-    return 'text-green-600';
   };
 
   return (
@@ -247,7 +275,7 @@ const AdminPlan = () => {
         </div>
         <div className="flex items-center gap-3">
           <button
-            onClick={() => toast.info('Refreshed')}
+            onClick={fetchPlans}
             disabled={isLoading}
             className="bg-white text-gray-700 border border-gray-200 px-5 py-2.5 rounded-lg hover:bg-gray-50 transition-all flex items-center gap-2 disabled:opacity-50 shadow-sm"
           >
@@ -264,42 +292,23 @@ const AdminPlan = () => {
         </div>
       </div>
 
-      {/* ============ STATS CARDS ============ */}
+      {/* ============ STATS ============ */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
         <div className="bg-white rounded-xl p-5 shadow">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-gray-500 font-medium">Total Plans</p>
-              <p className="text-3xl font-bold text-gray-800 mt-1">{stats.total}</p>
-            </div>
-          </div>
+          <p className="text-sm text-gray-500 font-medium">Total Plans</p>
+          <p className="text-3xl font-bold text-gray-800 mt-1">{stats.total}</p>
         </div>
-
         <div className="bg-white rounded-xl p-5 shadow">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-gray-500 font-medium">Active</p>
-              <p className="text-3xl font-bold text-green-600 mt-1">{stats.active}</p>
-            </div>
-          </div>
+          <p className="text-sm text-gray-500 font-medium">Active</p>
+          <p className="text-3xl font-bold text-green-600 mt-1">{stats.active}</p>
         </div>
-
         <div className="bg-white rounded-xl p-5 shadow">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-gray-500 font-medium">Inactive</p>
-              <p className="text-3xl font-bold text-red-600 mt-1">{stats.inactive}</p>
-            </div>
-          </div>
+          <p className="text-sm text-gray-500 font-medium">Inactive</p>
+          <p className="text-3xl font-bold text-red-600 mt-1">{stats.inactive}</p>
         </div>
-
         <div className="bg-white rounded-xl p-5 shadow">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-gray-500 font-medium">Featured Plan</p>
-              <p className="text-2xl font-bold text-purple-600 mt-1 truncate">{stats.featured}</p>
-            </div>
-          </div>
+          <p className="text-sm text-gray-500 font-medium">Featured Plan</p>
+          <p className="text-2xl font-bold text-purple-600 mt-1 truncate">{stats.featured}</p>
         </div>
       </div>
 
@@ -308,7 +317,7 @@ const AdminPlan = () => {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div className="md:col-span-2">
             <div className="relative">
-              <FiSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+              <FiSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4" />
               <input
                 type="text"
                 placeholder="Search plans by name..."
@@ -319,14 +328,13 @@ const AdminPlan = () => {
               {searchTerm && (
                 <button
                   onClick={() => setSearchTerm('')}
-                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
                 >
                   <FiX className="w-4 h-4" />
                 </button>
               )}
             </div>
           </div>
-
           <div>
             <select
               value={filterActive}
@@ -356,13 +364,15 @@ const AdminPlan = () => {
               ? 'Try adjusting your filters'
               : 'Create your first pricing plan to get started'}
           </p>
-          <button
-            onClick={handleOpenCreate}
-            className="bg-orange-500 text-white px-5 py-2.5 rounded-lg hover:bg-orange-600 transition-all inline-flex items-center gap-2"
-          >
-            <FiPlus className="w-4 h-4" />
-            Create First Plan
-          </button>
+          {!searchTerm && filterActive === 'all' && (
+            <button
+              onClick={handleOpenCreate}
+              className="bg-orange-500 text-white px-5 py-2.5 rounded-lg hover:bg-orange-600 transition-all inline-flex items-center gap-2"
+            >
+              <FiPlus className="w-4 h-4" />
+              Create First Plan
+            </button>
+          )}
         </div>
       ) : (
         <div className="space-y-4">
@@ -371,7 +381,9 @@ const AdminPlan = () => {
             const discount = plan.originalPrice > plan.price
               ? Math.round(((plan.originalPrice - plan.price) / plan.originalPrice) * 100)
               : 0;
-            const pricePerEnquiry = Math.round(plan.price / plan.enquiries);
+            const pricePerEnquiry = plan.enquiries > 0
+              ? Math.round(plan.price / plan.enquiries)
+              : 0;
 
             return (
               <div
@@ -384,9 +396,7 @@ const AdminPlan = () => {
                 <div className="p-5">
                   <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
 
-                    {/* LEFT: PLAN INFO */}
                     <div className="flex items-start gap-4 flex-1 min-w-0">
-                      {/* Plan Avatar */}
                       <div className={`w-14 h-14 rounded-xl flex items-center justify-center flex-shrink-0 shadow-lg ${
                         plan.popular
                           ? 'bg-gradient-to-br from-purple-500 to-pink-500'
@@ -396,11 +406,8 @@ const AdminPlan = () => {
                       </div>
 
                       <div className="flex-1 min-w-0">
-                        {/* Title Row */}
                         <div className="flex items-center gap-2 flex-wrap mb-1">
-                          <h3 className="text-lg font-bold text-gray-800 truncate">
-                            {plan.name}
-                          </h3>
+                          <h3 className="text-lg font-bold text-gray-800 truncate">{plan.name}</h3>
                           {plan.popular && (
                             <span className="px-2.5 py-1 rounded-full text-xs font-medium bg-purple-100 text-purple-700 flex items-center gap-1">
                               <FiStar className="w-3 h-3 fill-purple-700" />
@@ -433,10 +440,9 @@ const AdminPlan = () => {
                           )}
                         </div>
 
-                        {/* Price Row */}
                         <div className="flex flex-wrap items-center gap-3 text-sm text-gray-500 mt-2">
                           <span className="flex items-center gap-1">
-                            <FiDollarSign className={`w-3.5 h-3.5 ${getPriceColor(plan)}`} />
+                            <FiDollarSign className="w-3.5 h-3.5 text-green-600" />
                             <span className="font-bold text-gray-800 text-base">₹{plan.price.toLocaleString()}</span>
                             {plan.originalPrice > plan.price && (
                               <span className="text-gray-400 line-through text-xs ml-1">
@@ -452,13 +458,14 @@ const AdminPlan = () => {
                             <FiTrendingUp className="w-3.5 h-3.5 text-blue-500" />
                             ₹{pricePerEnquiry}/enquiry
                           </span>
-                          <span className="flex items-center gap-1 text-xs">
-                            <FiCalendar className="w-3.5 h-3.5 text-gray-400" />
-                            Valid {plan.validityDays} days
-                          </span>
+                          {plan.validityDays && (
+                            <span className="flex items-center gap-1 text-xs">
+                              <FiCalendar className="w-3.5 h-3.5 text-gray-400" />
+                              Valid {plan.validityDays} days
+                            </span>
+                          )}
                         </div>
 
-                        {/* Features Preview */}
                         {plan.features?.length > 0 && (
                           <div className="flex flex-wrap items-center gap-2 mt-3">
                             {plan.features.slice(0, 3).map((feature, idx) => (
@@ -484,7 +491,6 @@ const AdminPlan = () => {
                       </div>
                     </div>
 
-                    {/* RIGHT: ACTIONS */}
                     <div className="flex flex-wrap items-center gap-2 flex-shrink-0">
                       <button
                         onClick={() => handleToggleActive(plan)}
@@ -493,7 +499,6 @@ const AdminPlan = () => {
                             ? 'bg-green-100 text-green-700 hover:bg-green-200'
                             : 'bg-red-100 text-red-700 hover:bg-red-200'
                         }`}
-                        title={plan.isActive ? 'Deactivate' : 'Activate'}
                       >
                         {plan.isActive ? <FiEye className="w-3.5 h-3.5" /> : <FiEyeOff className="w-3.5 h-3.5" />}
                         {plan.isActive ? 'Active' : 'Inactive'}
@@ -506,7 +511,6 @@ const AdminPlan = () => {
                             ? 'bg-purple-100 text-purple-700 hover:bg-purple-200'
                             : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
                         }`}
-                        title="Set as featured"
                       >
                         <FiStar className={`w-3.5 h-3.5 ${plan.popular ? 'fill-purple-700' : ''}`} />
                         {plan.popular ? 'Featured' : 'Feature'}
@@ -523,7 +527,6 @@ const AdminPlan = () => {
                       <button
                         onClick={() => setDeleteConfirm(plan)}
                         className="px-3 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-all text-sm flex items-center gap-1.5"
-                        title="Delete"
                       >
                         <FiTrash2 className="w-3.5 h-3.5" />
                       </button>
@@ -548,10 +551,7 @@ const AdminPlan = () => {
                         </h4>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
                           {plan.features.map((feature, idx) => (
-                            <div
-                              key={idx}
-                              className="flex items-start gap-2 bg-white rounded-lg p-2.5 border border-gray-200"
-                            >
+                            <div key={idx} className="flex items-start gap-2 bg-white rounded-lg p-2.5 border border-gray-200">
                               <FiCheck className="w-3.5 h-3.5 text-green-600 mt-0.5 flex-shrink-0" />
                               <span className="text-sm text-gray-700">{feature}</span>
                             </div>
@@ -575,7 +575,7 @@ const AdminPlan = () => {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4"
-            onClick={() => setShowModal(false)}
+            onClick={() => !isSaving && setShowModal(false)}
           >
             <motion.div
               initial={{ scale: 0.95, y: 20 }}
@@ -584,7 +584,6 @@ const AdminPlan = () => {
               onClick={(e) => e.stopPropagation()}
               className="bg-white rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto shadow-2xl"
             >
-              {/* MODAL HEADER */}
               <div className="p-6 border-b border-gray-200 sticky top-0 bg-white z-10 rounded-t-2xl">
                 <div className="flex justify-between items-start">
                   <div>
@@ -598,16 +597,15 @@ const AdminPlan = () => {
                   </div>
                   <button
                     onClick={() => setShowModal(false)}
-                    className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                    disabled={isSaving}
+                    className="p-2 hover:bg-gray-100 rounded-lg transition-colors disabled:opacity-50"
                   >
                     <FiX className="w-5 h-5 text-gray-500" />
                   </button>
                 </div>
               </div>
 
-              {/* MODAL BODY */}
               <div className="p-6 space-y-5">
-
                 {/* NAME */}
                 <div>
                   <label className="text-sm font-medium text-gray-700 block mb-2">
@@ -618,7 +616,8 @@ const AdminPlan = () => {
                     value={formData.name}
                     onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                     placeholder="e.g., Basic, Standard, Premium"
-                    className={`w-full px-4 py-2.5 bg-gray-50 text-gray-800 rounded-lg border focus:outline-none transition-all ${
+                    disabled={isSaving}
+                    className={`w-full px-4 py-2.5 bg-gray-50 text-gray-800 rounded-lg border focus:outline-none transition-all disabled:opacity-50 ${
                       formErrors.name
                         ? 'border-red-400 focus:border-red-500'
                         : 'border-gray-200 focus:border-orange-500 focus:bg-white'
@@ -644,7 +643,8 @@ const AdminPlan = () => {
                         min="1"
                         value={formData.enquiries}
                         onChange={(e) => setFormData({ ...formData, enquiries: parseInt(e.target.value) || 0 })}
-                        className={`w-full pl-10 pr-4 py-2.5 bg-gray-50 text-gray-800 rounded-lg border focus:outline-none transition-all ${
+                        disabled={isSaving}
+                        className={`w-full pl-10 pr-4 py-2.5 bg-gray-50 text-gray-800 rounded-lg border focus:outline-none transition-all disabled:opacity-50 ${
                           formErrors.enquiries
                             ? 'border-red-400 focus:border-red-500'
                             : 'border-gray-200 focus:border-orange-500 focus:bg-white'
@@ -664,7 +664,8 @@ const AdminPlan = () => {
                         min="0"
                         value={formData.price}
                         onChange={(e) => setFormData({ ...formData, price: parseInt(e.target.value) || 0 })}
-                        className={`w-full pl-10 pr-4 py-2.5 bg-gray-50 text-gray-800 rounded-lg border focus:outline-none transition-all ${
+                        disabled={isSaving}
+                        className={`w-full pl-10 pr-4 py-2.5 bg-gray-50 text-gray-800 rounded-lg border focus:outline-none transition-all disabled:opacity-50 ${
                           formErrors.price
                             ? 'border-red-400 focus:border-red-500'
                             : 'border-gray-200 focus:border-orange-500 focus:bg-white'
@@ -684,7 +685,8 @@ const AdminPlan = () => {
                         min="0"
                         value={formData.originalPrice}
                         onChange={(e) => setFormData({ ...formData, originalPrice: parseInt(e.target.value) || 0 })}
-                        className={`w-full pl-10 pr-4 py-2.5 bg-gray-50 text-gray-800 rounded-lg border focus:outline-none transition-all ${
+                        disabled={isSaving}
+                        className={`w-full pl-10 pr-4 py-2.5 bg-gray-50 text-gray-800 rounded-lg border focus:outline-none transition-all disabled:opacity-50 ${
                           formErrors.originalPrice
                             ? 'border-red-400 focus:border-red-500'
                             : 'border-gray-200 focus:border-orange-500 focus:bg-white'
@@ -710,7 +712,8 @@ const AdminPlan = () => {
                       value={formData.badge}
                       onChange={(e) => setFormData({ ...formData, badge: e.target.value })}
                       placeholder="e.g., BEST VALUE, SAVE 30%"
-                      className="w-full px-4 py-2.5 bg-gray-50 text-gray-800 rounded-lg border border-gray-200 focus:outline-none focus:border-orange-500 focus:bg-white transition-all"
+                      disabled={isSaving}
+                      className="w-full px-4 py-2.5 bg-gray-50 text-gray-800 rounded-lg border border-gray-200 focus:outline-none focus:border-orange-500 focus:bg-white transition-all disabled:opacity-50"
                     />
                     <div className="flex gap-2 mt-2 flex-wrap">
                       {BADGE_COLORS.map((color) => (
@@ -718,7 +721,8 @@ const AdminPlan = () => {
                           key={color.value}
                           type="button"
                           onClick={() => setFormData({ ...formData, badgeColor: color.value })}
-                          className={`w-6 h-6 rounded-full border-2 transition-all ${
+                          disabled={isSaving}
+                          className={`w-6 h-6 rounded-full border-2 transition-all disabled:opacity-50 ${
                             formData.badgeColor === color.value
                               ? 'border-gray-800 scale-110'
                               : 'border-gray-200'
@@ -739,7 +743,8 @@ const AdminPlan = () => {
                       min="1"
                       value={formData.validityDays}
                       onChange={(e) => setFormData({ ...formData, validityDays: parseInt(e.target.value) || 365 })}
-                      className="w-full px-4 py-2.5 bg-gray-50 text-gray-800 rounded-lg border border-gray-200 focus:outline-none focus:border-orange-500 focus:bg-white transition-all"
+                      disabled={isSaving}
+                      className="w-full px-4 py-2.5 bg-gray-50 text-gray-800 rounded-lg border border-gray-200 focus:outline-none focus:border-orange-500 focus:bg-white transition-all disabled:opacity-50"
                     />
                   </div>
                 </div>
@@ -753,7 +758,8 @@ const AdminPlan = () => {
                     <button
                       type="button"
                       onClick={addFeature}
-                      className="text-xs text-orange-600 hover:text-orange-700 flex items-center gap-1 font-medium"
+                      disabled={isSaving}
+                      className="text-xs text-orange-600 hover:text-orange-700 flex items-center gap-1 font-medium disabled:opacity-50"
                     >
                       <FiPlus className="w-3 h-3" /> Add Feature
                     </button>
@@ -767,13 +773,15 @@ const AdminPlan = () => {
                           value={feature}
                           onChange={(e) => handleFeatureChange(index, e.target.value)}
                           placeholder={`Feature ${index + 1}`}
-                          className="flex-1 px-3 py-2 bg-gray-50 text-gray-800 rounded-lg border border-gray-200 focus:outline-none focus:border-orange-500 focus:bg-white transition-all text-sm"
+                          disabled={isSaving}
+                          className="flex-1 px-3 py-2 bg-gray-50 text-gray-800 rounded-lg border border-gray-200 focus:outline-none focus:border-orange-500 focus:bg-white transition-all text-sm disabled:opacity-50"
                         />
                         {formData.features.length > 1 && (
                           <button
                             type="button"
                             onClick={() => removeFeature(index)}
-                            className="text-red-500 hover:text-red-700 p-1.5 rounded hover:bg-red-50 transition-all"
+                            disabled={isSaving}
+                            className="text-red-500 hover:text-red-700 p-1.5 rounded hover:bg-red-50 transition-all disabled:opacity-50"
                           >
                             <FiX className="w-4 h-4" />
                           </button>
@@ -798,7 +806,8 @@ const AdminPlan = () => {
                     onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                     rows="2"
                     placeholder="Brief description of this plan..."
-                    className="w-full px-4 py-2.5 bg-gray-50 text-gray-800 rounded-lg border border-gray-200 focus:outline-none focus:border-orange-500 focus:bg-white transition-all resize-none"
+                    disabled={isSaving}
+                    className="w-full px-4 py-2.5 bg-gray-50 text-gray-800 rounded-lg border border-gray-200 focus:outline-none focus:border-orange-500 focus:bg-white transition-all resize-none disabled:opacity-50"
                   />
                 </div>
 
@@ -806,8 +815,9 @@ const AdminPlan = () => {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                   <button
                     type="button"
-                    onClick={() => setFormData({ ...formData, popular: !formData.popular })}
-                    className={`p-3 rounded-lg border-2 transition-all flex items-center gap-3 ${
+                    onClick={() => !isSaving && setFormData({ ...formData, popular: !formData.popular })}
+                    disabled={isSaving}
+                    className={`p-3 rounded-lg border-2 transition-all flex items-center gap-3 disabled:opacity-50 ${
                       formData.popular
                         ? 'bg-purple-50 border-purple-300'
                         : 'bg-gray-50 border-gray-200'
@@ -829,8 +839,9 @@ const AdminPlan = () => {
 
                   <button
                     type="button"
-                    onClick={() => setFormData({ ...formData, isActive: !formData.isActive })}
-                    className={`p-3 rounded-lg border-2 transition-all flex items-center gap-3 ${
+                    onClick={() => !isSaving && setFormData({ ...formData, isActive: !formData.isActive })}
+                    disabled={isSaving}
+                    className={`p-3 rounded-lg border-2 transition-all flex items-center gap-3 disabled:opacity-50 ${
                       formData.isActive
                         ? 'bg-green-50 border-green-300'
                         : 'bg-gray-50 border-gray-200'
@@ -856,16 +867,27 @@ const AdminPlan = () => {
               <div className="p-6 border-t border-gray-200 sticky bottom-0 bg-white rounded-b-2xl flex items-center justify-end gap-3">
                 <button
                   onClick={() => setShowModal(false)}
-                  className="px-5 py-2.5 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-all font-medium"
+                  disabled={isSaving}
+                  className="px-5 py-2.5 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-all font-medium disabled:opacity-50"
                 >
                   Cancel
                 </button>
                 <button
                   onClick={handleSave}
-                  className="px-6 py-2.5 bg-gradient-to-r from-orange-500 to-amber-500 text-white rounded-lg hover:from-orange-600 hover:to-amber-600 transition-all font-medium flex items-center gap-2 shadow-md shadow-orange-500/20"
+                  disabled={isSaving}
+                  className="px-6 py-2.5 bg-gradient-to-r from-orange-500 to-amber-500 text-white rounded-lg hover:from-orange-600 hover:to-amber-600 transition-all font-medium flex items-center gap-2 shadow-md shadow-orange-500/20 disabled:opacity-50"
                 >
-                  <FiSave className="w-4 h-4" />
-                  {editingPlan ? 'Update Plan' : 'Create Plan'}
+                  {isSaving ? (
+                    <>
+                      <FiLoader className="w-4 h-4 animate-spin" />
+                      Saving...
+                    </>
+                  ) : (
+                    <>
+                      <FiSave className="w-4 h-4" />
+                      {editingPlan ? 'Update Plan' : 'Create Plan'}
+                    </>
+                  )}
                 </button>
               </div>
             </motion.div>
@@ -881,7 +903,7 @@ const AdminPlan = () => {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4"
-            onClick={() => setDeleteConfirm(null)}
+            onClick={() => !isDeleting && setDeleteConfirm(null)}
           >
             <motion.div
               initial={{ scale: 0.95 }}
@@ -907,16 +929,27 @@ const AdminPlan = () => {
               <div className="flex gap-3">
                 <button
                   onClick={() => setDeleteConfirm(null)}
-                  className="flex-1 px-4 py-2.5 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-all font-medium"
+                  disabled={isDeleting}
+                  className="flex-1 px-4 py-2.5 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-all font-medium disabled:opacity-50"
                 >
                   Cancel
                 </button>
                 <button
                   onClick={() => handleDelete(deleteConfirm.id)}
-                  className="flex-1 px-4 py-2.5 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-all font-medium flex items-center justify-center gap-2"
+                  disabled={isDeleting}
+                  className="flex-1 px-4 py-2.5 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-all font-medium flex items-center justify-center gap-2 disabled:opacity-50"
                 >
-                  <FiTrash2 className="w-4 h-4" />
-                  Delete
+                  {isDeleting ? (
+                    <>
+                      <FiLoader className="w-4 h-4 animate-spin" />
+                      Deleting...
+                    </>
+                  ) : (
+                    <>
+                      <FiTrash2 className="w-4 h-4" />
+                      Delete
+                    </>
+                  )}
                 </button>
               </div>
             </motion.div>

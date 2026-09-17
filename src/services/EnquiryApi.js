@@ -402,7 +402,94 @@ const enquiryApi = {
       
       return { success: true, message: 'Reset locally' };
     }
+  },
+  // ============ PLANS ============
+
+// Public - get all active plans
+getActivePlans: async () => {
+  try {
+    const response = await api.get('/plans', { params: { activeOnly: 'true' } });
+    return response.data;
+  } catch (error) {
+    console.error('Get active plans error:', error);
+    return { success: false, data: [] };
   }
+},
+
+// Get all plans (admin)
+getAllPlans: async () => {
+  try {
+    const response = await api.get('/plans');
+    return response.data;
+  } catch (error) {
+    console.error('Get all plans error:', error);
+    return { success: false, data: [] };
+  }
+},
+
+// Create plan (admin)
+createPlan: async (planData) => {
+  try {
+    const response = await api.post('/admin/plans', planData);
+    return response.data;
+  } catch (error) {
+    console.error('Create plan error:', error);
+    return {
+      success: false,
+      message: error.response?.data?.message || 'Failed to create plan',
+      errors: error.response?.data?.errors || []
+    };
+  }
+},
+
+// Update plan (admin)
+updatePlan: async (planId, planData) => {
+  try {
+    const response = await api.put(`/admin/plans/${planId}`, planData);
+    return response.data;
+  } catch (error) {
+    console.error('Update plan error:', error);
+    return {
+      success: false,
+      message: error.response?.data?.message || 'Failed to update plan',
+      errors: error.response?.data?.errors || []
+    };
+  }
+},
+
+// Delete plan (admin)
+deletePlan: async (planId) => {
+  try {
+    const response = await api.delete(`/admin/plans/${planId}`);
+    return response.data;
+  } catch (error) {
+    console.error('Delete plan error:', error);
+    return { success: false, message: 'Failed to delete plan' };
+  }
+},
+
+// Toggle active (admin)
+togglePlanActive: async (planId, isActive) => {
+  try {
+    const response = await api.patch(`/admin/plans/${planId}/toggle-active`, { isActive });
+    return response.data;
+  } catch (error) {
+    console.error('Toggle plan error:', error);
+    return { success: false, message: 'Failed to toggle plan' };
+  }
+},
+
+// Seed default plans (admin, one-time)
+seedDefaultPlans: async () => {
+  try {
+    const response = await api.post('/admin/plans/seed-defaults');
+    return response.data;
+  } catch (error) {
+    console.error('Seed plans error:', error);
+    return { success: false, message: 'Failed to seed plans' };
+  }
+}
+  
 };
 
 export default enquiryApi;
