@@ -26,16 +26,16 @@ const DEFAULT_PLAN = {
   validityDays: 365
 };
 
-const BADGE_COLORS = [
-  { name: 'Orange', value: '#f97316' },
-  { name: 'Amber', value: '#f59e0b' },
-  { name: 'Green', value: '#22c55e' },
-  { name: 'Blue', value: '#3b82f6' },
-  { name: 'Purple', value: '#8b5cf6' },
-  { name: 'Pink', value: '#ec4899' },
-  { name: 'Red', value: '#ef4444' },
-  { name: 'Teal', value: '#14b8a6' }
-];
+// const BADGE_COLORS = [
+//   { name: 'Orange', value: '#f97316' },
+//   { name: 'Amber', value: '#f59e0b' },
+//   { name: 'Green', value: '#22c55e' },
+//   { name: 'Blue', value: '#3b82f6' },
+//   { name: 'Purple', value: '#8b5cf6' },
+//   { name: 'Pink', value: '#ec4899' },
+//   { name: 'Red', value: '#ef4444' },
+//   { name: 'Teal', value: '#14b8a6' }
+// ];
 
 const AdminPlan = () => {
   const [plans, setPlans] = useState([]);
@@ -715,7 +715,7 @@ const AdminPlan = () => {
                       disabled={isSaving}
                       className="w-full px-4 py-2.5 bg-gray-50 text-gray-800 rounded-lg border border-gray-200 focus:outline-none focus:border-orange-500 focus:bg-white transition-all disabled:opacity-50"
                     />
-                    <div className="flex gap-2 mt-2 flex-wrap">
+                    {/* <div className="flex gap-2 mt-2 flex-wrap">
                       {BADGE_COLORS.map((color) => (
                         <button
                           key={color.value}
@@ -731,7 +731,7 @@ const AdminPlan = () => {
                           title={color.name}
                         />
                       ))}
-                    </div>
+                    </div> */}
                   </div>
 
                   <div>
@@ -797,7 +797,7 @@ const AdminPlan = () => {
                 </div>
 
                 {/* DESCRIPTION */}
-                <div>
+                {/* <div>
                   <label className="text-sm font-medium text-gray-700 block mb-2">
                     Description (optional)
                   </label>
@@ -809,7 +809,7 @@ const AdminPlan = () => {
                     disabled={isSaving}
                     className="w-full px-4 py-2.5 bg-gray-50 text-gray-800 rounded-lg border border-gray-200 focus:outline-none focus:border-orange-500 focus:bg-white transition-all resize-none disabled:opacity-50"
                   />
-                </div>
+                </div> */}
 
                 {/* TOGGLES */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3">

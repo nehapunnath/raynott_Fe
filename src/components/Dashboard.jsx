@@ -9,7 +9,7 @@ import {
   FiArrowRight, FiRefreshCw, FiMessageSquare, FiInbox,
   FiEye, FiCopy, FiAtSign, FiSearch, FiLock, FiUnlock,
   FiPackage, FiStar, FiChevronDown, FiChevronUp,
-  FiDollarSign, FiCreditCard
+  FiDollarSign, FiCreditCard,FiZap
 } from 'react-icons/fi';
 import { authApis } from '../services/allApis';
 import registerApi from '../services/RegisterApi';
@@ -23,8 +23,8 @@ import enquiryApi from '../services/EnquiryApi';
 
 const DEFAULT_FREE_LIMIT = 5;
 
-// Pricing plans
-const PRICING_PLANS = [
+// Fallback plans if backend fails
+const FALLBACK_PLANS = [
   {
     id: 'basic',
     name: 'Basic',
@@ -32,6 +32,7 @@ const PRICING_PLANS = [
     price: 500,
     originalPrice: 700,
     popular: false,
+    badge: '',
     features: ['10 additional enquiries', 'Email & phone access', 'Priority support']
   },
   {
@@ -41,6 +42,7 @@ const PRICING_PLANS = [
     price: 1000,
     originalPrice: 1500,
     popular: true,
+    badge: 'MOST POPULAR',
     features: ['25 additional enquiries', 'Email & phone access', 'Priority support', 'Better visibility']
   },
   {
@@ -50,6 +52,7 @@ const PRICING_PLANS = [
     price: 1800,
     originalPrice: 2800,
     popular: false,
+    badge: 'BEST VALUE',
     features: ['50 additional enquiries', 'Email & phone access', 'Priority support', 'Better visibility', 'Featured badge']
   }
 ];
@@ -87,6 +90,10 @@ const Dashboard = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [copySuccess, setCopySuccess] = useState('');
   const [showPlansExpanded, setShowPlansExpanded] = useState(false);
+  
+  // ============ PLANS STATE (from backend) ============
+  const [pricingPlans, setPricingPlans] = useState([]);
+  const [plansLoading, setPlansLoading] = useState(false);
   
   // ============ LIMIT STATE (from backend) ============
   const [institutionLimit, setInstitutionLimit] = useState({
@@ -170,7 +177,6 @@ const Dashboard = () => {
     } catch (error) {
       console.warn('⚠️ Failed to fetch limit from backend, using localStorage');
       
-      // Fallback to localStorage
       const savedLimits = JSON.parse(localStorage.getItem('institutionLimits') || '{}');
       const localLimit = savedLimits[id];
       
@@ -183,6 +189,28 @@ const Dashboard = () => {
       
       setInstitutionLimit(fallbackLimit);
       return fallbackLimit;
+    }
+  };
+
+  // ============ FETCH ACTIVE PLANS FROM BACKEND ============
+  const fetchActivePlans = async () => {
+    setPlansLoading(true);
+    try {
+      console.log('📡 Fetching active plans from backend...');
+      const result = await enquiryApi.getActivePlans();
+      
+      if (result && result.success && Array.isArray(result.data) && result.data.length > 0) {
+        console.log(`📋 Loaded ${result.data.length} active plans`);
+        setPricingPlans(result.data);
+      } else {
+        console.warn('⚠️ No plans from backend, using fallback');
+        // setPricingPlans(FALLBACK_PLANS);
+      }
+    } catch (error) {
+      console.error('❌ Error fetching plans:', error);
+      // setPricingPlans(FALLBACK_PLANS);
+    } finally {
+      setPlansLoading(false);
     }
   };
 
@@ -210,7 +238,6 @@ const Dashboard = () => {
       let lockedCount = 0;
       let limitData = institutionLimit;
 
-      // New backend format (with limit already applied)
       if (result && result.success && result.visibleEnquiries) {
         enquiriesData = result.data || result.visibleEnquiries || [];
         visible = result.visibleEnquiries || [];
@@ -226,7 +253,6 @@ const Dashboard = () => {
           setInstitutionLimit(limitData);
         }
       } else {
-        // Fallback: apply limit locally
         if (result && result.success && result.data) {
           enquiriesData = Array.isArray(result.data) ? result.data : [];
         } else if (result && result.enquiries) {
@@ -242,11 +268,9 @@ const Dashboard = () => {
         lockedCount = Math.max(0, enquiriesData.length - totalLimit);
       }
 
-      // Sort by newest
       visible.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
       enquiriesData.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
 
-      // Get locked enquiries (hidden from institution)
       const locked = enquiriesData.slice(limitData.totalLimit);
 
       setAllEnquiries(enquiriesData);
@@ -369,7 +393,6 @@ const Dashboard = () => {
               }
             }
             
-            // Fetch limit + enquiries
             await fetchInstitutionLimit();
             await fetchInstitutionEnquiries();
           } else {
@@ -598,9 +621,9 @@ const Dashboard = () => {
     }
     
     if (registrationStatus === 'approved') {
-      // Refresh limit first, then enquiries
       await fetchInstitutionLimit();
       await fetchInstitutionEnquiries();
+      await fetchActivePlans();
     }
   };
 
@@ -710,172 +733,410 @@ const Dashboard = () => {
       <motion.div
         initial={{ opacity: 0, y: -10 }}
         animate={{ opacity: 1, y: 0 }}
-        className="bg-gradient-to-r from-blue-500/10 via-purple-500/10 to-orange-500/10 rounded-xl border border-blue-500/20 mb-6 overflow-hidden mt-4"
+        className="relative bg-gradient-to-br from-blue-500/10 via-purple-500/10 to-orange-500/10 rounded-2xl border border-blue-500/20 mb-6 overflow-hidden mt-4 shadow-2xl backdrop-blur-sm"
       >
-        <div className="p-5 ">
-          <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4">
+        {/* Decorative top accent bar */}
+        <div className="h-1 bg-gradient-to-r from-blue-500 via-purple-500 to-orange-500" />
+
+        {/* Background glow decorations */}
+        <div className="absolute top-0 right-0 w-80 h-80 bg-orange-500/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2 pointer-events-none" />
+        <div className="absolute bottom-0 left-0 w-80 h-80 bg-purple-500/10 rounded-full blur-3xl translate-y-1/2 -translate-x-1/2 pointer-events-none" />
+
+        <div className="relative p-6">
+          <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-5">
+
+            {/* LEFT: INFO */}
             <div className="flex items-start gap-4 flex-1">
-              <div className="p-3 bg-blue-500/20 rounded-xl flex-shrink-0">
-                <FiInfo className="w-6 h-6 text-blue-400" />
+              <div className="relative flex-shrink-0">
+                <div className="absolute inset-0 bg-gradient-to-br from-blue-500 to-purple-500 rounded-2xl blur-md opacity-50" />
+                <div className="relative p-3.5 bg-gradient-to-br from-blue-500 to-purple-500 rounded-2xl shadow-lg">
+                  <FiPackage className="w-7 h-7 text-white" />
+                </div>
               </div>
+
               <div className="flex-1">
-                <h3 className="text-white font-bold text-lg flex items-center gap-2 flex-wrap">
-                  Enquiry Access Plan
-                  <span className="px-2 py-0.5 bg-blue-500/20 text-blue-300 rounded-full text-xs font-medium">
-                    Free Tier
+                <div className="flex items-center gap-2 flex-wrap mb-2">
+                  <h3 className="text-white font-bold text-xl tracking-tight">
+                    Unlock More Enquiries
+                  </h3>
+                  <span className="px-2.5 py-1 bg-gradient-to-r from-blue-500 to-purple-500 text-white rounded-full text-[10px] font-bold uppercase tracking-wider shadow-lg">
+                    Premium
                   </span>
-                </h3>
-                <p className="text-gray-300 text-sm mt-1">
-                  You have <strong className="text-blue-400">{freeLimit} free enquiries</strong>
+                </div>
+
+                <p className="text-gray-300 text-sm mb-3">
+                  You're on the <span className="text-white font-semibold">Free Tier</span> with{' '}
+                  <span className="text-orange-400 font-bold">{freeLimit} enquiries</span>
                   {customLimit > 0 && (
-                    <> + <strong className="text-green-400">{customLimit} unlocked</strong></>
+                    <> + <span className="text-green-400 font-bold">{customLimit} unlocked</span></>
                   )}
-                  {' '}= <strong className="text-white">{totalLimit} total</strong> visible
+                  {' '}= <span className="text-white font-bold">{totalLimit} total visible</span>
                 </p>
-                <p className="text-xs text-gray-400 mt-1">
-                  Need more? Check the plans below or contact support.
-                </p>
+
+                {/* Progress bar */}
+                <div className="flex items-center gap-3 max-w-md">
+                  <div className="flex-1 h-2 bg-gray-700/50 rounded-full overflow-hidden">
+                    <motion.div
+                      initial={{ width: 0 }}
+                      animate={{
+                        width: `${Math.min(100, (totalLimit / Math.max(totalLimit + 50, 1)) * 100)}%`
+                      }}
+                      transition={{ duration: 1, delay: 0.3 }}
+                      className="h-full bg-gradient-to-r from-orange-500 via-amber-500 to-orange-400 rounded-full shadow-lg shadow-orange-500/50"
+                    />
+                  </div>
+                  <span className="text-xs text-gray-400 whitespace-nowrap">
+                    <span className="text-white font-semibold">{enquiryStats.total}</span> received
+                  </span>
+                </div>
               </div>
             </div>
 
+            {/* RIGHT: CTA */}
             <div className="flex items-center gap-3 flex-shrink-0">
-              {/* <div className="bg-black/20 backdrop-blur-sm rounded-xl px-4 py-3 border border-white/10 text-center min-w-[100px]">
-                <p className="text-xl font-bold text-white">{enquiryStats.visible}<span className="text-gray-400 text-sm">/{enquiryStats.total}</span></p>
-                <p className="text-xs text-gray-400">Used</p>
-              </div> */}
               <button
-                onClick={() => setShowPlansExpanded(!showPlansExpanded)}
-                className="px-4 py-3 bg-gradient-to-r from-orange-500 to-amber-500 text-white rounded-xl hover:from-orange-600 hover:to-amber-600 transition-all text-sm font-semibold flex items-center gap-2 shadow-lg shadow-orange-500/20 whitespace-nowrap"
+                onClick={() => {
+                  const newState = !showPlansExpanded;
+                  setShowPlansExpanded(newState);
+                  if (newState) fetchActivePlans();
+                }}
+                className="group relative px-6 py-3.5 bg-gradient-to-r from-orange-500 to-amber-500 text-white rounded-xl hover:from-orange-600 hover:to-amber-600 transition-all text-sm font-bold flex items-center gap-2 shadow-xl shadow-orange-500/30 hover:shadow-orange-500/50 hover:scale-105 whitespace-nowrap"
               >
-                <FiPackage className="w-4 h-4" />
-                {showPlansExpanded ? 'Hide Plans' : 'View Plans'}
-                {showPlansExpanded ? <FiChevronUp className="w-4 h-4" /> : <FiChevronDown className="w-4 h-4" />}
+                <div className="absolute inset-0 rounded-xl bg-white/20 opacity-0 group-hover:opacity-100 transition-opacity" />
+                <FiPackage className="w-4 h-4 relative" />
+                <span className="relative">{showPlansExpanded ? 'Hide Plans' : 'View Plans'}</span>
+                {showPlansExpanded ?
+                  <FiChevronUp className="w-4 h-4 relative" /> :
+                  <FiChevronDown className="w-4 h-4 relative" />
+                }
               </button>
             </div>
           </div>
         </div>
 
+        {/* EXPANDED PLANS */}
         {showPlansExpanded && (
           <motion.div
             initial={{ height: 0, opacity: 0 }}
             animate={{ height: 'auto', opacity: 1 }}
             exit={{ height: 0, opacity: 0 }}
-            className="border-t border-blue-500/20 bg-gray-900/30"
+            className="border-t border-blue-500/20 bg-gray-900/40"
           >
-            <div className="p-6">
-              <div className="bg-blue-500/10 border border-blue-500/20 rounded-lg p-3 mb-5">
-                <p className="text-xs text-blue-300 flex items-start gap-2">
-                  <FiInfo className="w-4 h-4 mt-0.5 flex-shrink-0" />
-                  <span>
-                    Additional enquiries can be unlocked by contacting our support team. 
-                    Click <strong className="text-white">"Buy Plan"</strong> on any plan to get started.
-                  </span>
-                </p>
-              </div>
+            <div className="p-6 lg:p-8">
 
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                {PRICING_PLANS.map((plan) => {
-                  const discount = Math.round(((plan.originalPrice - plan.price) / plan.originalPrice) * 100);
-                  
-                  return (
-                    <motion.div
-                      key={plan.id}
-                      whileHover={{ y: -4 }}
-                      className={`relative rounded-xl p-5 transition-all border-2 ${
-                        plan.popular
-                          ? 'bg-gradient-to-br from-purple-500/10 to-pink-500/10 border-purple-500/40 hover:border-purple-500/70'
-                          : 'bg-gray-800/50 border-gray-600/50 hover:border-orange-500/50'
-                      }`}
-                    >
-                      {plan.popular && (
-                        <div className="absolute -top-2.5 left-1/2 transform -translate-x-1/2">
-                          <span className="px-3 py-0.5 bg-gradient-to-r from-purple-500 to-pink-500 text-white text-[10px] font-bold rounded-full shadow-lg flex items-center gap-1 whitespace-nowrap">
-                            <FiStar className="w-2.5 h-2.5 fill-white" />
-                            MOST POPULAR
-                          </span>
-                        </div>
-                      )}
+              {/* ============ HOW IT WORKS SECTION ============ */}
+              <div className="mb-8">
+                <div className="text-center mb-5">
+                  <h4 className="text-xl font-bold text-white mb-1">How to Purchase a Plan</h4>
+                  <p className="text-sm text-gray-400">Simple 3-step process — we'll guide you through it</p>
+                </div>
 
-                      {discount > 0 && (
-                        <div className="absolute top-3 right-3">
-                          <span className="px-2 py-0.5 bg-red-500 text-white text-[10px] font-bold rounded-full">
-                            -{discount}%
-                          </span>
-                        </div>
-                      )}
-
-                      <div className="mb-3 mt-2">
-                        <h5 className="text-lg font-bold text-white">{plan.name}</h5>
-                        <div className="flex items-center gap-1.5 mt-1">
-                          <FiPackage className="w-3.5 h-3.5 text-orange-400" />
-                          <span className="text-xs text-gray-300">{plan.enquiries} enquiries</span>
-                        </div>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  {/* Step 1 */}
+                  <div className="relative bg-gray-800/60 backdrop-blur-sm rounded-xl p-5 border border-orange-500/20 hover:border-orange-500/40 shadow-lg transition-all">
+                    <div className="absolute -top-3 -left-3 w-9 h-9 bg-gradient-to-br from-orange-500 to-amber-500 rounded-full flex items-center justify-center text-white font-bold text-sm shadow-lg shadow-orange-500/40">
+                      1
+                    </div>
+                    <div className="flex items-start gap-3 mt-1">
+                      <div className="p-2.5 bg-orange-500/20 rounded-lg flex-shrink-0">
+                        <FiPackage className="w-5 h-5 text-orange-400" />
                       </div>
-
-                      <div className="mb-4">
-                        <div className="flex items-baseline gap-2">
-                          <span className="text-2xl font-bold text-white">₹{plan.price.toLocaleString()}</span>
-                          {plan.originalPrice > plan.price && (
-                            <span className="text-xs text-gray-500 line-through">
-                              ₹{plan.originalPrice.toLocaleString()}
-                            </span>
-                          )}
-                        </div>
-                        <p className="text-[10px] text-gray-400 mt-0.5">
-                          ₹{Math.round(plan.price / plan.enquiries)}/enquiry
+                      <div>
+                        <p className="font-bold text-white text-sm mb-1">Choose Your Plan</p>
+                        <p className="text-xs text-gray-400 leading-relaxed">
+                          Pick the plan that fits your enquiry volume
                         </p>
                       </div>
-
-                      <ul className="space-y-1.5 mb-4">
-                        {plan.features.map((feature, idx) => (
-                          <li key={idx} className="flex items-start gap-1.5 text-[11px] text-gray-300">
-                            <FiCheck className="w-3 h-3 text-green-400 flex-shrink-0 mt-0.5" />
-                            <span>{feature}</span>
-                          </li>
-                        ))}
-                      </ul>
-
-                      <button
-                        onClick={() => handleBuyPlan(plan)}
-                        className={`w-full px-4 py-2.5 rounded-lg font-semibold text-sm transition-all flex items-center justify-center gap-2 ${
-                          plan.popular
-                            ? 'bg-gradient-to-r from-purple-500 to-pink-500 text-white hover:from-purple-600 hover:to-pink-600 shadow-lg shadow-purple-500/30'
-                            : 'bg-gradient-to-r from-orange-500 to-amber-500 text-white hover:from-orange-600 hover:to-amber-600 shadow-lg shadow-orange-500/30'
-                        }`}
-                      >
-                        <FiCreditCard className="w-4 h-4" />
-                        Buy Plan
-                      </button>
-                    </motion.div>
-                  );
-                })}
-              </div>
-
-              <div className="mt-5 flex flex-col sm:flex-row items-center justify-between gap-3 p-4 bg-gray-800/50 rounded-xl border border-gray-700">
-                <div className="flex items-center gap-3">
-                  <div className="p-2 bg-blue-500/20 rounded-lg">
-                    <FiMail className="w-4 h-4 text-blue-400" />
+                    </div>
                   </div>
-                  <div>
-                    <p className="text-sm text-white font-medium">Need help choosing?</p>
-                    <p className="text-xs text-gray-400">Our team is here to help</p>
+
+                  {/* Step 2 */}
+                  <div className="relative bg-gray-800/60 backdrop-blur-sm rounded-xl p-5 border border-blue-500/20 hover:border-blue-500/40 shadow-lg transition-all">
+                    <div className="absolute -top-3 -left-3 w-9 h-9 bg-gradient-to-br from-blue-500 to-indigo-500 rounded-full flex items-center justify-center text-white font-bold text-sm shadow-lg shadow-blue-500/40">
+                      2
+                    </div>
+                    <div className="flex items-start gap-3 mt-1">
+                      <div className="p-2.5 bg-blue-500/20 rounded-lg flex-shrink-0">
+                        <FiMail className="w-5 h-5 text-blue-400" />
+                      </div>
+                      <div>
+                        <p className="font-bold text-white text-sm mb-1">Click "Buy Plan"</p>
+                        <p className="text-xs text-gray-400 leading-relaxed">
+                          An email will open pre-filled with your plan details
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Step 3 */}
+                  <div className="relative bg-gray-800/60 backdrop-blur-sm rounded-xl p-5 border border-green-500/20 hover:border-green-500/40 shadow-lg transition-all">
+                    <div className="absolute -top-3 -left-3 w-9 h-9 bg-gradient-to-br from-green-500 to-emerald-500 rounded-full flex items-center justify-center text-white font-bold text-sm shadow-lg shadow-green-500/40">
+                      3
+                    </div>
+                    <div className="flex items-start gap-3 mt-1">
+                      <div className="p-2.5 bg-green-500/20 rounded-lg flex-shrink-0">
+                        <FiCreditCard className="w-5 h-5 text-green-400" />
+                      </div>
+                      <div>
+                        <p className="font-bold text-white text-sm mb-1">Get Payment Details</p>
+                        <p className="text-xs text-gray-400 leading-relaxed">
+                          Our team will share payment info & activate your plan
+                        </p>
+                      </div>
+                    </div>
                   </div>
                 </div>
-                <div className="flex gap-2">
-                  <a
-                    href="mailto:raynottbangalore@gmail.com?subject=Enquiry%20Plan%20Inquiry"
-                    className="px-4 py-2 bg-blue-500/20 text-blue-300 rounded-lg hover:bg-blue-500/30 transition-all text-sm flex items-center gap-2"
-                  >
-                    <FiMail className="w-3.5 h-3.5" />
-                    Email Support
-                  </a>
-                  <a
-                    href="tel:8618591978"
-                    className="px-4 py-2 bg-green-500/20 text-green-300 rounded-lg hover:bg-green-500/30 transition-all text-sm flex items-center gap-2"
-                  >
-                    <FiPhone className="w-3.5 h-3.5" />
-                    Call Us
-                  </a>
+
+                {/* Arrow flow indicator */}
+                <div className="hidden md:flex items-center justify-center gap-2 mt-5 text-xs text-gray-500">
+                  <span className="px-2 py-1 bg-gray-800/50 rounded-md">Select Plan</span>
+                  <FiArrowRight className="w-3 h-3 text-orange-400" />
+                  <span className="px-2 py-1 bg-gray-800/50 rounded-md">Send Email</span>
+                  <FiArrowRight className="w-3 h-3 text-blue-400" />
+                  <span className="px-2 py-1 bg-gray-800/50 rounded-md">Receive Payment Info</span>
+                  <FiArrowRight className="w-3 h-3 text-green-400" />
+                  <span className="px-2 py-1 bg-gray-800/50 rounded-md">Get Access</span>
+                </div>
+              </div>
+
+              {/* ============ PLANS GRID ============ */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-5 lg:gap-6">
+                {plansLoading ? (
+                  <div className="col-span-full text-center py-12">
+                    <FiLoader className="w-10 h-10 text-orange-400 animate-spin mx-auto mb-3" />
+                    <p className="text-gray-400 text-sm">Loading premium plans...</p>
+                  </div>
+                ) : pricingPlans.length === 0 ? (
+                  <div className="col-span-full text-center py-12 bg-gray-800/40 rounded-2xl border border-gray-700/50">
+                    <FiPackage className="w-14 h-14 text-gray-600 mx-auto mb-3" />
+                    <p className="text-gray-400">No plans available right now</p>
+                    <p className="text-xs text-gray-500 mt-1">Please contact support for details</p>
+                  </div>
+                ) : (
+                  pricingPlans.map((plan, index) => {
+                    const discount = plan.originalPrice > plan.price
+                      ? Math.round(((plan.originalPrice - plan.price) / plan.originalPrice) * 100)
+                      : 0;
+                    const pricePerEnquiry = plan.enquiries > 0
+                      ? Math.round(plan.price / plan.enquiries)
+                      : 0;
+                    const savings = plan.originalPrice > plan.price
+                      ? plan.originalPrice - plan.price
+                      : 0;
+
+                    return (
+                      <motion.div
+                        key={plan.id}
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: index * 0.1 }}
+                        whileHover={{ y: -6, scale: 1.02 }}
+                        className={`group relative rounded-2xl p-6 transition-all duration-300 ${
+                          plan.popular
+                            ? 'bg-gradient-to-br from-purple-600/20 via-pink-600/10 to-purple-600/20 border-2 border-purple-500/50 shadow-2xl shadow-purple-500/30 lg:scale-105'
+                            : 'bg-gradient-to-br from-gray-800/80 to-gray-900/80 border border-gray-700/50 hover:border-orange-500/50 shadow-xl hover:shadow-orange-500/20'
+                        }`}
+                      >
+                        {/* Shine effect on hover */}
+                        <div className="absolute inset-0 rounded-2xl overflow-hidden pointer-events-none">
+                          <div className="absolute -top-1/2 -left-1/2 w-1/2 h-full bg-gradient-to-r from-transparent via-white/5 to-transparent rotate-45 opacity-0 group-hover:opacity-100 group-hover:translate-x-[400%] group-hover:translate-y-[400%] transition-all duration-1000" />
+                        </div>
+
+                        {/* POPULAR RIBBON */}
+                        {plan.popular && (
+                          <>
+                            <div className="absolute -top-3 left-1/2 transform -translate-x-1/2 z-10">
+                              <div className="relative">
+                                <div className="absolute inset-0 bg-gradient-to-r from-purple-500 to-pink-500 blur-md opacity-70 rounded-full" />
+                                <span className="relative px-4 py-1.5 bg-gradient-to-r from-purple-500 to-pink-500 text-white text-[10px] font-extrabold rounded-full shadow-lg flex items-center gap-1.5 whitespace-nowrap tracking-wider">
+                                  <FiStar className="w-3 h-3 fill-white" />
+                                  {plan.badge || 'MOST POPULAR'}
+                                </span>
+                              </div>
+                            </div>
+                            <div className="absolute inset-0 rounded-2xl border-2 border-purple-500/30 animate-pulse pointer-events-none" />
+                          </>
+                        )}
+
+                        {/* Non-popular badge */}
+                        {!plan.popular && plan.badge && (
+                          <div className="absolute -top-3 left-1/2 transform -translate-x-1/2 z-10">
+                            <span className="px-3 py-1 bg-gradient-to-r from-orange-500 to-amber-500 text-white text-[10px] font-extrabold rounded-full shadow-lg whitespace-nowrap tracking-wider">
+                              {plan.badge}
+                            </span>
+                          </div>
+                        )}
+
+                        {/* DISCOUNT BADGE */}
+                        {discount > 0 && (
+                          <div className="absolute top-4 right-4 z-10">
+                            <div className="relative">
+                              <div className="absolute inset-0 bg-red-500 blur-md opacity-50 rounded-full" />
+                              <span className="relative px-2.5 py-1 bg-gradient-to-r from-red-500 to-red-600 text-white text-[11px] font-extrabold rounded-full shadow-lg">
+                                -{discount}%
+                              </span>
+                            </div>
+                          </div>
+                        )}
+
+                        {/* PLAN HEADER */}
+                        <div className="relative mb-5 mt-2">
+                          <div className={`inline-flex items-center justify-center w-12 h-12 rounded-xl mb-3 shadow-lg ${
+                            plan.popular
+                              ? 'bg-gradient-to-br from-purple-500 to-pink-500 shadow-purple-500/40'
+                              : 'bg-gradient-to-br from-orange-500 to-amber-500 shadow-orange-500/40'
+                          }`}>
+                            <FiPackage className="w-6 h-6 text-white" />
+                          </div>
+
+                          <h5 className="text-2xl font-extrabold text-white tracking-tight">
+                            {plan.name}
+                          </h5>
+
+                          <p className="text-xs text-gray-400 mt-1 flex items-center gap-1.5">
+                            <FiZap className="w-3 h-3 text-yellow-400" />
+                            Best for growing institutions
+                          </p>
+                        </div>
+
+                        {/* PRICE */}
+                        <div className="relative mb-5 pb-5 border-b border-gray-700/50">
+                          <div className="flex items-baseline gap-2 flex-wrap">
+                            <span className="text-4xl font-black text-white tracking-tight">
+                              ₹{plan.price.toLocaleString()}
+                            </span>
+                            {plan.originalPrice > plan.price && (
+                              <span className="text-sm text-gray-500 line-through">
+                                ₹{plan.originalPrice.toLocaleString()}
+                              </span>
+                            )}
+                          </div>
+
+                          {savings > 0 && (
+                            <p className="text-xs text-green-400 font-semibold mt-1">
+                              You save ₹{savings.toLocaleString()}
+                            </p>
+                          )}
+
+                          <p className="text-[11px] text-gray-400 mt-1.5">
+                            Just <span className="text-orange-400 font-bold">₹{pricePerEnquiry}</span> per enquiry
+                          </p>
+                        </div>
+
+                        {/* ENQUIRIES HIGHLIGHT */}
+                        <div className={`mb-5 p-3 rounded-xl flex items-center gap-3 ${
+                          plan.popular
+                            ? 'bg-purple-500/10 border border-purple-500/30'
+                            : 'bg-orange-500/10 border border-orange-500/30'
+                        }`}>
+                          <div className={`p-2 rounded-lg ${
+                            plan.popular ? 'bg-purple-500/20' : 'bg-orange-500/20'
+                          }`}>
+                            <FiPackage className={`w-4 h-4 ${
+                              plan.popular ? 'text-purple-400' : 'text-orange-400'
+                            }`} />
+                          </div>
+                          <div>
+                            <p className="text-xl font-extrabold text-white leading-none">
+                              {plan.enquiries}
+                            </p>
+                            <p className="text-[10px] text-gray-400 uppercase tracking-wider mt-0.5">
+                              Enquiries unlocked
+                            </p>
+                          </div>
+                        </div>
+
+                        {/* FEATURES */}
+                        <ul className="space-y-2.5 mb-6">
+                          {plan.features.map((feature, idx) => (
+                            <li key={idx} className="flex items-start gap-2.5 text-sm">
+                              <div className={`p-0.5 rounded-full flex-shrink-0 mt-0.5 ${
+                                plan.popular ? 'bg-purple-500/20' : 'bg-green-500/20'
+                              }`}>
+                                <FiCheck className={`w-3 h-3 ${
+                                  plan.popular ? 'text-purple-400' : 'text-green-400'
+                                }`} />
+                              </div>
+                              <span className="text-gray-300 leading-tight">{feature}</span>
+                            </li>
+                          ))}
+                        </ul>
+
+                        {/* CTA BUTTON */}
+                        <button
+                          onClick={() => handleBuyPlan(plan)}
+                          className={`group/btn relative w-full px-4 py-3.5 rounded-xl font-bold text-sm transition-all overflow-hidden ${
+                            plan.popular
+                              ? 'bg-gradient-to-r from-purple-500 to-pink-500 text-white shadow-xl shadow-purple-500/40 hover:shadow-purple-500/60'
+                              : 'bg-gradient-to-r from-orange-500 to-amber-500 text-white shadow-xl shadow-orange-500/40 hover:shadow-orange-500/60'
+                          } hover:scale-[1.02]`}
+                        >
+                          <div className="absolute inset-0 bg-white/20 opacity-0 group-hover/btn:opacity-100 transition-opacity" />
+                          <div className="relative flex items-center justify-center gap-2">
+                            <FiMail className="w-4 h-4" />
+                            Buy Plan
+                            <FiArrowRight className="w-4 h-4 group-hover/btn:translate-x-1 transition-transform" />
+                          </div>
+                        </button>
+
+                        {/* Flow hint */}
+                        <p className="text-center text-[10px] text-gray-500 mt-3 flex items-center justify-center gap-1">
+                          <FiInfo className="w-2.5 h-2.5" />
+                          Email opens → We'll send payment details
+                        </p>
+                      </motion.div>
+                    );
+                  })
+                )}
+              </div>
+
+              {/* ============ SUPPORT & INFO FOOTER ============ */}
+              <div className="mt-8 grid grid-cols-1 lg:grid-cols-2 gap-4">
+
+                {/* Support card */}
+                <div className="p-5 bg-gradient-to-br from-blue-500/10 to-indigo-500/5 border border-blue-500/20 rounded-2xl backdrop-blur-sm">
+                  <div className="flex items-start gap-4">
+                    <div className="p-3 bg-gradient-to-br from-blue-500 to-indigo-500 rounded-xl flex-shrink-0 shadow-lg shadow-blue-500/30">
+                      <FiMail className="w-5 h-5 text-white" />
+                    </div>
+                    <div className="flex-1">
+                      <p className="text-white font-bold mb-1">Have questions before buying?</p>
+                      <p className="text-xs text-gray-400 mb-3">
+                        Our team can help you choose the right plan for your institution's needs
+                      </p>
+                      <div className="flex flex-wrap gap-2">
+                        <a
+                          href="mailto:raynottbangalore@gmail.com?subject=Plan%20Consultation"
+                          className="px-3 py-2 bg-blue-500/20 text-blue-300 rounded-lg hover:bg-blue-500/30 transition-all text-xs font-medium flex items-center gap-2 border border-blue-500/30"
+                        >
+                          <FiMail className="w-3.5 h-3.5" />
+                          Email Team
+                        </a>
+                        <a
+                          href="tel:8618591978"
+                          className="px-3 py-2 bg-green-500/20 text-green-300 rounded-lg hover:bg-green-500/30 transition-all text-xs font-medium flex items-center gap-2 border border-green-500/30"
+                        >
+                          <FiPhone className="w-3.5 h-3.5" />
+                          Call Now
+                        </a>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Guarantee card */}
+                <div className="p-5 bg-gradient-to-br from-green-500/10 to-emerald-500/5 border border-green-500/20 rounded-2xl backdrop-blur-sm">
+                  <div className="flex items-start gap-4">
+                    <div className="p-3 bg-gradient-to-br from-green-500 to-emerald-500 rounded-xl flex-shrink-0 shadow-lg shadow-green-500/30">
+                      <FiCheckCircle className="w-5 h-5 text-white" />
+                    </div>
+                    <div className="flex-1">
+                      <p className="text-white font-bold mb-1">Activation within 24 hours</p>
+                      <p className="text-xs text-gray-400 leading-relaxed">
+                        Once payment is confirmed, your enquiry limit will be increased and instantly visible on your dashboard.
+                      </p>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
@@ -1417,7 +1678,6 @@ const Dashboard = () => {
             </div>
           ))}
         </div>
-        
       </motion.div>
     );
   };
@@ -1488,6 +1748,13 @@ const Dashboard = () => {
       if (pollingInterval) clearInterval(pollingInterval);
     };
   }, [navigate]);
+
+  // ✅ NEW: Fetch plans when registration is approved
+  useEffect(() => {
+    if (registrationStatus === 'approved') {
+      fetchActivePlans();
+    }
+  }, [registrationStatus]);
 
   // ============ MAIN RENDER ============
   return (
