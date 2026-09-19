@@ -773,22 +773,6 @@ const Dashboard = () => {
                   {' '}= <span className="text-white font-bold">{totalLimit} total visible</span>
                 </p>
 
-                {/* Progress bar */}
-                <div className="flex items-center gap-3 max-w-md">
-                  <div className="flex-1 h-2 bg-gray-700/50 rounded-full overflow-hidden">
-                    <motion.div
-                      initial={{ width: 0 }}
-                      animate={{
-                        width: `${Math.min(100, (totalLimit / Math.max(totalLimit + 50, 1)) * 100)}%`
-                      }}
-                      transition={{ duration: 1, delay: 0.3 }}
-                      className="h-full bg-gradient-to-r from-orange-500 via-amber-500 to-orange-400 rounded-full shadow-lg shadow-orange-500/50"
-                    />
-                  </div>
-                  <span className="text-xs text-gray-400 whitespace-nowrap">
-                    <span className="text-white font-semibold">{enquiryStats.total}</span> received
-                  </span>
-                </div>
               </div>
             </div>
 
