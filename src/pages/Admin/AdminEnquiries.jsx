@@ -6,7 +6,7 @@ import {
   FiCheckCircle, FiXCircle, FiInfo, FiAtSign, FiMessageSquare,
   FiBriefcase, FiCalendar, FiChevronDown, FiChevronUp,
   FiUnlock, FiLock, FiUsers, FiPlus, FiMinus, FiTrash2,
-  FiAlertCircle, FiSave, FiRotateCcw
+  FiAlertCircle, FiSave, FiRotateCcw, FiPackage
 } from 'react-icons/fi';
 import { toast } from 'react-toastify';
 import enquiryApi from '../../services/EnquiryApi';
@@ -28,10 +28,15 @@ const AdminEnquiries = () => {
   const [limitData, setLimitData] = useState({
     institutionId: null,
     institutionName: '',
-    customLimit: 10
+    customLimit: 10,
+    selectedPlanId: '' // ✅ NEW
   });
   const [savingLimit, setSavingLimit] = useState(false);
   const [resettingLimit, setResettingLimit] = useState(null);
+
+  // ✅ NEW: Plans state
+  const [plans, setPlans] = useState([]);
+  const [plansLoading, setPlansLoading] = useState(false);
 
   const DEFAULT_FREE_LIMIT = 5;
 
@@ -39,6 +44,20 @@ const AdminEnquiries = () => {
   const fetchAllEnquiries = async () => {
     setIsLoading(true);
     try {
+      // ✅ NEW: Fetch plans too
+      setPlansLoading(true);
+      try {
+        const plansResult = await enquiryApi.getAllPlans();
+        if (plansResult && plansResult.success && Array.isArray(plansResult.data)) {
+          setPlans(plansResult.data);
+          console.log(`📋 Loaded ${plansResult.data.length} plans`);
+        }
+      } catch (planErr) {
+        console.warn('⚠️ Could not fetch plans:', planErr);
+      } finally {
+        setPlansLoading(false);
+      }
+
       console.log('📡 Fetching all enquiries...');
       const result = await enquiryApi.getAllEnquiries({ limit: 500 });
 
@@ -69,7 +88,9 @@ const AdminEnquiries = () => {
             savedLimits[limit.institutionId] = {
               customLimit: limit.customLimit || 0,
               totalLimit: limit.totalLimit || DEFAULT_FREE_LIMIT,
-              updatedAt: limit.updatedAt || limit.lastUpdatedAt
+              updatedAt: limit.updatedAt || limit.lastUpdatedAt,
+              planName: limit.planName || null,  // ✅ NEW
+              planId: limit.planId || null        // ✅ NEW
             };
           });
         }
@@ -101,7 +122,8 @@ const AdminEnquiries = () => {
             freeLimit: DEFAULT_FREE_LIMIT,
             customLimit: savedLimit?.customLimit || 0,
             totalLimit: DEFAULT_FREE_LIMIT + (savedLimit?.customLimit || 0),
-            lastUpdated: savedLimit?.updatedAt || null
+            lastUpdated: savedLimit?.updatedAt || null,
+            assignedPlan: savedLimit?.planName || null // ✅ NEW
           };
         }
         grouped[instId].enquiries.push(enquiry);
@@ -141,13 +163,21 @@ const AdminEnquiries = () => {
     try {
       const institution = institutions[institutionId];
 
-      // ✅ CHANGED: Save to backend API
+      // ✅ Get the selected plan details
+      const selectedPlan = plans.find(p => p.id === limitData.selectedPlanId);
+
       const result = await enquiryApi.setInstitutionLimit(institutionId, {
         customLimit: Number(customLimit),
         institutionName: institution?.name || '',
         institutionType: institution?.type || '',
         institutionEmail: institution?.email || '',
-        note: 'Updated by admin from dashboard'
+        // ✅ NEW: plan info
+        planId: limitData.selectedPlanId || null,
+        planName: selectedPlan?.name || null,
+        planPrice: selectedPlan?.price || null,
+        note: selectedPlan
+          ? `Assigned plan: ${selectedPlan.name}`
+          : 'Updated by admin from dashboard'
       });
 
       if (result && result.success) {
@@ -160,7 +190,8 @@ const AdminEnquiries = () => {
             ...prev[institutionId],
             customLimit: Number(customLimit),
             totalLimit: DEFAULT_FREE_LIMIT + Number(customLimit),
-            lastUpdated: new Date().toISOString()
+            lastUpdated: new Date().toISOString(),
+            assignedPlan: selectedPlan?.name || prev[institutionId]?.assignedPlan // ✅ NEW
           }
         }));
 
@@ -168,7 +199,8 @@ const AdminEnquiries = () => {
         setLimitData({
           institutionId: null,
           institutionName: '',
-          customLimit: 10
+          customLimit: 10,
+          selectedPlanId: '' // ✅ reset
         });
       } else {
         toast.error(result.message || 'Failed to update limit');
@@ -200,7 +232,8 @@ const AdminEnquiries = () => {
             ...prev[institutionId],
             customLimit: 0,
             totalLimit: DEFAULT_FREE_LIMIT,
-            lastUpdated: null
+            lastUpdated: null,
+            assignedPlan: null // ✅ NEW
           }
         }));
       } else {
@@ -312,7 +345,8 @@ const AdminEnquiries = () => {
     setLimitData({
       institutionId: institution.id,
       institutionName: institution.name,
-      customLimit: institution.customLimit || 0
+      customLimit: institution.customLimit || 0,
+      selectedPlanId: '' // ✅ reset
     });
     setShowLimitModal(true);
   };
@@ -360,9 +394,9 @@ const AdminEnquiries = () => {
 
     return (
       <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-        <div className="bg-white rounded-2xl max-w-lg w-full shadow-2xl">
+        <div className="bg-white rounded-2xl max-w-lg w-full shadow-2xl max-h-[90vh] overflow-y-auto">
           {/* Header */}
-          <div className="p-6 border-b border-gray-200">
+          <div className="p-6 border-b border-gray-200 sticky top-0 bg-white z-10 rounded-t-2xl">
             <div className="flex justify-between items-start">
               <div>
                 <h3 className="text-xl font-bold text-gray-800 flex items-center gap-2">
@@ -410,6 +444,57 @@ const AdminEnquiries = () => {
                   Add more to let the institution see additional enquiries.
                 </span>
               </p>
+            </div>
+
+            {/* ✅ NEW: Select Plan Dropdown */}
+            <div>
+              <label className="text-sm font-medium text-gray-700 block mb-2 flex items-center gap-2">
+                <FiPackage className="w-4 h-4 text-orange-500" />
+                Select Plan
+              </label>
+              <select
+                value={limitData.selectedPlanId}
+                onChange={(e) => {
+                  const planId = e.target.value;
+                  const selectedPlan = plans.find(p => p.id === planId);
+                  setLimitData(prev => ({
+                    ...prev,
+                    selectedPlanId: planId,
+                    // ✅ Auto-fill the custom limit from the plan
+                    customLimit: selectedPlan ? Number(selectedPlan.enquiries) : prev.customLimit
+                  }));
+                }}
+                disabled={savingLimit || plansLoading}
+                className="w-full px-4 py-2.5 bg-gray-50 text-gray-800 rounded-lg border border-gray-200 focus:outline-none focus:border-orange-500 focus:bg-white transition-all disabled:opacity-50"
+              >
+                <option value="">
+                  {plansLoading ? 'Loading plans...' : '— Choose a plan (or set manually below) —'}
+                </option>
+                {plans.map((plan) => (
+                  <option key={plan.id} value={plan.id}>
+                    {plan.name} — {plan.enquiries} enquiries — ₹{plan.price.toLocaleString()}
+                    {plan.isActive ? '' : ' (Inactive)'}
+                  </option>
+                ))}
+              </select>
+
+              {/* Show selected plan preview */}
+              {limitData.selectedPlanId && (() => {
+                const p = plans.find(x => x.id === limitData.selectedPlanId);
+                if (!p) return null;
+                return (
+                  <div className="mt-2 p-3 bg-orange-50 border border-orange-200 rounded-lg">
+                    <div className="flex items-center justify-between flex-wrap gap-2 text-xs">
+                      <span className="text-gray-600">
+                        <strong className="text-gray-800">{p.name}</strong> — {p.enquiries} enquiries
+                      </span>
+                      <span className="font-bold text-orange-600">
+                        ₹{p.price.toLocaleString()}
+                      </span>
+                    </div>
+                  </div>
+                );
+              })()}
             </div>
 
             {/* Custom Limit Input */}
@@ -999,6 +1084,16 @@ const AdminEnquiries = () => {
                               )}
                             </span>
                           </div>
+
+                          {/* ✅ NEW: Assigned Plan badge */}
+                          {institution.assignedPlan && (
+                            <div className="mt-2">
+                              <span className="inline-flex items-center gap-1.5 text-xs px-2.5 py-1 bg-gradient-to-r from-orange-100 to-amber-100 text-orange-700 rounded-full border border-orange-200 font-medium">
+                                <FiPackage className="w-3 h-3" />
+                                {institution.assignedPlan}
+                              </span>
+                            </div>
+                          )}
                         </div>
                       </div>
 
@@ -1012,14 +1107,14 @@ const AdminEnquiries = () => {
                           Manage Limit
                         </button>
 
-                        <button
+                        {/* <button
                           onClick={() => toggleInstitutionExpand(institution.id)}
                           className="px-4 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-all text-sm flex items-center gap-2"
                         >
                           <FiEye className="w-4 h-4" />
                           {isExpanded ? 'Hide' : 'View'} Enquiries
                           {isExpanded ? <FiChevronUp className="w-4 h-4" /> : <FiChevronDown className="w-4 h-4" />}
-                        </button>
+                        </button> */}
                       </div>
                     </div>
                   </div>

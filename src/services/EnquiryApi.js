@@ -53,7 +53,6 @@ function getLocalEnquiries() {
   return { success: true, data: [], count: 0, source: 'localStorage' };
 }
 
-// ============ LOCAL LIMIT FALLBACK ============
 function getLocalLimit(institutionId) {
   const DEFAULT_FREE_LIMIT = 5;
   try {
@@ -66,6 +65,9 @@ function getLocalLimit(institutionId) {
       freeLimit: DEFAULT_FREE_LIMIT,
       customLimit,
       totalLimit: DEFAULT_FREE_LIMIT + customLimit,
+      planId: instLimit?.planId || null,        // ✅
+      planName: instLimit?.planName || null,    // ✅
+      planPrice: instLimit?.planPrice || null,  // ✅
       lastUpdatedAt: instLimit?.updatedAt || null,
       source: 'localStorage'
     };
@@ -75,19 +77,24 @@ function getLocalLimit(institutionId) {
       freeLimit: DEFAULT_FREE_LIMIT,
       customLimit: 0,
       totalLimit: DEFAULT_FREE_LIMIT,
+      planId: null,
+      planName: null,
+      planPrice: null,
       lastUpdatedAt: null,
       source: 'localStorage'
     };
   }
 }
 
-// Save limit to localStorage as cache
 function saveLocalLimit(institutionId, limitData) {
   try {
     const savedLimits = JSON.parse(localStorage.getItem('institutionLimits') || '{}');
     savedLimits[institutionId] = {
       customLimit: limitData.customLimit || 0,
       totalLimit: limitData.totalLimit || 5,
+      planId: limitData.planId || null,        // ✅
+      planName: limitData.planName || null,    // ✅
+      planPrice: limitData.planPrice || null,  // ✅
       updatedAt: limitData.updatedAt || new Date().toISOString()
     };
     localStorage.setItem('institutionLimits', JSON.stringify(savedLimits));
@@ -321,47 +328,68 @@ const enquiryApi = {
     }
   },
 
-  // Set/Update institution limit (admin only)
   setInstitutionLimit: async (institutionId, limitData) => {
+  try {
+    // ✅ Explicitly send plan fields
+    const payload = {
+      customLimit: limitData.customLimit,
+      institutionName: limitData.institutionName,
+      institutionType: limitData.institutionType,
+      institutionEmail: limitData.institutionEmail,
+      note: limitData.note,
+      planId: limitData.planId || null,
+      planName: limitData.planName || null,
+      planPrice: limitData.planPrice || null
+    };
+
+    console.log('📤 Sending to backend:', payload);
+
+    const response = await api.put(`/admin/institution-limits/${institutionId}`, payload);
+
+    // Cache to localStorage with plan info
+    if (response.data && response.data.success) {
+      saveLocalLimit(institutionId, {
+        customLimit: response.data.data.customLimit,
+        totalLimit: response.data.data.totalLimit,
+        planId: response.data.data.planId,      
+        planName: response.data.data.planName,  
+        planPrice: response.data.data.planPrice,
+        updatedAt: response.data.data.updatedAt
+      });
+    }
+
+    return response.data;
+  } catch (error) {
+    console.error('Set institution limit error:', error);
+
     try {
-      const response = await api.put(`/admin/institution-limits/${institutionId}`, limitData);
-      
-      // Cache to localStorage
-      if (response.data && response.data.success) {
-        saveLocalLimit(institutionId, {
-          customLimit: response.data.data.customLimit,
-          totalLimit: response.data.data.totalLimit,
-          updatedAt: response.data.data.updatedAt
-        });
-      }
-      
-      return response.data;
-    } catch (error) {
-      console.error('Set institution limit error:', error);
-      
-      // Fallback: save to localStorage
-      try {
-        saveLocalLimit(institutionId, {
+      saveLocalLimit(institutionId, {
+        customLimit: limitData.customLimit,
+        totalLimit: 5 + limitData.customLimit,
+        planId: limitData.planId || null,       // ✅
+        planName: limitData.planName || null,   // ✅
+        planPrice: limitData.planPrice || null, // ✅
+        updatedAt: new Date().toISOString()
+      });
+
+      return {
+        success: true,
+        message: 'Saved locally (backend unavailable)',
+        data: {
+          institutionId,
           customLimit: limitData.customLimit,
           totalLimit: 5 + limitData.customLimit,
-          updatedAt: new Date().toISOString()
-        });
-        
-        return {
-          success: true,
-          message: 'Saved locally (backend unavailable)',
-          data: {
-            institutionId,
-            customLimit: limitData.customLimit,
-            totalLimit: 5 + limitData.customLimit
-          },
-          source: 'localStorage'
-        };
-      } catch (e) {
-        return { success: false, message: 'Failed to save limit' };
-      }
+          planId: limitData.planId || null,
+          planName: limitData.planName || null,
+          planPrice: limitData.planPrice || null
+        },
+        source: 'localStorage'
+      };
+    } catch (e) {
+      return { success: false, message: 'Failed to save limit' };
     }
-  },
+  }
+},
 
   // Get all institution limits (admin)
   getAllInstitutionLimits: async () => {

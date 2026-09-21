@@ -9,7 +9,7 @@ import {
   FiArrowRight, FiRefreshCw, FiMessageSquare, FiInbox,
   FiEye, FiCopy, FiAtSign, FiSearch, FiLock, FiUnlock,
   FiPackage, FiStar, FiChevronDown, FiChevronUp,
-  FiDollarSign, FiCreditCard,FiZap
+  FiDollarSign, FiCreditCard, FiZap
 } from 'react-icons/fi';
 import { authApis } from '../services/allApis';
 import registerApi from '../services/RegisterApi';
@@ -22,40 +22,6 @@ import { toast } from 'react-toastify';
 import enquiryApi from '../services/EnquiryApi';
 
 const DEFAULT_FREE_LIMIT = 5;
-
-// Fallback plans if backend fails
-const FALLBACK_PLANS = [
-  {
-    id: 'basic',
-    name: 'Basic',
-    enquiries: 10,
-    price: 500,
-    originalPrice: 700,
-    popular: false,
-    badge: '',
-    features: ['10 additional enquiries', 'Email & phone access', 'Priority support']
-  },
-  {
-    id: 'standard',
-    name: 'Standard',
-    enquiries: 25,
-    price: 1000,
-    originalPrice: 1500,
-    popular: true,
-    badge: 'MOST POPULAR',
-    features: ['25 additional enquiries', 'Email & phone access', 'Priority support', 'Better visibility']
-  },
-  {
-    id: 'premium',
-    name: 'Premium',
-    enquiries: 50,
-    price: 1800,
-    originalPrice: 2800,
-    popular: false,
-    badge: 'BEST VALUE',
-    features: ['50 additional enquiries', 'Email & phone access', 'Priority support', 'Better visibility', 'Featured badge']
-  }
-];
 
 const Dashboard = () => {
   // ============ BASIC STATE ============
@@ -91,17 +57,20 @@ const Dashboard = () => {
   const [copySuccess, setCopySuccess] = useState('');
   const [showPlansExpanded, setShowPlansExpanded] = useState(false);
   
-  // ============ PLANS STATE (from backend) ============
+  // ============ PLANS STATE ============
   const [pricingPlans, setPricingPlans] = useState([]);
   const [plansLoading, setPlansLoading] = useState(false);
   
-  // ============ LIMIT STATE (from backend) ============
+  // ============ LIMIT STATE ============
   const [institutionLimit, setInstitutionLimit] = useState({
     freeLimit: DEFAULT_FREE_LIMIT,
     customLimit: 0,
     totalLimit: DEFAULT_FREE_LIMIT,
     lastUpdatedAt: null
   });
+
+  // ✅ Plan state
+  const [assignedPlan, setAssignedPlan] = useState(null);
 
   const navigate = useNavigate();
 
@@ -153,7 +122,7 @@ const Dashboard = () => {
     }
   };
 
-  // ============ FETCH INSTITUTION LIMIT FROM BACKEND ============
+  // ============ FETCH INSTITUTION LIMIT ============
   const fetchInstitutionLimit = async () => {
     const id = institutionId || localStorage.getItem('institutionId');
     if (!id) return;
@@ -167,11 +136,26 @@ const Dashboard = () => {
           freeLimit: result.data.freeLimit || DEFAULT_FREE_LIMIT,
           customLimit: result.data.customLimit || 0,
           totalLimit: result.data.totalLimit || (DEFAULT_FREE_LIMIT + (result.data.customLimit || 0)),
-          lastUpdatedAt: result.data.lastUpdatedAt || null
+          lastUpdatedAt: result.data.lastUpdatedAt || null,
+          planId: result.data.planId || null,
+          planName: result.data.planName || null,
+          planPrice: result.data.planPrice || null
         };
         
         console.log('✅ Fetched limit:', limitData);
         setInstitutionLimit(limitData);
+
+        // ✅ Set assigned plan
+        if (limitData.planId || limitData.planName) {
+          setAssignedPlan({
+            id: limitData.planId,
+            name: limitData.planName,
+            price: limitData.planPrice
+          });
+        } else {
+          setAssignedPlan(null);
+        }
+
         return limitData;
       }
     } catch (error) {
@@ -184,15 +168,29 @@ const Dashboard = () => {
         freeLimit: DEFAULT_FREE_LIMIT,
         customLimit: localLimit?.customLimit || 0,
         totalLimit: DEFAULT_FREE_LIMIT + (localLimit?.customLimit || 0),
-        lastUpdatedAt: localLimit?.updatedAt || null
+        lastUpdatedAt: localLimit?.updatedAt || null,
+        planId: localLimit?.planId || null,
+        planName: localLimit?.planName || null,
+        planPrice: localLimit?.planPrice || null
       };
       
       setInstitutionLimit(fallbackLimit);
+
+      if (fallbackLimit.planId || fallbackLimit.planName) {
+        setAssignedPlan({
+          id: fallbackLimit.planId,
+          name: fallbackLimit.planName,
+          price: fallbackLimit.planPrice
+        });
+      } else {
+        setAssignedPlan(null);
+      }
+
       return fallbackLimit;
     }
   };
 
-  // ============ FETCH ACTIVE PLANS FROM BACKEND ============
+  // ============ FETCH ACTIVE PLANS ============
   const fetchActivePlans = async () => {
     setPlansLoading(true);
     try {
@@ -203,24 +201,16 @@ const Dashboard = () => {
         console.log(`📋 Loaded ${result.data.length} active plans`);
         setPricingPlans(result.data);
       } else {
-        console.warn('⚠️ No plans from backend, using fallback');
-        // setPricingPlans(FALLBACK_PLANS);
+        console.warn('⚠️ No plans from backend');
       }
     } catch (error) {
       console.error('❌ Error fetching plans:', error);
-      // setPricingPlans(FALLBACK_PLANS);
     } finally {
       setPlansLoading(false);
     }
   };
 
-  // Get current limit (from state)
-  const getEnquiryLimit = () => {
-    return institutionLimit;
-  };
-
-  // ============ ENQUIRY FUNCTIONS ============
-
+  // ============ FETCH INSTITUTION ENQUIRIES ============
   const fetchInstitutionEnquiries = async () => {
     const id = institutionId || localStorage.getItem('institutionId');
     
@@ -248,9 +238,20 @@ const Dashboard = () => {
             freeLimit: result.limit.freeLimit || DEFAULT_FREE_LIMIT,
             customLimit: result.limit.customLimit || 0,
             totalLimit: result.limit.totalLimit || DEFAULT_FREE_LIMIT,
-            lastUpdatedAt: result.limit.lastUpdatedAt || null
+            lastUpdatedAt: result.limit.lastUpdatedAt || null,
+            planId: result.limit.planId || null,
+            planName: result.limit.planName || null,
+            planPrice: result.limit.planPrice || null
           };
           setInstitutionLimit(limitData);
+
+          if (limitData.planId || limitData.planName) {
+            setAssignedPlan({
+              id: limitData.planId,
+              name: limitData.planName,
+              price: limitData.planPrice
+            });
+          }
         }
       } else {
         if (result && result.success && result.data) {
@@ -689,6 +690,15 @@ const Dashboard = () => {
     toast.success('Opening email client...');
   };
 
+  // ✅ Open plans panel
+  const handleOpenPlans = () => {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+    setTimeout(() => {
+      setShowPlansExpanded(true);
+      fetchActivePlans();
+    }, 400);
+  };
+
   const getStatusConfig = (status) => {
     const configs = {
       'not_started': {
@@ -735,21 +745,26 @@ const Dashboard = () => {
         animate={{ opacity: 1, y: 0 }}
         className="relative bg-gradient-to-br from-blue-500/10 via-purple-500/10 to-orange-500/10 rounded-2xl border border-blue-500/20 mb-6 overflow-hidden mt-4 shadow-2xl backdrop-blur-sm"
       >
-        {/* Decorative top accent bar */}
         <div className="h-1 bg-gradient-to-r from-blue-500 via-purple-500 to-orange-500" />
 
-        {/* Background glow decorations */}
         <div className="absolute top-0 right-0 w-80 h-80 bg-orange-500/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2 pointer-events-none" />
         <div className="absolute bottom-0 left-0 w-80 h-80 bg-purple-500/10 rounded-full blur-3xl translate-y-1/2 -translate-x-1/2 pointer-events-none" />
 
         <div className="relative p-6">
           <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-5">
 
-            {/* LEFT: INFO */}
             <div className="flex items-start gap-4 flex-1">
               <div className="relative flex-shrink-0">
-                <div className="absolute inset-0 bg-gradient-to-br from-blue-500 to-purple-500 rounded-2xl blur-md opacity-50" />
-                <div className="relative p-3.5 bg-gradient-to-br from-blue-500 to-purple-500 rounded-2xl shadow-lg">
+                <div className={`absolute inset-0 rounded-2xl blur-md opacity-50 ${
+                  assignedPlan
+                    ? 'bg-gradient-to-br from-purple-500 to-pink-500'
+                    : 'bg-gradient-to-br from-blue-500 to-purple-500'
+                }`} />
+                <div className={`relative p-3.5 rounded-2xl shadow-lg ${
+                  assignedPlan
+                    ? 'bg-gradient-to-br from-purple-500 to-pink-500'
+                    : 'bg-gradient-to-br from-blue-500 to-purple-500'
+                }`}>
                   <FiPackage className="w-7 h-7 text-white" />
                 </div>
               </div>
@@ -757,26 +772,42 @@ const Dashboard = () => {
               <div className="flex-1">
                 <div className="flex items-center gap-2 flex-wrap mb-2">
                   <h3 className="text-white font-bold text-xl tracking-tight">
-                    Unlock More Enquiries
+                    {assignedPlan ? 'Your Active Plan' : 'Unlock More Enquiries'}
                   </h3>
-                  <span className="px-2.5 py-1 bg-gradient-to-r from-blue-500 to-purple-500 text-white rounded-full text-[10px] font-bold uppercase tracking-wider shadow-lg">
-                    Premium
+                  <span className={`px-2.5 py-1 text-white rounded-full text-[10px] font-bold uppercase tracking-wider shadow-lg ${
+                    assignedPlan
+                      ? 'bg-gradient-to-r from-purple-500 to-pink-500'
+                      : 'bg-gradient-to-r from-blue-500 to-purple-500'
+                  }`}>
+                    {assignedPlan ? 'Subscribed' : 'Get Now'}
                   </span>
                 </div>
 
+                {assignedPlan && (
+                  <div className="mb-3 inline-flex items-center gap-2 px-3 py-1.5 bg-gradient-to-r from-purple-500/20 to-pink-500/20 border border-purple-500/40 rounded-full">
+                    <FiStar className="w-3.5 h-3.5 text-purple-300 fill-purple-300" />
+                    <span className="text-xs font-bold text-white uppercase tracking-wider">
+                      {assignedPlan.name} Plan
+                    </span>
+                    <span className="px-2 py-0.5 bg-purple-500 text-white text-[9px] font-bold rounded-full">
+                      ACTIVE
+                    </span>
+                  </div>
+                )}
+
                 <p className="text-gray-300 text-sm mb-3">
-                  You're on the <span className="text-white font-semibold">Free Tier</span> with{' '}
-                  <span className="text-orange-400 font-bold">{freeLimit} enquiries</span>
+                  You're on the <span className="text-white font-semibold">
+                    {assignedPlan ? `${assignedPlan.name} Plan` : 'Free Tier'}
+                  </span> with{' '}
+                  <span className="text-orange-400 font-bold">{freeLimit} free enquiries</span>
                   {customLimit > 0 && (
                     <> + <span className="text-green-400 font-bold">{customLimit} unlocked</span></>
                   )}
                   {' '}= <span className="text-white font-bold">{totalLimit} total visible</span>
                 </p>
-
               </div>
             </div>
 
-            {/* RIGHT: CTA */}
             <div className="flex items-center gap-3 flex-shrink-0">
               <button
                 onClick={() => {
@@ -788,7 +819,7 @@ const Dashboard = () => {
               >
                 <div className="absolute inset-0 rounded-xl bg-white/20 opacity-0 group-hover:opacity-100 transition-opacity" />
                 <FiPackage className="w-4 h-4 relative" />
-                <span className="relative">{showPlansExpanded ? 'Hide Plans' : 'View Plans'}</span>
+                <span className="relative">{showPlansExpanded ? 'Hide Plans' : assignedPlan ? 'Upgrade Plan' : 'View Plans'}</span>
                 {showPlansExpanded ?
                   <FiChevronUp className="w-4 h-4 relative" /> :
                   <FiChevronDown className="w-4 h-4 relative" />
@@ -798,7 +829,6 @@ const Dashboard = () => {
           </div>
         </div>
 
-        {/* EXPANDED PLANS */}
         {showPlansExpanded && (
           <motion.div
             initial={{ height: 0, opacity: 0 }}
@@ -808,7 +838,6 @@ const Dashboard = () => {
           >
             <div className="p-6 lg:p-8">
 
-              {/* ============ HOW IT WORKS SECTION ============ */}
               <div className="mb-8">
                 <div className="text-center mb-5">
                   <h4 className="text-xl font-bold text-white mb-1">How to Purchase a Plan</h4>
@@ -816,7 +845,6 @@ const Dashboard = () => {
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  {/* Step 1 */}
                   <div className="relative bg-gray-800/60 backdrop-blur-sm rounded-xl p-5 border border-orange-500/20 hover:border-orange-500/40 shadow-lg transition-all">
                     <div className="absolute -top-3 -left-3 w-9 h-9 bg-gradient-to-br from-orange-500 to-amber-500 rounded-full flex items-center justify-center text-white font-bold text-sm shadow-lg shadow-orange-500/40">
                       1
@@ -834,7 +862,6 @@ const Dashboard = () => {
                     </div>
                   </div>
 
-                  {/* Step 2 */}
                   <div className="relative bg-gray-800/60 backdrop-blur-sm rounded-xl p-5 border border-blue-500/20 hover:border-blue-500/40 shadow-lg transition-all">
                     <div className="absolute -top-3 -left-3 w-9 h-9 bg-gradient-to-br from-blue-500 to-indigo-500 rounded-full flex items-center justify-center text-white font-bold text-sm shadow-lg shadow-blue-500/40">
                       2
@@ -852,7 +879,6 @@ const Dashboard = () => {
                     </div>
                   </div>
 
-                  {/* Step 3 */}
                   <div className="relative bg-gray-800/60 backdrop-blur-sm rounded-xl p-5 border border-green-500/20 hover:border-green-500/40 shadow-lg transition-all">
                     <div className="absolute -top-3 -left-3 w-9 h-9 bg-gradient-to-br from-green-500 to-emerald-500 rounded-full flex items-center justify-center text-white font-bold text-sm shadow-lg shadow-green-500/40">
                       3
@@ -871,7 +897,6 @@ const Dashboard = () => {
                   </div>
                 </div>
 
-                {/* Arrow flow indicator */}
                 <div className="hidden md:flex items-center justify-center gap-2 mt-5 text-xs text-gray-500">
                   <span className="px-2 py-1 bg-gray-800/50 rounded-md">Select Plan</span>
                   <FiArrowRight className="w-3 h-3 text-orange-400" />
@@ -883,7 +908,6 @@ const Dashboard = () => {
                 </div>
               </div>
 
-              {/* ============ PLANS GRID ============ */}
               <div className="grid grid-cols-1 md:grid-cols-3 gap-5 lg:gap-6">
                 {plansLoading ? (
                   <div className="col-span-full text-center py-12">
@@ -908,6 +932,9 @@ const Dashboard = () => {
                       ? plan.originalPrice - plan.price
                       : 0;
 
+                    const isCurrentPlan = assignedPlan &&
+                      (assignedPlan.id === plan.id || assignedPlan.name === plan.name);
+
                     return (
                       <motion.div
                         key={plan.id}
@@ -916,18 +943,33 @@ const Dashboard = () => {
                         transition={{ delay: index * 0.1 }}
                         whileHover={{ y: -6, scale: 1.02 }}
                         className={`group relative rounded-2xl p-6 transition-all duration-300 ${
-                          plan.popular
+                          isCurrentPlan
+                            ? 'bg-gradient-to-br from-green-600/20 via-emerald-600/10 to-green-600/20 border-2 border-green-500/50 shadow-2xl shadow-green-500/30'
+                            : plan.popular
                             ? 'bg-gradient-to-br from-purple-600/20 via-pink-600/10 to-purple-600/20 border-2 border-purple-500/50 shadow-2xl shadow-purple-500/30 lg:scale-105'
                             : 'bg-gradient-to-br from-gray-800/80 to-gray-900/80 border border-gray-700/50 hover:border-orange-500/50 shadow-xl hover:shadow-orange-500/20'
                         }`}
                       >
-                        {/* Shine effect on hover */}
                         <div className="absolute inset-0 rounded-2xl overflow-hidden pointer-events-none">
                           <div className="absolute -top-1/2 -left-1/2 w-1/2 h-full bg-gradient-to-r from-transparent via-white/5 to-transparent rotate-45 opacity-0 group-hover:opacity-100 group-hover:translate-x-[400%] group-hover:translate-y-[400%] transition-all duration-1000" />
                         </div>
 
-                        {/* POPULAR RIBBON */}
-                        {plan.popular && (
+                        {isCurrentPlan && (
+                          <>
+                            <div className="absolute -top-3 left-1/2 transform -translate-x-1/2 z-10">
+                              <div className="relative">
+                                <div className="absolute inset-0 bg-gradient-to-r from-green-500 to-emerald-500 blur-md opacity-70 rounded-full" />
+                                <span className="relative px-4 py-1.5 bg-gradient-to-r from-green-500 to-emerald-500 text-white text-[10px] font-extrabold rounded-full shadow-lg flex items-center gap-1.5 whitespace-nowrap tracking-wider">
+                                  <FiCheckCircle className="w-3 h-3" />
+                                  YOUR CURRENT PLAN
+                                </span>
+                              </div>
+                            </div>
+                            <div className="absolute inset-0 rounded-2xl border-2 border-green-500/30 animate-pulse pointer-events-none" />
+                          </>
+                        )}
+
+                        {!isCurrentPlan && plan.popular && (
                           <>
                             <div className="absolute -top-3 left-1/2 transform -translate-x-1/2 z-10">
                               <div className="relative">
@@ -942,8 +984,7 @@ const Dashboard = () => {
                           </>
                         )}
 
-                        {/* Non-popular badge */}
-                        {!plan.popular && plan.badge && (
+                        {!isCurrentPlan && !plan.popular && plan.badge && (
                           <div className="absolute -top-3 left-1/2 transform -translate-x-1/2 z-10">
                             <span className="px-3 py-1 bg-gradient-to-r from-orange-500 to-amber-500 text-white text-[10px] font-extrabold rounded-full shadow-lg whitespace-nowrap tracking-wider">
                               {plan.badge}
@@ -951,8 +992,7 @@ const Dashboard = () => {
                           </div>
                         )}
 
-                        {/* DISCOUNT BADGE */}
-                        {discount > 0 && (
+                        {!isCurrentPlan && discount > 0 && (
                           <div className="absolute top-4 right-4 z-10">
                             <div className="relative">
                               <div className="absolute inset-0 bg-red-500 blur-md opacity-50 rounded-full" />
@@ -963,10 +1003,11 @@ const Dashboard = () => {
                           </div>
                         )}
 
-                        {/* PLAN HEADER */}
                         <div className="relative mb-5 mt-2">
                           <div className={`inline-flex items-center justify-center w-12 h-12 rounded-xl mb-3 shadow-lg ${
-                            plan.popular
+                            isCurrentPlan
+                              ? 'bg-gradient-to-br from-green-500 to-emerald-500 shadow-green-500/40'
+                              : plan.popular
                               ? 'bg-gradient-to-br from-purple-500 to-pink-500 shadow-purple-500/40'
                               : 'bg-gradient-to-br from-orange-500 to-amber-500 shadow-orange-500/40'
                           }`}>
@@ -979,11 +1020,10 @@ const Dashboard = () => {
 
                           <p className="text-xs text-gray-400 mt-1 flex items-center gap-1.5">
                             <FiZap className="w-3 h-3 text-yellow-400" />
-                            Best for growing institutions
+                            {isCurrentPlan ? 'Currently active for your institution' : 'Best for growing institutions'}
                           </p>
                         </div>
 
-                        {/* PRICE */}
                         <div className="relative mb-5 pb-5 border-b border-gray-700/50">
                           <div className="flex items-baseline gap-2 flex-wrap">
                             <span className="text-4xl font-black text-white tracking-tight">
@@ -996,7 +1036,7 @@ const Dashboard = () => {
                             )}
                           </div>
 
-                          {savings > 0 && (
+                          {savings > 0 && !isCurrentPlan && (
                             <p className="text-xs text-green-400 font-semibold mt-1">
                               You save ₹{savings.toLocaleString()}
                             </p>
@@ -1007,17 +1047,26 @@ const Dashboard = () => {
                           </p>
                         </div>
 
-                        {/* ENQUIRIES HIGHLIGHT */}
                         <div className={`mb-5 p-3 rounded-xl flex items-center gap-3 ${
-                          plan.popular
+                          isCurrentPlan
+                            ? 'bg-green-500/10 border border-green-500/30'
+                            : plan.popular
                             ? 'bg-purple-500/10 border border-purple-500/30'
                             : 'bg-orange-500/10 border border-orange-500/30'
                         }`}>
                           <div className={`p-2 rounded-lg ${
-                            plan.popular ? 'bg-purple-500/20' : 'bg-orange-500/20'
+                            isCurrentPlan
+                              ? 'bg-green-500/20'
+                              : plan.popular
+                              ? 'bg-purple-500/20'
+                              : 'bg-orange-500/20'
                           }`}>
                             <FiPackage className={`w-4 h-4 ${
-                              plan.popular ? 'text-purple-400' : 'text-orange-400'
+                              isCurrentPlan
+                                ? 'text-green-400'
+                                : plan.popular
+                                ? 'text-purple-400'
+                                : 'text-orange-400'
                             }`} />
                           </div>
                           <div>
@@ -1030,15 +1079,22 @@ const Dashboard = () => {
                           </div>
                         </div>
 
-                        {/* FEATURES */}
                         <ul className="space-y-2.5 mb-6">
                           {plan.features.map((feature, idx) => (
                             <li key={idx} className="flex items-start gap-2.5 text-sm">
                               <div className={`p-0.5 rounded-full flex-shrink-0 mt-0.5 ${
-                                plan.popular ? 'bg-purple-500/20' : 'bg-green-500/20'
+                                isCurrentPlan
+                                  ? 'bg-green-500/20'
+                                  : plan.popular
+                                  ? 'bg-purple-500/20'
+                                  : 'bg-green-500/20'
                               }`}>
                                 <FiCheck className={`w-3 h-3 ${
-                                  plan.popular ? 'text-purple-400' : 'text-green-400'
+                                  isCurrentPlan
+                                    ? 'text-green-400'
+                                    : plan.popular
+                                    ? 'text-purple-400'
+                                    : 'text-green-400'
                                 }`} />
                               </div>
                               <span className="text-gray-300 leading-tight">{feature}</span>
@@ -1046,27 +1102,37 @@ const Dashboard = () => {
                           ))}
                         </ul>
 
-                        {/* CTA BUTTON */}
-                        <button
-                          onClick={() => handleBuyPlan(plan)}
-                          className={`group/btn relative w-full px-4 py-3.5 rounded-xl font-bold text-sm transition-all overflow-hidden ${
-                            plan.popular
-                              ? 'bg-gradient-to-r from-purple-500 to-pink-500 text-white shadow-xl shadow-purple-500/40 hover:shadow-purple-500/60'
-                              : 'bg-gradient-to-r from-orange-500 to-amber-500 text-white shadow-xl shadow-orange-500/40 hover:shadow-orange-500/60'
-                          } hover:scale-[1.02]`}
-                        >
-                          <div className="absolute inset-0 bg-white/20 opacity-0 group-hover/btn:opacity-100 transition-opacity" />
-                          <div className="relative flex items-center justify-center gap-2">
-                            <FiMail className="w-4 h-4" />
-                            Buy Plan
-                            <FiArrowRight className="w-4 h-4 group-hover/btn:translate-x-1 transition-transform" />
-                          </div>
-                        </button>
+                        {isCurrentPlan ? (
+                          <button
+                            disabled
+                            className="relative w-full px-4 py-3.5 rounded-xl font-bold text-sm bg-green-500/20 text-green-300 border border-green-500/40 cursor-not-allowed flex items-center justify-center gap-2"
+                          >
+                            <FiCheckCircle className="w-4 h-4" />
+                            Current Plan
+                          </button>
+                        ) : (
+                          <button
+                            onClick={() => handleBuyPlan(plan)}
+                            className={`group/btn relative w-full px-4 py-3.5 rounded-xl font-bold text-sm transition-all overflow-hidden ${
+                              plan.popular
+                                ? 'bg-gradient-to-r from-purple-500 to-pink-500 text-white shadow-xl shadow-purple-500/40 hover:shadow-purple-500/60'
+                                : 'bg-gradient-to-r from-orange-500 to-amber-500 text-white shadow-xl shadow-orange-500/40 hover:shadow-orange-500/60'
+                            } hover:scale-[1.02]`}
+                          >
+                            <div className="absolute inset-0 bg-white/20 opacity-0 group-hover/btn:opacity-100 transition-opacity" />
+                            <div className="relative flex items-center justify-center gap-2">
+                              <FiMail className="w-4 h-4" />
+                              {assignedPlan ? 'Upgrade Plan' : 'Buy Plan'}
+                              <FiArrowRight className="w-4 h-4 group-hover/btn:translate-x-1 transition-transform" />
+                            </div>
+                          </button>
+                        )}
 
-                        {/* Flow hint */}
                         <p className="text-center text-[10px] text-gray-500 mt-3 flex items-center justify-center gap-1">
                           <FiInfo className="w-2.5 h-2.5" />
-                          Email opens → We'll send payment details
+                          {isCurrentPlan
+                            ? 'This plan is active for your institution'
+                            : 'Email opens → We\'ll send payment details'}
                         </p>
                       </motion.div>
                     );
@@ -1074,10 +1140,7 @@ const Dashboard = () => {
                 )}
               </div>
 
-              {/* ============ SUPPORT & INFO FOOTER ============ */}
               <div className="mt-8 grid grid-cols-1 lg:grid-cols-2 gap-4">
-
-                {/* Support card */}
                 <div className="p-5 bg-gradient-to-br from-blue-500/10 to-indigo-500/5 border border-blue-500/20 rounded-2xl backdrop-blur-sm">
                   <div className="flex items-start gap-4">
                     <div className="p-3 bg-gradient-to-br from-blue-500 to-indigo-500 rounded-xl flex-shrink-0 shadow-lg shadow-blue-500/30">
@@ -1108,7 +1171,6 @@ const Dashboard = () => {
                   </div>
                 </div>
 
-                {/* Guarantee card */}
                 <div className="p-5 bg-gradient-to-br from-green-500/10 to-emerald-500/5 border border-green-500/20 rounded-2xl backdrop-blur-sm">
                   <div className="flex items-start gap-4">
                     <div className="p-3 bg-gradient-to-br from-green-500 to-emerald-500 rounded-xl flex-shrink-0 shadow-lg shadow-green-500/30">
@@ -1640,6 +1702,16 @@ const Dashboard = () => {
       { icon: FiFlag, label: 'Established Year', value: registrationData.establishedYear || 'Not specified' },
     ];
 
+    // ✅ NEW: Add assigned plan
+    if (assignedPlan) {
+      details.push({
+        icon: FiPackage,
+        label: 'Assigned Plan',
+        value: `${assignedPlan.name} — ${institutionLimit.totalLimit} total enquiries`,
+        highlight: true
+      });
+    }
+
     return (
       <motion.div
         initial={{ opacity: 0, y: 20 }}
@@ -1653,8 +1725,17 @@ const Dashboard = () => {
         </h2>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {details.map((detail, index) => (
-            <div key={index} className="flex items-start gap-3 p-3 bg-gray-700/30 rounded-lg">
-              <detail.icon className="w-5 h-5 text-orange-400 mt-0.5" />
+            <div
+              key={index}
+              className={`flex items-start gap-3 p-3 rounded-lg ${
+                detail.highlight
+                  ? 'bg-gradient-to-r from-purple-500/20 to-pink-500/20 border border-purple-500/30'
+                  : 'bg-gray-700/30'
+              }`}
+            >
+              <detail.icon className={`w-5 h-5 mt-0.5 ${
+                detail.highlight ? 'text-purple-300' : 'text-orange-400'
+              }`} />
               <div>
                 <p className="text-xs text-gray-400">{detail.label}</p>
                 <p className="text-white font-medium">{detail.value}</p>
@@ -1733,7 +1814,6 @@ const Dashboard = () => {
     };
   }, [navigate]);
 
-  // ✅ NEW: Fetch plans when registration is approved
   useEffect(() => {
     if (registrationStatus === 'approved') {
       fetchActivePlans();
@@ -1829,11 +1909,45 @@ const Dashboard = () => {
       </motion.div>
 
       <div className={`lg:ml-64 transition-all duration-300 ${isSidebarOpen ? 'ml-64' : ''}`}>
+        {/* ✅ HEADER WITH PLAN BADGE */}
         <div className="bg-gray-800/50 backdrop-blur-lg border-b border-gray-700 p-6">
           <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
             <div>
-              <h1 className="text-3xl font-bold text-white">Institute Dashboard</h1>
-              <p className="text-gray-400 text-sm">
+              <div className="flex items-center gap-3 flex-wrap">
+                <h1 className="text-3xl font-bold text-white">Institute Dashboard</h1>
+
+                {/* ✅ Plan Label on Header */}
+                {registrationStatus === 'approved' && (
+                  assignedPlan ? (
+                    <motion.button
+                      initial={{ opacity: 0, scale: 0.9 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      onClick={handleOpenPlans}
+                      whileHover={{ scale: 1.05 }}
+                      whileTap={{ scale: 0.95 }}
+                      className="inline-flex items-center gap-2 px-3 py-1.5 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full shadow-lg shadow-purple-500/30 hover:shadow-purple-500/50 transition-all cursor-pointer"
+                      title="Click to view plans"
+                    >
+                      <FiStar className="w-3.5 h-3.5 text-white fill-white" />
+                      <span className="text-xs font-bold text-white uppercase tracking-wider">
+                        {assignedPlan.name} Plan
+                      </span>
+                    </motion.button>
+                  ) : (
+                    <button
+                      onClick={handleOpenPlans}
+                      className="inline-flex items-center gap-2 px-3 py-1.5 bg-gray-700/50 border border-gray-600 rounded-full hover:bg-gray-700 hover:border-orange-500/50 transition-all cursor-pointer"
+                      title="Click to view plans"
+                    >
+                      <FiPackage className="w-3.5 h-3.5 text-gray-400" />
+                      <span className="text-xs font-bold text-gray-300 uppercase tracking-wider">
+                        Free Tier
+                      </span>
+                    </button>
+                  )
+                )}
+              </div>
+              <p className="text-gray-400 text-sm mt-1">
                 Welcome back, <span className="text-white font-medium">{institutionName || 'User'}</span>
               </p>
             </div>

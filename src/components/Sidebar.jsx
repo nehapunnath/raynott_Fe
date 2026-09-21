@@ -52,14 +52,14 @@ const Sidebar = ({ sidebarOpen, setSidebarOpen, activeTab, setActiveTab }) => {
         />
         <NavItem 
           icon={<FiCreditCard />} 
-          text="Plans" 
+          text="Create Plans" 
           active={activeTab === 'Plans'} 
           onClick={() => setActiveTab('Plans')}
           sidebarOpen={sidebarOpen}
         />
         <NavItem 
           icon={<FiMessageSquare />} 
-          text="Enquiries" 
+          text="Plan and Limit" 
           active={activeTab === 'Enquiries'} 
           onClick={() => setActiveTab('Enquiries')}
           sidebarOpen={sidebarOpen}
