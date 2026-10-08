@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
-import { 
-  FiLogOut, FiUser, FiHome, FiPlus, FiUsers, FiCalendar, FiClock, 
-  FiMenu, FiX, FiCheckCircle, FiXCircle, FiAlertCircle, 
-  FiLoader, FiFileText, FiMail, FiPhone, FiMapPin, FiBookOpen, 
-  FiAward, FiBriefcase, FiFlag, FiCheck, FiClipboard, FiInfo, 
+import {
+  FiLogOut, FiUser, FiHome, FiPlus, FiUsers, FiCalendar, FiClock,
+  FiMenu, FiX, FiCheckCircle, FiXCircle, FiAlertCircle,
+  FiLoader, FiFileText, FiMail, FiPhone, FiMapPin, FiBookOpen,
+  FiAward, FiBriefcase, FiFlag, FiCheck, FiClipboard, FiInfo,
   FiArrowRight, FiRefreshCw, FiMessageSquare, FiInbox,
   FiEye, FiCopy, FiAtSign, FiSearch, FiLock, FiUnlock,
   FiPackage, FiStar, FiChevronDown, FiChevronUp,
@@ -36,7 +36,7 @@ const Dashboard = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState('');
   const [pollingInterval, setPollingInterval] = useState(null);
-  
+
   // ============ ENQUIRY STATE ============
   const [allEnquiries, setAllEnquiries] = useState([]);
   const [visibleEnquiries, setVisibleEnquiries] = useState([]);
@@ -56,11 +56,11 @@ const Dashboard = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [copySuccess, setCopySuccess] = useState('');
   const [showPlansExpanded, setShowPlansExpanded] = useState(false);
-  
+
   // ============ PLANS STATE ============
   const [pricingPlans, setPricingPlans] = useState([]);
   const [plansLoading, setPlansLoading] = useState(false);
-  
+
   // ============ LIMIT STATE ============
   const [institutionLimit, setInstitutionLimit] = useState({
     freeLimit: DEFAULT_FREE_LIMIT,
@@ -89,7 +89,7 @@ const Dashboard = () => {
       for (const item of apis) {
         try {
           const response = await item.api[item.method]();
-          
+
           if (response && response.success && response.data) {
             let institutions = [];
             if (Array.isArray(response.data)) {
@@ -100,12 +100,12 @@ const Dashboard = () => {
                 ...response.data[key]
               }));
             }
-            
-            const found = institutions.find(inst => 
-              inst.email === email || 
+
+            const found = institutions.find(inst =>
+              inst.email === email ||
               inst.email?.toLowerCase() === email?.toLowerCase()
             );
-            
+
             if (found) {
               return { ...found, institutionType: item.type };
             }
@@ -114,7 +114,7 @@ const Dashboard = () => {
           console.log(`⚠️ Error fetching ${item.type}:`, e.message);
         }
       }
-      
+
       return null;
     } catch (error) {
       console.error('Error finding institution by email:', error);
@@ -130,7 +130,7 @@ const Dashboard = () => {
     try {
       console.log('📡 Fetching institution limit from backend:', id);
       const result = await enquiryApi.getInstitutionLimit(id);
-      
+
       if (result && result.success && result.data) {
         const limitData = {
           freeLimit: result.data.freeLimit || DEFAULT_FREE_LIMIT,
@@ -141,7 +141,7 @@ const Dashboard = () => {
           planName: result.data.planName || null,
           planPrice: result.data.planPrice || null
         };
-        
+
         console.log('✅ Fetched limit:', limitData);
         setInstitutionLimit(limitData);
 
@@ -160,10 +160,10 @@ const Dashboard = () => {
       }
     } catch (error) {
       console.warn('⚠️ Failed to fetch limit from backend, using localStorage');
-      
+
       const savedLimits = JSON.parse(localStorage.getItem('institutionLimits') || '{}');
       const localLimit = savedLimits[id];
-      
+
       const fallbackLimit = {
         freeLimit: DEFAULT_FREE_LIMIT,
         customLimit: localLimit?.customLimit || 0,
@@ -173,7 +173,7 @@ const Dashboard = () => {
         planName: localLimit?.planName || null,
         planPrice: localLimit?.planPrice || null
       };
-      
+
       setInstitutionLimit(fallbackLimit);
 
       if (fallbackLimit.planId || fallbackLimit.planName) {
@@ -196,7 +196,7 @@ const Dashboard = () => {
     try {
       console.log('📡 Fetching active plans from backend...');
       const result = await enquiryApi.getActivePlans();
-      
+
       if (result && result.success && Array.isArray(result.data) && result.data.length > 0) {
         console.log(`📋 Loaded ${result.data.length} active plans`);
         setPricingPlans(result.data);
@@ -213,16 +213,16 @@ const Dashboard = () => {
   // ============ FETCH INSTITUTION ENQUIRIES ============
   const fetchInstitutionEnquiries = async () => {
     const id = institutionId || localStorage.getItem('institutionId');
-    
+
     if (!id) return;
 
     setEnquiriesLoading(true);
     try {
       console.log('📡 Fetching institution enquiries from backend:', id);
       const result = await enquiryApi.getPublicInstitutionEnquiries(id);
-      
+
       console.log('📋 Enquiries response:', result);
-      
+
       let enquiriesData = [];
       let visible = [];
       let lockedCount = 0;
@@ -232,7 +232,7 @@ const Dashboard = () => {
         enquiriesData = result.data || result.visibleEnquiries || [];
         visible = result.visibleEnquiries || [];
         lockedCount = result.lockedCount || 0;
-        
+
         if (result.limit) {
           limitData = {
             freeLimit: result.limit.freeLimit || DEFAULT_FREE_LIMIT,
@@ -259,7 +259,7 @@ const Dashboard = () => {
         } else if (result && result.enquiries) {
           enquiriesData = result.enquiries;
         }
-        
+
         if (!Array.isArray(enquiriesData)) {
           enquiriesData = [];
         }
@@ -277,7 +277,7 @@ const Dashboard = () => {
       setAllEnquiries(enquiriesData);
       setVisibleEnquiries(visible);
       setLockedEnquiries(locked);
-      
+
       setEnquiryStats({
         total: enquiriesData.length,
         visible: visible.length,
@@ -286,7 +286,7 @@ const Dashboard = () => {
         responded: visible.filter(e => e.status === 'responded').length,
         closed: visible.filter(e => e.status === 'closed').length
       });
-      
+
     } catch (error) {
       console.error('❌ Error fetching enquiries:', error);
       toast.error('Failed to load enquiries');
@@ -298,7 +298,7 @@ const Dashboard = () => {
   const handleUpdateStatus = async (enquiryId, newStatus) => {
     try {
       const result = await enquiryApi.updateEnquiryStatus(enquiryId, newStatus);
-      
+
       if (result && result.success) {
         toast.success(`Enquiry ${newStatus}`);
         await fetchInstitutionEnquiries();
@@ -323,14 +323,14 @@ const Dashboard = () => {
 
   const getFilteredEnquiries = () => {
     let filtered = [...visibleEnquiries];
-    
+
     if (filterStatus !== 'all') {
       filtered = filtered.filter(e => e.status === filterStatus);
     }
-    
+
     if (searchTerm.trim()) {
       const term = searchTerm.toLowerCase().trim();
-      filtered = filtered.filter(e => 
+      filtered = filtered.filter(e =>
         e.parentName?.toLowerCase().includes(term) ||
         e.subject?.toLowerCase().includes(term) ||
         e.message?.toLowerCase().includes(term) ||
@@ -338,7 +338,7 @@ const Dashboard = () => {
         e.parentPhone?.toLowerCase().includes(term)
       );
     }
-    
+
     filtered.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
     return filtered;
   };
@@ -354,7 +354,7 @@ const Dashboard = () => {
 
     setIsLoading(true);
     setError('');
-    
+
     try {
       const result = await registerApi.checkRegistrationByEmail(email);
 
@@ -364,7 +364,7 @@ const Dashboard = () => {
         localStorage.setItem('registrationId', regData.id);
         setRegistrationData(regData);
         setRegistrationStatus(regData.status);
-        
+
         if (regData.institutionType) {
           localStorage.setItem('institutionType', regData.institutionType);
           setInstitutionType(regData.institutionType);
@@ -372,14 +372,14 @@ const Dashboard = () => {
           localStorage.setItem('institutionType', regData.type);
           setInstitutionType(regData.type);
         }
-        
+
         if (regData.status === 'approved') {
           let id = regData.schoolId || regData.institutionId || regData.id;
-          
+
           if (id) {
             setInstitutionId(id);
             localStorage.setItem('institutionId', id);
-            
+
             const type = regData.institutionType || regData.type || localStorage.getItem('institutionType');
             if (type) {
               const foundInstitution = await findInstitutionByEmail(email);
@@ -393,7 +393,7 @@ const Dashboard = () => {
                 setInstitutionType(instType);
               }
             }
-            
+
             await fetchInstitutionLimit();
             await fetchInstitutionEnquiries();
           } else {
@@ -411,7 +411,7 @@ const Dashboard = () => {
             }
           }
         }
-        
+
         if (regData.status === 'pending') {
           startStatusPolling(regData.id);
         }
@@ -420,7 +420,7 @@ const Dashboard = () => {
       }
     } catch (error) {
       console.error('❌ Error checking registration:', error);
-      
+
       if (error.message.includes('Session expired')) {
         toast.error('Session expired. Please login again.');
         navigate('/login', { replace: true });
@@ -440,10 +440,10 @@ const Dashboard = () => {
       setIsLoading(false);
       return;
     }
-    
+
     setIsLoading(true);
     setError('');
-    
+
     try {
       const result = await registerApi.getRegistrationStatus(id);
 
@@ -451,7 +451,7 @@ const Dashboard = () => {
         const regData = result.data;
         setRegistrationData(regData);
         setRegistrationStatus(regData.status);
-        
+
         if (regData.institutionType) {
           localStorage.setItem('institutionType', regData.institutionType);
           setInstitutionType(regData.institutionType);
@@ -459,14 +459,14 @@ const Dashboard = () => {
           localStorage.setItem('institutionType', regData.type);
           setInstitutionType(regData.type);
         }
-        
+
         if (regData.status === 'approved') {
           let id = regData.schoolId || regData.institutionId || regData.id;
-          
+
           if (id) {
             setInstitutionId(id);
             localStorage.setItem('institutionId', id);
-            
+
             const type = regData.institutionType || regData.type || localStorage.getItem('institutionType');
             if (type) {
               const email = regData.email || userEmail;
@@ -483,7 +483,7 @@ const Dashboard = () => {
                 }
               }
             }
-            
+
             await fetchInstitutionLimit();
             await fetchInstitutionEnquiries();
           } else {
@@ -504,7 +504,7 @@ const Dashboard = () => {
             }
           }
         }
-        
+
         if (regData.status === 'pending') {
           startStatusPolling(id);
         }
@@ -515,7 +515,7 @@ const Dashboard = () => {
       }
     } catch (error) {
       console.error('Error fetching registration:', error);
-      
+
       if (error.message.includes('Session expired')) {
         toast.error('Session expired. Please login again.');
         navigate('/login', { replace: true });
@@ -530,17 +530,17 @@ const Dashboard = () => {
 
   const startStatusPolling = (id) => {
     if (pollingInterval) clearInterval(pollingInterval);
-    
+
     const interval = setInterval(async () => {
       try {
         const result = await registerApi.getRegistrationStatus(id);
-        
+
         if (result && result.success && result.data) {
           const newStatus = result.data.status;
           if (newStatus !== registrationStatus) {
             setRegistrationStatus(newStatus);
             setRegistrationData(result.data);
-            
+
             if (newStatus === 'approved') {
               if (result.data.schoolId || result.data.institutionId) {
                 const id = result.data.schoolId || result.data.institutionId;
@@ -566,13 +566,13 @@ const Dashboard = () => {
                 }
               }
             }
-            
+
             if (newStatus === 'approved') {
               toast.success('🎉 Your registration has been approved!');
             } else if (newStatus === 'rejected') {
               toast.error('Your registration was rejected. Please check the reason.');
             }
-            
+
             if (newStatus === 'approved' || newStatus === 'rejected') {
               clearInterval(interval);
               setPollingInterval(null);
@@ -589,7 +589,7 @@ const Dashboard = () => {
         }
       }
     }, 30000);
-    
+
     setPollingInterval(interval);
   };
 
@@ -620,7 +620,7 @@ const Dashboard = () => {
         navigate('/login', { replace: true });
       }
     }
-    
+
     if (registrationStatus === 'approved') {
       await fetchInstitutionLimit();
       await fetchInstitutionEnquiries();
@@ -630,16 +630,16 @@ const Dashboard = () => {
 
   const handleViewProfile = () => {
     let type = localStorage.getItem('institutionType');
-    
+
     if (!type) {
       const userData = JSON.parse(localStorage.getItem('userData') || '{}');
       type = userData.institutionType || userData.type;
     }
-    
+
     if (!type && registrationData) {
       type = registrationData.institutionType || registrationData.type;
     }
-    
+
     if (!type) {
       if (localStorage.getItem('collegeData')) type = 'college';
       else if (localStorage.getItem('schoolData')) type = 'school';
@@ -647,15 +647,15 @@ const Dashboard = () => {
       else if (localStorage.getItem('coachingData')) type = 'coaching';
       else if (localStorage.getItem('teacherData')) type = 'teacher';
     }
-    
+
     const id = institutionId || localStorage.getItem('institutionId');
-    
+
     if (!id) {
       toast.warning('Profile ID not found. Please contact support.');
       return;
     }
 
-    switch(type?.toLowerCase()) {
+    switch (type?.toLowerCase()) {
       case 'college': navigate('/college-profile'); break;
       case 'school': navigate('/school-profile'); break;
       case 'pu_college':
@@ -755,16 +755,14 @@ const Dashboard = () => {
 
             <div className="flex items-start gap-4 flex-1">
               <div className="relative flex-shrink-0">
-                <div className={`absolute inset-0 rounded-2xl blur-md opacity-50 ${
-                  assignedPlan
+                <div className={`absolute inset-0 rounded-2xl blur-md opacity-50 ${assignedPlan
                     ? 'bg-gradient-to-br from-purple-500 to-pink-500'
                     : 'bg-gradient-to-br from-blue-500 to-purple-500'
-                }`} />
-                <div className={`relative p-3.5 rounded-2xl shadow-lg ${
-                  assignedPlan
+                  }`} />
+                <div className={`relative p-3.5 rounded-2xl shadow-lg ${assignedPlan
                     ? 'bg-gradient-to-br from-purple-500 to-pink-500'
                     : 'bg-gradient-to-br from-blue-500 to-purple-500'
-                }`}>
+                  }`}>
                   <FiPackage className="w-7 h-7 text-white" />
                 </div>
               </div>
@@ -774,11 +772,10 @@ const Dashboard = () => {
                   <h3 className="text-white font-bold text-xl tracking-tight">
                     {assignedPlan ? 'Your Active Plan' : 'Unlock More Enquiries'}
                   </h3>
-                  <span className={`px-2.5 py-1 text-white rounded-full text-[10px] font-bold uppercase tracking-wider shadow-lg ${
-                    assignedPlan
+                  <span className={`px-2.5 py-1 text-white rounded-full text-[10px] font-bold uppercase tracking-wider shadow-lg ${assignedPlan
                       ? 'bg-gradient-to-r from-purple-500 to-pink-500'
                       : 'bg-gradient-to-r from-blue-500 to-purple-500'
-                  }`}>
+                    }`}>
                     {assignedPlan ? 'Subscribed' : 'Get Now'}
                   </span>
                 </div>
@@ -942,13 +939,12 @@ const Dashboard = () => {
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ delay: index * 0.1 }}
                         whileHover={{ y: -6, scale: 1.02 }}
-                        className={`group relative rounded-2xl p-6 transition-all duration-300 ${
-                          isCurrentPlan
+                        className={`group relative rounded-2xl p-6 transition-all duration-300 ${isCurrentPlan
                             ? 'bg-gradient-to-br from-green-600/20 via-emerald-600/10 to-green-600/20 border-2 border-green-500/50 shadow-2xl shadow-green-500/30'
                             : plan.popular
-                            ? 'bg-gradient-to-br from-purple-600/20 via-pink-600/10 to-purple-600/20 border-2 border-purple-500/50 shadow-2xl shadow-purple-500/30 lg:scale-105'
-                            : 'bg-gradient-to-br from-gray-800/80 to-gray-900/80 border border-gray-700/50 hover:border-orange-500/50 shadow-xl hover:shadow-orange-500/20'
-                        }`}
+                              ? 'bg-gradient-to-br from-purple-600/20 via-pink-600/10 to-purple-600/20 border-2 border-purple-500/50 shadow-2xl shadow-purple-500/30 lg:scale-105'
+                              : 'bg-gradient-to-br from-gray-800/80 to-gray-900/80 border border-gray-700/50 hover:border-orange-500/50 shadow-xl hover:shadow-orange-500/20'
+                          }`}
                       >
                         <div className="absolute inset-0 rounded-2xl overflow-hidden pointer-events-none">
                           <div className="absolute -top-1/2 -left-1/2 w-1/2 h-full bg-gradient-to-r from-transparent via-white/5 to-transparent rotate-45 opacity-0 group-hover:opacity-100 group-hover:translate-x-[400%] group-hover:translate-y-[400%] transition-all duration-1000" />
@@ -1004,13 +1000,12 @@ const Dashboard = () => {
                         )}
 
                         <div className="relative mb-5 mt-2">
-                          <div className={`inline-flex items-center justify-center w-12 h-12 rounded-xl mb-3 shadow-lg ${
-                            isCurrentPlan
+                          <div className={`inline-flex items-center justify-center w-12 h-12 rounded-xl mb-3 shadow-lg ${isCurrentPlan
                               ? 'bg-gradient-to-br from-green-500 to-emerald-500 shadow-green-500/40'
                               : plan.popular
-                              ? 'bg-gradient-to-br from-purple-500 to-pink-500 shadow-purple-500/40'
-                              : 'bg-gradient-to-br from-orange-500 to-amber-500 shadow-orange-500/40'
-                          }`}>
+                                ? 'bg-gradient-to-br from-purple-500 to-pink-500 shadow-purple-500/40'
+                                : 'bg-gradient-to-br from-orange-500 to-amber-500 shadow-orange-500/40'
+                            }`}>
                             <FiPackage className="w-6 h-6 text-white" />
                           </div>
 
@@ -1047,27 +1042,24 @@ const Dashboard = () => {
                           </p>
                         </div>
 
-                        <div className={`mb-5 p-3 rounded-xl flex items-center gap-3 ${
-                          isCurrentPlan
+                        <div className={`mb-5 p-3 rounded-xl flex items-center gap-3 ${isCurrentPlan
                             ? 'bg-green-500/10 border border-green-500/30'
                             : plan.popular
-                            ? 'bg-purple-500/10 border border-purple-500/30'
-                            : 'bg-orange-500/10 border border-orange-500/30'
-                        }`}>
-                          <div className={`p-2 rounded-lg ${
-                            isCurrentPlan
+                              ? 'bg-purple-500/10 border border-purple-500/30'
+                              : 'bg-orange-500/10 border border-orange-500/30'
+                          }`}>
+                          <div className={`p-2 rounded-lg ${isCurrentPlan
                               ? 'bg-green-500/20'
                               : plan.popular
-                              ? 'bg-purple-500/20'
-                              : 'bg-orange-500/20'
-                          }`}>
-                            <FiPackage className={`w-4 h-4 ${
-                              isCurrentPlan
+                                ? 'bg-purple-500/20'
+                                : 'bg-orange-500/20'
+                            }`}>
+                            <FiPackage className={`w-4 h-4 ${isCurrentPlan
                                 ? 'text-green-400'
                                 : plan.popular
-                                ? 'text-purple-400'
-                                : 'text-orange-400'
-                            }`} />
+                                  ? 'text-purple-400'
+                                  : 'text-orange-400'
+                              }`} />
                           </div>
                           <div>
                             <p className="text-xl font-extrabold text-white leading-none">
@@ -1082,20 +1074,18 @@ const Dashboard = () => {
                         <ul className="space-y-2.5 mb-6">
                           {plan.features.map((feature, idx) => (
                             <li key={idx} className="flex items-start gap-2.5 text-sm">
-                              <div className={`p-0.5 rounded-full flex-shrink-0 mt-0.5 ${
-                                isCurrentPlan
+                              <div className={`p-0.5 rounded-full flex-shrink-0 mt-0.5 ${isCurrentPlan
                                   ? 'bg-green-500/20'
                                   : plan.popular
-                                  ? 'bg-purple-500/20'
-                                  : 'bg-green-500/20'
-                              }`}>
-                                <FiCheck className={`w-3 h-3 ${
-                                  isCurrentPlan
+                                    ? 'bg-purple-500/20'
+                                    : 'bg-green-500/20'
+                                }`}>
+                                <FiCheck className={`w-3 h-3 ${isCurrentPlan
                                     ? 'text-green-400'
                                     : plan.popular
-                                    ? 'text-purple-400'
-                                    : 'text-green-400'
-                                }`} />
+                                      ? 'text-purple-400'
+                                      : 'text-green-400'
+                                  }`} />
                               </div>
                               <span className="text-gray-300 leading-tight">{feature}</span>
                             </li>
@@ -1113,11 +1103,10 @@ const Dashboard = () => {
                         ) : (
                           <button
                             onClick={() => handleBuyPlan(plan)}
-                            className={`group/btn relative w-full px-4 py-3.5 rounded-xl font-bold text-sm transition-all overflow-hidden ${
-                              plan.popular
+                            className={`group/btn relative w-full px-4 py-3.5 rounded-xl font-bold text-sm transition-all overflow-hidden ${plan.popular
                                 ? 'bg-gradient-to-r from-purple-500 to-pink-500 text-white shadow-xl shadow-purple-500/40 hover:shadow-purple-500/60'
                                 : 'bg-gradient-to-r from-orange-500 to-amber-500 text-white shadow-xl shadow-orange-500/40 hover:shadow-orange-500/60'
-                            } hover:scale-[1.02]`}
+                              } hover:scale-[1.02]`}
                           >
                             <div className="absolute inset-0 bg-white/20 opacity-0 group-hover/btn:opacity-100 transition-opacity" />
                             <div className="relative flex items-center justify-center gap-2">
@@ -1205,11 +1194,10 @@ const Dashboard = () => {
             <div>
               <h3 className="text-xl font-bold text-white">{enquiry.subject}</h3>
               <div className="flex items-center gap-2 mt-1 flex-wrap">
-                <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                  enquiry.status === 'pending' ? 'bg-yellow-500/20 text-yellow-400' :
-                  enquiry.status === 'responded' ? 'bg-blue-500/20 text-blue-400' :
-                  'bg-green-500/20 text-green-400'
-                }`}>
+                <span className={`px-2 py-1 rounded-full text-xs font-medium ${enquiry.status === 'pending' ? 'bg-yellow-500/20 text-yellow-400' :
+                    enquiry.status === 'responded' ? 'bg-blue-500/20 text-blue-400' :
+                      'bg-green-500/20 text-green-400'
+                  }`}>
                   {enquiry.status.charAt(0).toUpperCase() + enquiry.status.slice(1)}
                 </span>
                 <span className="text-xs text-gray-500">
@@ -1314,7 +1302,7 @@ const Dashboard = () => {
                 <option value="responded">Responded</option>
                 <option value="closed">Closed</option>
               </select>
-              
+
               {enquiry.parentEmail && (
                 <a href={`mailto:${enquiry.parentEmail}?subject=Re: ${enquiry.subject}`} target="_blank" rel="noopener noreferrer" className="px-4 py-2 bg-blue-500/20 text-blue-400 rounded-lg hover:bg-blue-500/30 transition-all flex items-center gap-2">
                   <FiMail className="w-4 h-4" />
@@ -1400,37 +1388,33 @@ const Dashboard = () => {
         )}
 
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-          <div 
-            className={`bg-gray-700/30 rounded-lg p-4 text-center cursor-pointer transition-all hover:bg-gray-700/50 ${
-              filterStatus === 'all' ? 'ring-2 ring-orange-500' : ''
-            }`} 
+          <div
+            className={`bg-gray-700/30 rounded-lg p-4 text-center cursor-pointer transition-all hover:bg-gray-700/50 ${filterStatus === 'all' ? 'ring-2 ring-orange-500' : ''
+              }`}
             onClick={() => setFilterStatus('all')}
           >
             <div className="text-3xl font-bold text-white">{enquiryStats.visible}</div>
             <div className="text-sm text-gray-400">Visible</div>
           </div>
-          <div 
-            className={`bg-yellow-500/10 rounded-lg p-4 text-center border border-yellow-500/20 cursor-pointer transition-all hover:bg-yellow-500/20 ${
-              filterStatus === 'pending' ? 'ring-2 ring-yellow-500' : ''
-            }`} 
+          <div
+            className={`bg-yellow-500/10 rounded-lg p-4 text-center border border-yellow-500/20 cursor-pointer transition-all hover:bg-yellow-500/20 ${filterStatus === 'pending' ? 'ring-2 ring-yellow-500' : ''
+              }`}
             onClick={() => setFilterStatus('pending')}
           >
             <div className="text-3xl font-bold text-yellow-400">{enquiryStats.pending}</div>
             <div className="text-sm text-yellow-400">Pending</div>
           </div>
-          <div 
-            className={`bg-blue-500/10 rounded-lg p-4 text-center border border-blue-500/20 cursor-pointer transition-all hover:bg-blue-500/20 ${
-              filterStatus === 'responded' ? 'ring-2 ring-blue-500' : ''
-            }`} 
+          <div
+            className={`bg-blue-500/10 rounded-lg p-4 text-center border border-blue-500/20 cursor-pointer transition-all hover:bg-blue-500/20 ${filterStatus === 'responded' ? 'ring-2 ring-blue-500' : ''
+              }`}
             onClick={() => setFilterStatus('responded')}
           >
             <div className="text-3xl font-bold text-blue-400">{enquiryStats.responded}</div>
             <div className="text-sm text-blue-400">Responded</div>
           </div>
-          <div 
-            className={`bg-green-500/10 rounded-lg p-4 text-center border border-green-500/20 cursor-pointer transition-all hover:bg-green-500/20 ${
-              filterStatus === 'closed' ? 'ring-2 ring-green-500' : ''
-            }`} 
+          <div
+            className={`bg-green-500/10 rounded-lg p-4 text-center border border-green-500/20 cursor-pointer transition-all hover:bg-green-500/20 ${filterStatus === 'closed' ? 'ring-2 ring-green-500' : ''
+              }`}
             onClick={() => setFilterStatus('closed')}
           >
             <div className="text-3xl font-bold text-green-400">{enquiryStats.closed}</div>
@@ -1482,20 +1466,19 @@ const Dashboard = () => {
         ) : (
           <div className="space-y-4">
             {filteredEnquiries.map((enquiry) => {
-              const StatusIcon = enquiry.status === 'pending' ? FiClock : 
-                                enquiry.status === 'responded' ? FiCheckCircle : FiXCircle;
+              const StatusIcon = enquiry.status === 'pending' ? FiClock :
+                enquiry.status === 'responded' ? FiCheckCircle : FiXCircle;
               const statusColor = enquiry.status === 'pending' ? 'bg-yellow-500/20 text-yellow-400' :
-                                  enquiry.status === 'responded' ? 'bg-blue-500/20 text-blue-400' :
-                                  'bg-green-500/20 text-green-400';
+                enquiry.status === 'responded' ? 'bg-blue-500/20 text-blue-400' :
+                  'bg-green-500/20 text-green-400';
 
               return (
                 <div
                   key={enquiry.id || enquiry.enquiryId}
-                  className={`bg-gray-700/30 rounded-lg p-4 border ${
-                    enquiry.status === 'pending' ? 'border-yellow-500/30 hover:border-yellow-500/50' :
-                    enquiry.status === 'responded' ? 'border-blue-500/30 hover:border-blue-500/50' :
-                    'border-green-500/30 hover:border-green-500/50'
-                  } transition-all`}
+                  className={`bg-gray-700/30 rounded-lg p-4 border ${enquiry.status === 'pending' ? 'border-yellow-500/30 hover:border-yellow-500/50' :
+                      enquiry.status === 'responded' ? 'border-blue-500/30 hover:border-blue-500/50' :
+                        'border-green-500/30 hover:border-green-500/50'
+                    } transition-all`}
                 >
                   <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-3">
                     <div className="flex-1 min-w-0">
@@ -1550,7 +1533,7 @@ const Dashboard = () => {
                         <FiEye className="w-3 h-3" />
                         View
                       </button>
-                      
+
                       {enquiry.parentEmail && (
                         <a
                           href={`mailto:${enquiry.parentEmail}?subject=Re: ${enquiry.subject}`}
@@ -1727,15 +1710,13 @@ const Dashboard = () => {
           {details.map((detail, index) => (
             <div
               key={index}
-              className={`flex items-start gap-3 p-3 rounded-lg ${
-                detail.highlight
+              className={`flex items-start gap-3 p-3 rounded-lg ${detail.highlight
                   ? 'bg-gradient-to-r from-purple-500/20 to-pink-500/20 border border-purple-500/30'
                   : 'bg-gray-700/30'
-              }`}
+                }`}
             >
-              <detail.icon className={`w-5 h-5 mt-0.5 ${
-                detail.highlight ? 'text-purple-300' : 'text-orange-400'
-              }`} />
+              <detail.icon className={`w-5 h-5 mt-0.5 ${detail.highlight ? 'text-purple-300' : 'text-orange-400'
+                }`} />
               <div>
                 <p className="text-xs text-gray-400">{detail.label}</p>
                 <p className="text-white font-medium">{detail.value}</p>
@@ -1775,7 +1756,7 @@ const Dashboard = () => {
   // ============ INITIALIZATION ============
   useEffect(() => {
     const token = authApis.getAdminToken();
-    
+
     if (!token) {
       navigate('/login', { replace: true });
       return;
@@ -1785,7 +1766,7 @@ const Dashboard = () => {
     const type = localStorage.getItem('institutionType');
     const email = localStorage.getItem('userEmail');
     const role = localStorage.getItem('userRole');
-    
+
     const registrationKey = email ? `registrationId_${email}` : 'registrationId';
     const regId = localStorage.getItem(registrationKey);
 
@@ -1831,19 +1812,20 @@ const Dashboard = () => {
       </button>
 
       <motion.div
-        className={`fixed top-0 left-0 h-full w-64 bg-gray-800 border-r border-gray-700 z-40 transform transition-transform duration-300 ${
-          isSidebarOpen ? 'translate-x-0' : '-translate-x-full'
-        } lg:translate-x-0`}
+        className={`fixed top-0 left-0 h-full w-64 bg-gray-800 border-r border-gray-700 z-40 transform transition-transform duration-300 ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'
+          } lg:translate-x-0`}
       >
         <div className="p-6">
           <div className="flex items-center gap-3 mb-8">
-            <div className="w-10 h-10 rounded-full bg-gradient-to-r from-orange-500 to-amber-500 flex items-center justify-center">
+            <div className="w-10 h-10 rounded-full bg-gradient-to-r from-orange-500 to-amber-500 flex items-center justify-center shrink-0">
               <span className="text-white font-bold text-xl">
                 {institutionName ? institutionName.charAt(0).toUpperCase() : 'I'}
               </span>
             </div>
-            <div>
-              <h3 className="text-white font-semibold text-sm truncate">{institutionName || 'Institution'}</h3>
+            <div className="min-w-0">
+              <h3 className="text-white font-semibold text-sm break-words">
+                {institutionName || 'Institution'}
+              </h3>
               <p className="text-gray-400 text-xs">{institutionType || 'Type'}</p>
             </div>
           </div>
