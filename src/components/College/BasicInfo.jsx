@@ -3,35 +3,58 @@ import { motion } from 'framer-motion';
 import { FaChevronDown, FaChevronUp } from 'react-icons/fa';
 import { collegeApi } from '../../services/collegeApi';
 import { useParams } from 'react-router-dom';
-import "tailwindcss";
+import 'tailwindcss';
 
+// 👇 Safe array helper — prevents ".join is not a function" crashes
+const safeArray = (value, fallback = []) => {
+  if (Array.isArray(value)) return value.filter(Boolean);
+  if (typeof value === 'string' && value.trim()) {
+    return value.split(',').map((s) => s.trim()).filter(Boolean);
+  }
+  return fallback;
+};
 
-const BasicInfo = () => {
+// 👇 Accepts an optional `college` prop from the parent (CollegeDetails).
+// If not passed, it falls back to fetching by URL param.
+const BasicInfo = ({ college: collegeProp }) => {
   const { id } = useParams();
-  const [college, setCollege] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const [college, setCollege] = useState(collegeProp || null);
+  const [loading, setLoading] = useState(!collegeProp);
   const [error, setError] = useState(null);
-  const [openFaqIndex, setOpenFaqIndex] = useState(null); // Single state for FAQ toggle
+  const [openFaqIndex, setOpenFaqIndex] = useState(null);
 
-  // Fetch college details
+  // 👇 If parent provides college, use it directly
   useEffect(() => {
+    if (collegeProp) {
+      setCollege(collegeProp);
+      setLoading(false);
+      setError(null);
+    }
+  }, [collegeProp]);
+
+  // Fetch college details only if not provided via props
+  useEffect(() => {
+    if (collegeProp) return; // Skip fetch when parent already has it
+
     const fetchCollegeDetails = async () => {
       setLoading(true);
       setError(null);
       try {
-        console.log(`Fetching college with ID: ${id}`);
+        console.log(`BasicInfo fetching college with ID: ${id}`);
         const response = await collegeApi.getCollege(id);
-        console.log('College API response:', response);
         const collegeData = response.data || {};
 
-        // Format college data with fallback values
         const formattedCollege = {
           id: collegeData.id || id,
           name: collegeData.name || 'Unnamed College',
           address: collegeData.address || collegeData.city || 'Unknown Location',
           typeOfCollege: collegeData.typeOfCollege || 'N/A',
           affiliation: collegeData.affiliation || 'N/A',
-          coursesOffered: collegeData.coursesOffered || ['Course 1', 'Course 2'],
+          // 👇 safeArray
+          coursesOffered: safeArray(
+            collegeData.coursesOffered || collegeData.courses,
+            ['Course 1', 'Course 2']
+          ),
           duration: collegeData.duration || 'N/A',
           language: collegeData.language || 'N/A',
           establishmentYear: collegeData.establishmentYear || 'N/A',
@@ -49,7 +72,11 @@ const BasicInfo = () => {
         setCollege(formattedCollege);
       } catch (err) {
         console.error('Error fetching college details:', err);
-        setError(err.response?.data?.message || err.message || 'Failed to fetch college details');
+        setError(
+          err.response?.data?.message ||
+            err.message ||
+            'Failed to fetch college details'
+        );
         setCollege(null);
       } finally {
         setLoading(false);
@@ -57,21 +84,27 @@ const BasicInfo = () => {
     };
 
     fetchCollegeDetails();
-  }, [id]);
+  }, [id, collegeProp]);
 
-  // Toggle FAQ open/closed state
   const toggleFaq = (index) => {
     setOpenFaqIndex(openFaqIndex === index ? null : index);
   };
 
-  // Fallback values for college info
+  // 👇 Normalize coursesOffered from whatever shape it comes in
+  const coursesOfferedArray = safeArray(
+    college?.coursesOffered || college?.courses,
+    []
+  );
+
   const info = {
     typeOfCollege: college?.typeOfCollege || 'N/A',
     affiliation: college?.affiliation || 'N/A',
-    courses: college?.coursesOffered?.join(', ') || 'N/A',
+    // 👇 Now guaranteed an array → .join() is safe
+    courses: coursesOfferedArray.length > 0 ? coursesOfferedArray.join(', ') : 'N/A',
     duration: college?.duration || 'N/A',
     language: college?.language || 'N/A',
-    establishmentYear: college?.establishmentYear || 'N/A',
+    establishmentYear:
+      college?.establishmentYear || college?.established || 'N/A',
     accreditation: college?.accreditation || 'N/A',
     hostel: college?.hostel || 'N/A',
     library: college?.library || 'N/A',
@@ -82,7 +115,6 @@ const BasicInfo = () => {
     placement: college?.placementStatistics?.percentage || 'N/A',
   };
 
-  // FAQ section
   const faqs = [
     { question: 'When was the college established?', answer: info.establishmentYear },
     { question: 'Which university is the college affiliated to?', answer: info.affiliation },
@@ -92,7 +124,6 @@ const BasicInfo = () => {
     { question: 'Is the college accredited?', answer: info.accreditation },
   ];
 
-  // Info items for the grid
   const infoItems = [
     { icon: '🏫', label: 'Type of College', value: info.typeOfCollege },
     { icon: '📜', label: 'Affiliation', value: info.affiliation },
@@ -110,7 +141,6 @@ const BasicInfo = () => {
     { icon: '💼', label: 'Placement Percentage', value: info.placement },
   ];
 
-  // Loading state
   if (loading) {
     return (
       <div className="p-6 text-center">
@@ -120,11 +150,12 @@ const BasicInfo = () => {
     );
   }
 
-  // Error state
   if (error || !college) {
     return (
       <div className="p-6 text-center">
-        <p className="text-red-600">{error || 'Failed to load college information'}</p>
+        <p className="text-red-600">
+          {error || 'Failed to load college information'}
+        </p>
       </div>
     );
   }
@@ -189,12 +220,16 @@ const BasicInfo = () => {
               <motion.div
                 initial={{ height: 0, opacity: 0 }}
                 animate={
-                  openFaqIndex === index ? { height: 'auto', opacity: 1 } : { height: 0, opacity: 0 }
+                  openFaqIndex === index
+                    ? { height: 'auto', opacity: 1 }
+                    : { height: 0, opacity: 0 }
                 }
                 transition={{ duration: 0.3 }}
                 className="overflow-hidden"
               >
-                <div className="px-3 pb-4 text-gray-700 font-medium">{faq.answer}</div>
+                <div className="px-3 pb-4 text-gray-700 font-medium">
+                  {faq.answer}
+                </div>
               </motion.div>
             </motion.div>
           ))}

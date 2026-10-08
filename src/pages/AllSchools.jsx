@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Link, useNavigate } from 'react-router-dom';
-import { FaSchool, FaSearch, FaFilter, FaTimes, FaHome } from 'react-icons/fa';
+import { FaSchool, FaSearch, FaFilter, FaTimes, FaHome, FaUserLock } from 'react-icons/fa';
 import { IoLocationSharp } from 'react-icons/io5';
 import { BsFillCalendar2CheckFill } from 'react-icons/bs';
 import Footer from '../components/Footer';
@@ -9,9 +9,9 @@ import StickyButton from '../components/StickyButton';
 import { schoolApi } from '../services/schoolApi';
 import "tailwindcss";
 
-
 function AllSchools() {
   const [isFilterOpen, setIsFilterOpen] = useState(false);
+  const [showLoginPrompt, setShowLoginPrompt] = useState(false); // 👈 popup state
   const [filters, setFilters] = useState({
     feesRange: [0, 300000],
     board: [],
@@ -24,7 +24,7 @@ function AllSchools() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [totalSchools, setTotalSchools] = useState(0);
-  const [searchQuery, setSearchQuery] = useState(''); // New state for search query
+  const [searchQuery, setSearchQuery] = useState('');
 
   const boardOptions = ['CBSE', 'ICSE', 'IB', 'IGCSE', 'State Board'];
   const schoolTypeOptions = ['Government', 'Private', 'International', 'Public'];
@@ -37,7 +37,6 @@ function AllSchools() {
     console.log('Formatting schools:', schools);
     let filteredSchools = Object.values(schools);
 
-    // Apply search query filter if searchQuery is not empty
     if (searchQuery.trim()) {
       filteredSchools = filteredSchools.filter((school) =>
         school.name?.toLowerCase().includes(searchQuery.toLowerCase())
@@ -50,7 +49,12 @@ function AllSchools() {
         icon: <FaSchool className="text-white" />,
         place,
         items: filteredSchools.map((school) => {
-          console.log('Processing school:', school);
+          // 👇 Pick first photo from gallery, fallback to schoolImage, then placeholder
+          const image =
+            (Array.isArray(school.photos) && school.photos.length > 0 && school.photos[0]) ||
+            school.schoolImage ||
+            'https://placehold.co/800x400?text=No+Image';
+
           return {
             id: school.id || 'unknown-id',
             name: school.name || 'Unnamed School',
@@ -61,25 +65,23 @@ function AllSchools() {
             views: school.views ? `${(school.views / 1000).toFixed(1)}K Views` : '0 Views',
             board: school.board || 'N/A',
             rating: school.rating || 4.0,
-            image: school.schoolImage || 'https://via.placeholder.com/800x400',
+            image,
           };
         }),
       },
     ];
   };
 
-  // Fetch all schools
   const fetchAllSchools = async () => {
     setLoading(true);
     setError(null);
     try {
       console.log('Fetching all schools');
       const response = await schoolApi.getSchools();
-      console.log('API response (all schools):', response);
       const schools = response.data || {};
       const formattedSchools = formatSchools(schools);
       setSchoolsData(formattedSchools);
-      setTotalSchools(formattedSchools[0].items.length); // Update based on filtered items
+      setTotalSchools(formattedSchools[0].items.length);
       if (Object.keys(schools).length === 0) {
         setError('No schools available in the database.');
       }
@@ -93,18 +95,16 @@ function AllSchools() {
     }
   };
 
-  // Fetch filtered schools
   const fetchFilteredSchools = async (filterParams) => {
     setLoading(true);
     setError(null);
     try {
       console.log('Fetching filtered schools with params:', filterParams);
       const response = await schoolApi.getSchoolsWithFilters(filterParams);
-      console.log('API response (filtered schools):', response);
       const schools = response.data || {};
       const formattedSchools = formatSchools(schools, filterParams.city || 'Filtered Locations');
       setSchoolsData(formattedSchools);
-      setTotalSchools(formattedSchools[0].items.length); // Update based on filtered items
+      setTotalSchools(formattedSchools[0].items.length);
       if (Object.keys(schools).length === 0) {
         setError('No schools found for the selected filters.');
       }
@@ -118,16 +118,21 @@ function AllSchools() {
     }
   };
 
-  // Fetch schools on mount or when searchQuery changes
   useEffect(() => {
-    if (filters.location || filters.board.length || filters.schoolType.length || filters.gender.length || filters.feesRange[0] !== 0 || filters.feesRange[1] !== 300000) {
+    if (
+      filters.location ||
+      filters.board.length ||
+      filters.schoolType.length ||
+      filters.gender.length ||
+      filters.feesRange[0] !== 0 ||
+      filters.feesRange[1] !== 300000
+    ) {
       applyFilters();
     } else {
       fetchAllSchools();
     }
-  }, [searchQuery]); // Re-run when searchQuery changes
+  }, [searchQuery]);
 
-  // Handle filter changes
   const handleFilterChange = (filterType, value) => {
     setFilters((prev) => {
       if (filterType === 'feesRange') {
@@ -147,12 +152,10 @@ function AllSchools() {
     });
   };
 
-  // Handle search input change
   const handleSearchChange = (e) => {
     setSearchQuery(e.target.value);
   };
 
-  // Reset filters
   const resetFilters = () => {
     setFilters({
       feesRange: [0, 300000],
@@ -162,11 +165,10 @@ function AllSchools() {
       location: '',
       category: 'Schools',
     });
-    setSearchQuery(''); // Reset search query
+    setSearchQuery('');
     fetchAllSchools();
   };
 
-  // Apply filters
   const applyFilters = () => {
     const filterParams = {
       city: filters.location || undefined,
@@ -176,9 +178,21 @@ function AllSchools() {
       minFee: filters.feesRange[0],
       maxFee: filters.feesRange[1],
     };
-    console.log('Applied filters:', filterParams);
     fetchFilteredSchools(filterParams);
     setIsFilterOpen(false);
+  };
+
+  // 👇 Handle Enquire Now click
+  const handleEnquireNow = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setShowLoginPrompt(true);
+  };
+
+  // 👇 Handle login redirect
+  const goToLogin = () => {
+    setShowLoginPrompt(false);
+    nav('/login');
   };
 
   return (
@@ -228,22 +242,13 @@ function AllSchools() {
               <span className="text-orange-600">{filters.category}</span>
             </div>
             <h1 className="text-3xl md:text-4xl font-extrabold text-gray-800 mt-2">
-              Top Schools in India 
+              Top Schools in India
             </h1>
             <p className="text-lg text-gray-600 flex items-center mt-1">
               <BsFillCalendar2CheckFill className="mr-2 text-orange-500" />
-              {totalSchools} Schools 
+              {totalSchools} Schools
             </p>
           </div>
-          {/* <motion.button
-            className="bg-orange-600 hover:bg-orange-700 text-white font-semibold py-2 px-6 rounded-full transition duration-300 mt-4 md:mt-0 flex items-center"
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-            onClick={() => setIsFilterOpen(true)}
-          >
-            <FaFilter className="mr-2" />
-            Filters ({filters.board.length + filters.schoolType.length + filters.gender.length})
-          </motion.button> */}
         </div>
 
         {/* Loading and Error States */}
@@ -271,7 +276,9 @@ function AllSchools() {
             <div key={index} className="mb-12">
               <h2 className="text-2xl font-bold text-gray-800 mb-6 flex items-center">
                 <span className="p-2 bg-orange-600 rounded-full mr-3">{section.icon}</span>
-                <span className="ml-2">{section.category} in {section.place}</span>
+                <span className="ml-2">
+                  {section.category} in {section.place}
+                </span>
               </h2>
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
                 {section.items.map((item) => (
@@ -287,6 +294,10 @@ function AllSchools() {
                         <img
                           src={item.image}
                           alt={item.name}
+                          onError={(e) => {
+                            e.target.onerror = null;
+                            e.target.src = 'https://placehold.co/800x400?text=No+Image';
+                          }}
                           className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
                         />
                         <div className="absolute top-4 right-4 flex items-center bg-white/90 text-orange-600 px-3 py-1 rounded-full shadow-lg backdrop-blur-sm">
@@ -297,8 +308,9 @@ function AllSchools() {
                         </div>
                       </div>
                       <div className="p-4 flex flex-col flex-grow h-64">
-                        {/* <p className="text-xs font-semibold text-orange-500 uppercase tracking-wide">{item.board}</p> */}
-                        <h3 className="text-lg font-bold text-gray-900 mt-1 line-clamp-2 min-h-[4rem]">{item.name}</h3>
+                        <h3 className="text-lg font-bold text-gray-900 mt-1 line-clamp-2 min-h-[4rem]">
+                          {item.name}
+                        </h3>
                         <p className="text-sm text-gray-500 flex items-center mt-2">
                           <IoLocationSharp className="mr-1 text-orange-400" />
                           <span className="line-clamp-1">{item.location}</span>
@@ -308,11 +320,12 @@ function AllSchools() {
                         </div>
                         <div className="mt-auto pt-4">
                           <div className="flex justify-between items-center space-x-2">
+                            {/* 👇 Enquire Now triggers the login popup */}
                             <motion.button
                               className="bg-orange-600 hover:bg-orange-700 text-white text-sm font-medium py-2 px-3 rounded-lg w-full transition duration-300"
                               whileHover={{ scale: 1.02 }}
                               whileTap={{ scale: 0.98 }}
-                              onClick={(e) => e.preventDefault()}
+                              onClick={handleEnquireNow}
                             >
                               Enquire Now
                             </motion.button>
@@ -385,7 +398,12 @@ function AllSchools() {
                       max="300000"
                       step="10000"
                       value={filters.feesRange[1]}
-                      onChange={(e) => handleFilterChange('feesRange', [filters.feesRange[0], parseInt(e.target.value)])}
+                      onChange={(e) =>
+                        handleFilterChange('feesRange', [
+                          filters.feesRange[0],
+                          parseInt(e.target.value),
+                        ])
+                      }
                       className="w-full h-2 bg-orange-200 rounded-lg appearance-none cursor-pointer"
                     />
                     <div className="flex justify-between mt-2">
@@ -393,7 +411,8 @@ function AllSchools() {
                       <span className="text-sm text-gray-600">₹3,00,000+</span>
                     </div>
                     <div className="mt-2 text-center font-medium text-orange-600">
-                      ₹{filters.feesRange[0].toLocaleString()} - ₹{filters.feesRange[1].toLocaleString()}
+                      ₹{filters.feesRange[0].toLocaleString()} - ₹
+                      {filters.feesRange[1].toLocaleString()}
                     </div>
                   </div>
                 </div>
@@ -480,6 +499,65 @@ function AllSchools() {
           </motion.div>
         )}
       </AnimatePresence>
+
+      {/* 👇 Login Prompt Popup */}
+      <AnimatePresence>
+        {showLoginPrompt && (
+          <motion.div
+            className="fixed inset-0 bg-black bg-opacity-60 z-[60] flex items-center justify-center p-4"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={() => setShowLoginPrompt(false)}
+          >
+            <motion.div
+              className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6 relative"
+              initial={{ scale: 0.9, y: 30, opacity: 0 }}
+              animate={{ scale: 1, y: 0, opacity: 1 }}
+              exit={{ scale: 0.9, y: 30, opacity: 0 }}
+              transition={{ type: 'spring', damping: 22 }}
+              onClick={(e) => e.stopPropagation()}
+            >
+              <button
+                onClick={() => setShowLoginPrompt(false)}
+                className="absolute top-4 right-4 text-gray-400 hover:text-gray-600"
+                aria-label="Close"
+              >
+                <FaTimes className="text-lg" />
+              </button>
+
+              <div className="flex flex-col items-center text-center">
+                <div className="w-16 h-16 rounded-full bg-gradient-to-r from-orange-500 to-amber-500 flex items-center justify-center mb-4 shadow-lg">
+                  <FaUserLock className="text-white text-2xl" />
+                </div>
+                <h3 className="text-2xl font-bold text-gray-800 mb-2">
+                  Login Required
+                </h3>
+                <p className="text-gray-600 mb-6">
+                  Dear Parents, please login to enquire about this school. It only
+                  takes a few seconds!
+                </p>
+
+                <div className="flex flex-col sm:flex-row gap-3 w-full">
+                  <button
+                    onClick={() => setShowLoginPrompt(false)}
+                    className="flex-1 px-4 py-3 border border-gray-300 text-gray-700 font-medium rounded-lg hover:bg-gray-50 transition"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={goToLogin}
+                    className="flex-1 px-4 py-3 bg-gradient-to-r from-orange-500 to-amber-600 text-white font-semibold rounded-lg hover:from-orange-600 hover:to-amber-700 transition shadow-md"
+                  >
+                    Login Now
+                  </button>
+                </div>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       {/* <StickyButton /> */}
     </div>
   );

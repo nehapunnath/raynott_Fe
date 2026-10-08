@@ -22,10 +22,10 @@ import Footer from '../components/Footer';
 import { schoolApi } from '../services/schoolApi';
 import "tailwindcss";
 
-
 const SchoolDetails = () => {
   const [selectedImage, setSelectedImage] = useState(null);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
+  const [heroIndex, setHeroIndex] = useState(0); // 👈 hero banner index
   const [school, setSchool] = useState(null);
   const [similarSchools, setSimilarSchools] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -45,7 +45,17 @@ const SchoolDetails = () => {
         console.log('School API response:', response);
         const schoolData = response.data || {};
 
-        // Format school data
+        // Build a valid photos array
+        const photosArray =
+          Array.isArray(schoolData.photos) && schoolData.photos.length > 0
+            ? schoolData.photos.filter(Boolean)
+            : schoolData.schoolImage
+            ? [schoolData.schoolImage]
+            : [
+                'https://images.unsplash.com/photo-1588072432836-e10032774350?ixlib=rb-4.0.3&auto=format&fit=crop&w=1470&q=80',
+                'https://images.unsplash.com/photo-1523050854058-8df90110c9f1?ixlib=rb-4.0.3&auto=format&fit=crop&w=1470&q=80',
+              ];
+
         const formattedSchool = {
           id: schoolData.id || id,
           name: schoolData.name || 'Unnamed School',
@@ -56,30 +66,28 @@ const SchoolDetails = () => {
           rating: schoolData.rating || 4.0,
           affiliation: schoolData.affiliation || 'N/A',
           phone: schoolData.phone || '+91 9876543210',
-          image: schoolData.schoolImage || 'https://via.placeholder.com/800x400',
+          image: schoolData.schoolImage || photosArray[0],
           established: schoolData.established || 2000,
           medium: schoolData.medium || 'English',
           grades: schoolData.grades || 'Nursery to 12th',
+          board: schoolData.board || 'N/A',
           facilities: schoolData.facilities || ['Smart Classes', 'Library'],
-          photos: schoolData.photos || [
-            'https://images.unsplash.com/photo-1588072432836-e10032774350?ixlib=rb-4.0.3&auto=format&fit=crop&w=1470&q=80',
-            'https://images.unsplash.com/photo-1523050854058-8df90110c9f1?ixlib=rb-4.0.3&auto=format&fit=crop&w=1470&q=80',
-          ],
+          photos: photosArray,
         };
         setSchool(formattedSchool);
 
-        // Fetch similar schools (e.g., same city)
+        // Fetch similar schools
         console.log(`Fetching similar schools for city: ${schoolData.city}`);
         const similarResponse = await schoolApi.getSchoolsWithFilters({ city: schoolData.city });
         console.log('Similar schools API response:', similarResponse);
         const similarSchoolsData = Object.values(similarResponse.data || {})
-          .filter((s) => s.id !== id) // Exclude the current school
-          .slice(0, 5) // Limit to 5 similar schools
+          .filter((s) => s.id !== id)
+          .slice(0, 5)
           .map((s) => ({
             name: s.name || 'Unnamed School',
             address: s.address || s.city || 'Unknown Location',
             rating: s.rating || 4.0,
-            image: s.schoolImage || 'https://via.placeholder.com/800x400',
+            image: s.schoolImage || 'https://placehold.co/800x400?text=No+Image',
             link: `/school-details/${s.id}`,
           }));
         setSimilarSchools(similarSchoolsData);
@@ -96,6 +104,15 @@ const SchoolDetails = () => {
     fetchSchoolDetails();
     window.scrollTo(0, 0);
   }, [id]);
+
+  // Auto-rotate hero banner through all photos
+  useEffect(() => {
+    if (!school || school.photos.length <= 1) return;
+    const interval = setInterval(() => {
+      setHeroIndex((prev) => (prev + 1) % school.photos.length);
+    }, 5000);
+    return () => clearInterval(interval);
+  }, [school]);
 
   const scrollToSection = (id) => {
     const section = document.getElementById(id);
@@ -125,6 +142,17 @@ const SchoolDetails = () => {
         : currentImageIndex + 1;
     setSelectedImage(school.photos[newIndex]);
     setCurrentImageIndex(newIndex);
+  };
+
+  // Hero banner navigation
+  const nextHero = () => {
+    if (!school) return;
+    setHeroIndex((prev) => (prev + 1) % school.photos.length);
+  };
+
+  const prevHero = () => {
+    if (!school) return;
+    setHeroIndex((prev) => (prev - 1 + school.photos.length) % school.photos.length);
   };
 
   if (loading) {
@@ -169,14 +197,6 @@ const SchoolDetails = () => {
               </motion.button>
             </div>
           </div>
-          {/* <div className="relative w-full max-w-2xl md:max-w-xl flex-grow md:ml-8">
-            <FaSearch className="absolute left-4 top-1/2 transform -translate-y-1/2 text-orange-400" />
-            <input
-              type="text"
-              placeholder="Search Schools, Locations..."
-              className="pl-12 pr-4 py-3 rounded-full bg-white border border-transparent text-gray-800 focus:outline-none w-full focus:ring-2 focus:ring-orange-200 focus:border-transparent shadow-sm"
-            />
-          </div> */}
           <div className="hidden md:flex space-x-4 ml-8">
             <motion.button
               className="bg-white border border-white text-orange-600 hover:bg-orange-100 font-semibold py-2 px-4 rounded-full transition duration-300"
@@ -190,16 +210,83 @@ const SchoolDetails = () => {
         </div>
       </header>
 
-      {/* Hero Banner */}
+      {/* Hero Banner — slideshow of all gallery photos */}
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.6 }}
         className="relative max-w-7xl mx-auto mt-8 rounded-3xl overflow-hidden shadow-2xl"
       >
-        <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/40 to-transparent z-10"></div>
-        <img src={school.image} alt={school.name} className="w-full h-[32rem] object-cover" />
-        <div className="absolute bottom-0 left-0 right-0 z-20 p-8 text-white">
+        <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/40 to-transparent z-10 pointer-events-none"></div>
+
+        {/* Slideshow image */}
+        <div className="relative w-full h-[32rem] bg-gray-900">
+          <AnimatePresence mode="wait">
+            <motion.img
+              key={heroIndex}
+              src={school.photos[heroIndex]}
+              alt={`${school.name} - Photo ${heroIndex + 1}`}
+              onError={(e) => {
+                e.target.onerror = null;
+                e.target.src = 'https://placehold.co/1200x600?text=School+Image';
+              }}
+              onClick={() => openImage(school.photos[heroIndex], heroIndex)}
+              className="absolute inset-0 w-full h-full object-cover cursor-zoom-in"
+              initial={{ opacity: 0, scale: 1.05 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.8 }}
+            />
+          </AnimatePresence>
+        </div>
+
+        {/* Prev / Next arrows (only if more than 1 photo) */}
+        {school.photos.length > 1 && (
+          <>
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                prevHero();
+              }}
+              className="absolute left-4 top-1/2 -translate-y-1/2 z-30 bg-black/40 hover:bg-black/70 text-white rounded-full p-3 transition"
+              aria-label="Previous photo"
+            >
+              <FaChevronLeft />
+            </button>
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                nextHero();
+              }}
+              className="absolute right-4 top-1/2 -translate-y-1/2 z-30 bg-black/40 hover:bg-black/70 text-white rounded-full p-3 transition"
+              aria-label="Next photo"
+            >
+              <FaChevronRight />
+            </button>
+          </>
+        )}
+
+        {/* Dots indicator */}
+        {school.photos.length > 1 && (
+          <div className="absolute top-4 left-1/2 -translate-x-1/2 z-30 flex space-x-2">
+            {school.photos.map((_, i) => (
+              <button
+                key={i}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setHeroIndex(i);
+                }}
+                className={`w-2.5 h-2.5 rounded-full transition-all ${
+                  i === heroIndex ? 'bg-white w-6' : 'bg-white/50 hover:bg-white/80'
+                }`}
+                aria-label={`Go to photo ${i + 1}`}
+              />
+            ))}
+          </div>
+        )}
+
+        {/* Text overlay */}
+        <div className="absolute bottom-0 left-0 right-0 z-20 p-8 text-white pointer-events-none">
           <motion.h1
             className="text-4xl md:text-5xl font-bold mb-2 drop-shadow-lg"
             initial={{ opacity: 0 }}
@@ -233,7 +320,7 @@ const SchoolDetails = () => {
               href={`tel:${school.phone}`}
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
-              className="bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 text-white font-semibold py-3 px-8 rounded-full flex items-center transition-all duration-300 shadow-lg"
+              className="bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 text-white font-semibold py-3 px-8 rounded-full flex items-center transition-all duration-300 shadow-lg pointer-events-auto"
             >
               <FaPhone className="mr-2" /> Call Now
             </motion.a>
@@ -250,7 +337,7 @@ const SchoolDetails = () => {
       >
         <div className="bg-white rounded-xl shadow-lg overflow-hidden">
           <div className="flex overflow-x-auto scrollbar-hide justify-center bg-gradient-to-r from-orange-50 to-amber-50 rounded-xl p-1 shadow-inner">
-            {['Basic Info', 'Photos', 'Fee Structure', 'Contact', ].map((section) => (
+            {['Basic Info', 'Photos', 'Fee Structure', 'Contact'].map((section) => (
               <motion.button
                 key={section}
                 onClick={() => scrollToSection(section.replace(/\s+/g, '').toLowerCase())}
@@ -291,7 +378,7 @@ const SchoolDetails = () => {
                 <span className="w-2 h-8 bg-orange-600 rounded-full mr-3"></span>
                 Basic Information
               </h2>
-              <BasicInfo  />
+              <BasicInfo />
             </div>
           </motion.div>
 
@@ -320,6 +407,10 @@ const SchoolDetails = () => {
                     <img
                       src={photo}
                       alt={`${school.name} - Photo ${index + 1}`}
+                      onError={(e) => {
+                        e.target.onerror = null;
+                        e.target.src = 'https://placehold.co/600x600?text=No+Image';
+                      }}
                       className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
                     />
                     <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
@@ -346,7 +437,7 @@ const SchoolDetails = () => {
                 <span className="w-2 h-8 bg-orange-600 rounded-full mr-3"></span>
                 Fee Structure
               </h2>
-              <FeesStructure  />
+              <FeesStructure />
             </div>
           </motion.div>
 
@@ -364,7 +455,7 @@ const SchoolDetails = () => {
                 <span className="w-2 h-8 bg-orange-600 rounded-full mr-3"></span>
                 Contact Details
               </h2>
-              <Contact  />
+              <Contact />
             </div>
           </motion.div>
 
@@ -380,9 +471,9 @@ const SchoolDetails = () => {
             <div className="p-6">
               <h2 className="text-2xl font-bold text-gray-800 mb-4 flex items-center">
                 <span className="w-2 h-8 bg-orange-600 rounded-full mr-3"></span>
-                 Reviews
+                Reviews
               </h2>
-              <Review  />
+              <Review />
             </div>
           </motion.div>
         </div>
@@ -394,50 +485,6 @@ const SchoolDetails = () => {
           animate={{ opacity: 1, x: 0 }}
           transition={{ duration: 0.6, delay: 0.4 }}
         >
-          {/* <div className="bg-white rounded-2xl shadow-xl overflow-hidden border border-orange-100">
-            <div className="p-6">
-              <h3 className="text-2xl font-bold mb-4 text-gray-800">Free Counselling</h3>
-              <p className="mb-6 text-gray-600">Get personalized guidance from our education experts</p>
-              <div className="space-y-4">
-                <motion.input
-                  type="text"
-                  placeholder="Parent's Name"
-                  className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent placeholder-gray-400 text-gray-700"
-                  whileFocus={{ scale: 1.02 }}
-                />
-                <motion.input
-                  type="tel"
-                  placeholder="Mobile Number"
-                  className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent placeholder-gray-400 text-gray-700"
-                  whileFocus={{ scale: 1.02 }}
-                />
-                <motion.select
-                  className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent text-gray-700"
-                  whileFocus={{ scale: 1.02 }}
-                >
-                  <option value="">Select School Type</option>
-                  <option value="boarding">Boarding</option>
-                  <option value="day">Day School</option>
-                  <option value="pre">Pre School</option>
-                </motion.select>
-                <motion.textarea
-                  placeholder="Your Questions"
-                  rows="4"
-                  className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent placeholder-gray-400 text-gray-700"
-                  whileFocus={{ scale: 1.02 }}
-                />
-                <motion.button
-                  type="button"
-                  whileHover={{ scale: 1.03, boxShadow: '0 4px 15px rgba(249, 115, 22, 0.3)' }}
-                  whileTap={{ scale: 0.98 }}
-                  className="w-full bg-gradient-to-r from-orange-500 to-amber-600 text-white py-3 rounded-lg font-bold hover:from-orange-600 hover:to-amber-700 transition-all shadow-lg"
-                >
-                  Get Free Consultation
-                </motion.button>
-              </div>
-            </div>
-          </div> */}
-
           <div className="mt-6 bg-white rounded-2xl shadow-xl overflow-hidden border border-orange-100">
             <div className="p-6">
               <h3 className="text-xl font-bold text-gray-800 mb-4">Quick Facts</h3>
@@ -483,65 +530,6 @@ const SchoolDetails = () => {
           </div>
         </motion.div>
       </div>
-
-      {/* Similar Schools */}
-      {/* <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        whileInView={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5 }}
-        viewport={{ once: true }}
-        className="max-w-7xl mx-auto mt-16 px-4 pb-4"
-      >
-        <h2 className="text-3xl font-bold text-center text-gray-800 mb-2">
-          Similar Schools You Might Like
-        </h2>
-        <p className="text-lg text-center text-gray-600 mb-8">
-          Discover other great educational options in {school.address.split(',')[1]?.trim() || 'the area'}
-        </p>
-        {similarSchools.length > 0 ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {similarSchools.map((school, index) => (
-              <motion.div
-                key={index}
-                whileHover={{ y: -8 }}
-                transition={{ type: 'spring', stiffness: 300 }}
-                className="bg-white rounded-xl shadow-lg overflow-hidden"
-              >
-                <div className="relative h-48 overflow-hidden">
-                  <img
-                    src={school.image}
-                    alt={school.name}
-                    className="w-full h-full object-cover transition-transform duration-500 hover:scale-105"
-                  />
-                  <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent p-4">
-                    <div className="flex justify-between items-center">
-                      <h3 className="text-lg font-semibold text-white">{school.name}</h3>
-                      <div className="flex items-center bg-white/90 text-amber-600 px-2 py-1 rounded-full">
-                        <FaStar className="mr-1" />
-                        <span className="font-bold">{school.rating}</span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-                <div className="p-5">
-                  <p className="text-gray-600 mb-3 flex items-center">
-                    <FaMapMarkerAlt className="mr-2 text-orange-500" />
-                    {school.address}
-                  </p>
-                  <Link
-                    to={school.link}
-                    className="inline-block text-orange-600 font-medium hover:underline"
-                  >
-                    View Details →
-                  </Link>
-                </div>
-              </motion.div>
-            ))}
-          </div>
-        ) : (
-          <p className="text-center text-gray-600">No similar schools found.</p>
-        )}
-      </motion.div> */}
 
       {/* Image Modal */}
       <AnimatePresence>

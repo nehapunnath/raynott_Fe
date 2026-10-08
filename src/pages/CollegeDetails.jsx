@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   FaBookOpen,
-  FaSearch,
   FaStar,
   FaPhone,
   FaMapMarkerAlt,
@@ -11,11 +10,9 @@ import {
   FaChevronRight,
   FaTimes,
   FaHome,
-  FaFilter,
   FaUniversity,
 } from 'react-icons/fa';
 import { IoMdTime } from 'react-icons/io';
-import { BsFillCalendar2CheckFill } from 'react-icons/bs';
 import BasicInfo from '../components/College/BasicInfo';
 import FeesStructure from '../components/College/FeeStructure';
 import Contact from '../components/College/Contact';
@@ -24,12 +21,21 @@ import { Link, useNavigate, useParams } from 'react-router-dom';
 import Footer from '../components/Footer';
 import StickyButton from '../components/StickyButton';
 import { collegeApi } from '../services/collegeApi';
-import "tailwindcss";
+import 'tailwindcss';
 
+// 👇 Safe array helper — prevents ".join is not a function" crashes
+const safeArray = (value, fallback = []) => {
+  if (Array.isArray(value)) return value.filter(Boolean);
+  if (typeof value === 'string' && value.trim()) {
+    return value.split(',').map((s) => s.trim()).filter(Boolean);
+  }
+  return fallback;
+};
 
 const CollegeDetails = () => {
   const [selectedImage, setSelectedImage] = useState(null);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
+  const [heroIndex, setHeroIndex] = useState(0);
   const [college, setCollege] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -45,10 +51,19 @@ const CollegeDetails = () => {
       try {
         console.log(`Fetching college with ID: ${id}`);
         const response = await collegeApi.getCollege(id);
-        console.log('College API response:', response);
         const collegeData = response.data || {};
 
-        // Format college data
+        // Build valid photos array
+        const photosArray =
+          Array.isArray(collegeData.photos) && collegeData.photos.length > 0
+            ? collegeData.photos.filter(Boolean)
+            : collegeData.collegeImage
+            ? [collegeData.collegeImage]
+            : [
+                'https://images.unsplash.com/photo-1523050854058-8df90110c9f1?ixlib=rb-4.0.3&auto=format&fit=crop&w=1470&q=80',
+                'https://images.unsplash.com/photo-1523240795612-9a054b0db644?ixlib=rb-4.0.3&auto=format&fit=crop&w=1470&q=80',
+              ];
+
         const formattedCollege = {
           id: collegeData.id || id,
           name: collegeData.name || 'Unnamed College',
@@ -59,23 +74,27 @@ const CollegeDetails = () => {
           rating: collegeData.rating || 4.0,
           affiliation: collegeData.affiliation || 'N/A',
           phone: collegeData.phone || '+91 9876543210',
-          image: collegeData.collegeImage || 'https://via.placeholder.com/800x400',
+          image: collegeData.collegeImage || photosArray[0],
           established: collegeData.establishmentYear || 2000,
-          courses: collegeData.coursesOffered || ['Course 1', 'Course 2'],
-          streams: collegeData.streams || ['Stream 1', 'Stream 2'],
-          facilities: collegeData.facilities || ['Facility 1', 'Facility 2'],
+          // 👇 ALWAYS arrays — handles string, array, null, undefined
+          courses: safeArray(
+            collegeData.coursesOffered || collegeData.courses,
+            ['Course 1', 'Course 2']
+          ),
+          streams: safeArray(collegeData.streams, ['Stream 1', 'Stream 2']),
+          facilities: safeArray(collegeData.facilities, [
+            'Facility 1',
+            'Facility 2',
+          ]),
           accreditation: collegeData.accreditation || 'NAAC A',
-          photos: Array.isArray(collegeData.photos) && collegeData.photos.length > 0
-            ? collegeData.photos
-            : [
-                'https://images.unsplash.com/photo-1523050854058-8df90110c9f1?ixlib=rb-4.0.3&auto=format&fit=crop&w=1470&q=80',
-                'https://images.unsplash.com/photo-1523240795612-9a054b0db644?ixlib=rb-4.0.3&auto=format&fit=crop&w=1470&q=80',
-              ],
+          photos: photosArray,
         };
         setCollege(formattedCollege);
       } catch (err) {
         console.error('Error fetching college details:', err);
-        setError(err.response?.data?.message || err.message || 'Failed to fetch college details');
+        setError(
+          err.response?.data?.message || err.message || 'Failed to fetch college details'
+        );
         setCollege(null);
       } finally {
         setLoading(false);
@@ -84,6 +103,20 @@ const CollegeDetails = () => {
 
     fetchCollegeDetails();
   }, [id]);
+
+  // Auto-rotate hero banner through all photos
+  useEffect(() => {
+    if (!college || college.photos.length <= 1) return;
+    const interval = setInterval(() => {
+      setHeroIndex((prev) => (prev + 1) % college.photos.length);
+    }, 5000);
+    return () => clearInterval(interval);
+  }, [college]);
+
+  // Reset hero index when college changes
+  useEffect(() => {
+    setHeroIndex(0);
+  }, [college]);
 
   const scrollToSection = (id) => {
     const section = document.getElementById(id);
@@ -102,7 +135,7 @@ const CollegeDetails = () => {
   };
 
   const navigateImages = (direction) => {
-    if (!college || !college.photos) return;
+    if (!college || !college.photos || college.photos.length === 0) return;
     let newIndex =
       direction === 'prev'
         ? currentImageIndex === 0
@@ -115,9 +148,15 @@ const CollegeDetails = () => {
     setCurrentImageIndex(newIndex);
   };
 
-  const handleCounsellingSubmit = (e) => {
-    e.preventDefault();
-    alert('Thank you! Our counsellor will contact you shortly.');
+  const nextHero = () => {
+    if (!college || !college.photos?.length) return;
+    setHeroIndex((prev) => (prev + 1) % college.photos.length);
+  };
+  const prevHero = () => {
+    if (!college || !college.photos?.length) return;
+    setHeroIndex(
+      (prev) => (prev - 1 + college.photos.length) % college.photos.length
+    );
   };
 
   if (loading) {
@@ -148,6 +187,12 @@ const CollegeDetails = () => {
     );
   }
 
+  // 👇 Guard against out-of-bounds heroIndex
+  const safeHeroIndex = college.photos.length > 0
+    ? heroIndex % college.photos.length
+    : 0;
+  const heroImage = college.photos[safeHeroIndex] || college.image;
+
   return (
     <div className="min-h-screen bg-gradient-to-b from-orange-50 to-white">
       {/* Header */}
@@ -168,14 +213,6 @@ const CollegeDetails = () => {
               </motion.button>
             </div>
           </div>
-          {/* <div className="relative w-full max-w-2xl md:max-w-xl flex-grow md:ml-8">
-            <FaSearch className="absolute left-4 top-1/2 transform -translate-y-1/2 text-orange-400" />
-            <input
-              type="text"
-              placeholder="Search Colleges, Locations..."
-              className="pl-12 pr-4 py-3 rounded-full bg-white border border-transparent text-gray-800 focus:outline-none w-full focus:ring-2 focus:ring-orange-200 focus:border-transparent shadow-sm"
-            />
-          </div> */}
           <div className="hidden md:flex space-x-4 ml-8">
             <motion.button
               className="bg-white border border-white text-orange-600 hover:bg-orange-100 font-semibold py-2 px-4 rounded-full transition duration-300"
@@ -189,20 +226,6 @@ const CollegeDetails = () => {
         </div>
       </header>
 
-      {/* Breadcrumb */}
-      {/* <div className="max-w-7xl mx-auto px-4 py-4">
-        <div className="text-sm text-gray-500 flex items-center">
-          <Link to="/" className="flex items-center hover:text-orange-600">
-            <FaHome className="mr-1 text-orange-500" />
-            Home
-          </Link>
-          <span className="mx-2">»</span>
-          <Link to="/colleges" className="hover:text-orange-600">Colleges</Link>
-          <span className="mx-2">»</span>
-          <span className="text-orange-600">{college.name}</span>
-        </div>
-      </div> */}
-
       {/* Hero Banner */}
       <motion.div
         initial={{ opacity: 0, y: 20 }}
@@ -210,9 +233,73 @@ const CollegeDetails = () => {
         transition={{ duration: 0.6 }}
         className="relative max-w-7xl mx-auto mt-4 rounded-3xl overflow-hidden shadow-2xl"
       >
-        <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/40 to-transparent z-10"></div>
-        <img src={college.image} alt={college.name} className="w-full h-[32rem] object-cover" />
-        <div className="absolute bottom-0 left-0 right-0 z-20 p-8 text-white">
+        <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/40 to-transparent z-10 pointer-events-none"></div>
+
+        <div className="relative w-full h-[32rem] bg-gray-900">
+          <AnimatePresence mode="wait">
+            <motion.img
+              key={safeHeroIndex}
+              src={heroImage}
+              alt={`${college.name} - Photo ${safeHeroIndex + 1}`}
+              onError={(e) => {
+                e.target.onerror = null;
+                e.target.src = 'https://placehold.co/1200x600?text=College+Image';
+              }}
+              onClick={() => openImage(heroImage, safeHeroIndex)}
+              className="absolute inset-0 w-full h-full object-cover cursor-zoom-in"
+              initial={{ opacity: 0, scale: 1.05 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.8 }}
+            />
+          </AnimatePresence>
+        </div>
+
+        {college.photos.length > 1 && (
+          <>
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                prevHero();
+              }}
+              className="absolute left-4 top-1/2 -translate-y-1/2 z-30 bg-black/40 hover:bg-black/70 text-white rounded-full p-3 transition"
+              aria-label="Previous photo"
+            >
+              <FaChevronLeft />
+            </button>
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                nextHero();
+              }}
+              className="absolute right-4 top-1/2 -translate-y-1/2 z-30 bg-black/40 hover:bg-black/70 text-white rounded-full p-3 transition"
+              aria-label="Next photo"
+            >
+              <FaChevronRight />
+            </button>
+          </>
+        )}
+
+        {college.photos.length > 1 && (
+          <div className="absolute top-4 left-1/2 -translate-x-1/2 z-30 flex space-x-2">
+            {college.photos.map((_, i) => (
+              <button
+                key={i}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setHeroIndex(i);
+                }}
+                className={`w-2.5 h-2.5 rounded-full transition-all ${
+                  i === safeHeroIndex ? 'bg-white w-6' : 'bg-white/50 hover:bg-white/80'
+                }`}
+                aria-label={`Go to photo ${i + 1}`}
+              />
+            ))}
+          </div>
+        )}
+
+        {/* Text overlay */}
+        <div className="absolute bottom-0 left-0 right-0 z-20 p-8 text-white pointer-events-none">
           <motion.h1
             className="text-4xl md:text-5xl font-bold mb-2 drop-shadow-lg"
             initial={{ opacity: 0 }}
@@ -246,7 +333,7 @@ const CollegeDetails = () => {
               href={`tel:${college.phone}`}
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
-              className="bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 text-white font-semibold py-3 px-8 rounded-full flex items-center transition-all duration-300 shadow-lg"
+              className="bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 text-white font-semibold py-3 px-8 rounded-full flex items-center transition-all duration-300 shadow-lg pointer-events-auto"
             >
               <FaPhone className="mr-2" /> Call Now
             </motion.a>
@@ -288,9 +375,7 @@ const CollegeDetails = () => {
 
       {/* Main Content */}
       <div className="max-w-7xl mx-auto mt-6 px-4 flex flex-col lg:flex-row gap-8 pb-12">
-        {/* Left Column - Scrollable */}
         <div className="w-full lg:w-2/3 space-y-8">
-          {/* Basic Info */}
           <motion.div
             id="basicinfo"
             className="bg-white rounded-2xl shadow-lg overflow-hidden"
@@ -308,7 +393,6 @@ const CollegeDetails = () => {
             </div>
           </motion.div>
 
-          {/* Photos Section */}
           <motion.div
             id="photos"
             className="bg-white rounded-2xl shadow-lg overflow-hidden"
@@ -337,7 +421,8 @@ const CollegeDetails = () => {
                         className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
                         loading="lazy"
                         onError={(e) => {
-                          e.target.src = 'https://via.placeholder.com/300?text=Image+Not+Found';
+                          e.target.onerror = null;
+                          e.target.src = 'https://placehold.co/600x600?text=No+Image';
                         }}
                       />
                       <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
@@ -355,7 +440,6 @@ const CollegeDetails = () => {
             </div>
           </motion.div>
 
-          {/* Fee Structure */}
           <motion.div
             id="feestructure"
             className="bg-white rounded-2xl shadow-lg overflow-hidden"
@@ -373,7 +457,6 @@ const CollegeDetails = () => {
             </div>
           </motion.div>
 
-          {/* Contact */}
           <motion.div
             id="contact"
             className="bg-white rounded-2xl shadow-lg overflow-hidden"
@@ -391,7 +474,6 @@ const CollegeDetails = () => {
             </div>
           </motion.div>
 
-          {/* Reviews */}
           <motion.div
             id="reviews"
             className="bg-white rounded-2xl shadow-lg overflow-hidden"
@@ -399,7 +481,7 @@ const CollegeDetails = () => {
             whileInView={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5 }}
             viewport={{ once: true, margin: '-100px' }}
-          > 
+          >
             <div className="p-6">
               <h2 className="text-2xl font-bold text-gray-800 mb-4 flex items-center">
                 <span className="w-2 h-8 bg-orange-600 rounded-full mr-3"></span>
@@ -410,59 +492,12 @@ const CollegeDetails = () => {
           </motion.div>
         </div>
 
-        {/* Right Column - Fixed Form */}
         <motion.div
           className="w-full lg:w-1/3 lg:sticky lg:top-[140px] self-start pt-2"
           initial={{ opacity: 0, x: 20 }}
           animate={{ opacity: 1, x: 0 }}
           transition={{ duration: 0.6, delay: 0.4 }}
         >
-          {/* <div className="bg-white rounded-2xl shadow-xl overflow-hidden border border-orange-100">
-            <div className="p-6">
-              <h3 className="text-2xl font-bold mb-4 text-gray-800">Free Counselling</h3>
-              <p className="mb-6 text-gray-600">Get personalized guidance from our education experts</p>
-              <form onSubmit={handleCounsellingSubmit} className="space-y-4">
-                <motion.input
-                  type="text"
-                  placeholder="Student/Parent Name"
-                  required
-                  className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent placeholder-gray-400 text-gray-700"
-                  whileFocus={{ scale: 1.02 }}
-                />
-                <motion.input
-                  type="tel"
-                  placeholder="Mobile Number"
-                  required
-                  className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent placeholder-gray-400 text-gray-700"
-                  whileFocus={{ scale: 1.02 }}
-                />
-                <motion.select
-                  className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent text-gray-700"
-                  whileFocus={{ scale: 1.02 }}
-                  required
-                >
-                  <option value="">Select Course</option>
-                  {college.courses.map((course, index) => (
-                    <option key={index} value={course}>{course}</option>
-                  ))}
-                </motion.select>
-                <motion.textarea
-                  placeholder="Your Questions"
-                  rows="4"
-                  className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent placeholder-gray-400 text-gray-700"
-                  whileFocus={{ scale: 1.02 }}
-                />
-                <motion.button
-                  type="submit"
-                  whileHover={{ scale: 1.03, boxShadow: '0 4px 15px rgba(249, 115, 22, 0.3)' }}
-                  whileTap={{ scale: 0.98 }}
-                  className="w-full bg-gradient-to-r from-orange-500 to-amber-600 text-white py-3 rounded-lg font-bold hover:from-orange-600 hover:to-amber-700 transition-all shadow-lg"
-                >
-                  Get Free Consultation
-                </motion.button>
-              </form>
-            </div>
-          </div> */}
           <div className="mt-6 bg-white rounded-2xl shadow-xl overflow-hidden border border-orange-100">
             <div className="p-6">
               <h3 className="text-xl font-bold text-gray-800 mb-4">Quick Facts</h3>
@@ -500,6 +535,7 @@ const CollegeDetails = () => {
                   </div>
                   <div>
                     <p className="text-sm text-gray-500">Courses</p>
+                    {/* 👇 safe join — college.courses is now guaranteed an array */}
                     <p className="font-medium">{college.courses.join(', ')}</p>
                   </div>
                 </div>
@@ -538,7 +574,8 @@ const CollegeDetails = () => {
               animate={{ scale: 1 }}
               exit={{ scale: 0.9 }}
               onError={(e) => {
-                e.target.src = 'https://via.placeholder.com/800?text=Image+Not+Found';
+                e.target.onerror = null;
+                e.target.src = 'https://placehold.co/800x600?text=No+Image';
               }}
             />
             <button

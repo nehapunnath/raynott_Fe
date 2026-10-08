@@ -116,13 +116,13 @@ const TeachersList = () => {
               <tr key={teacher.id} className="hover:bg-gray-50">
                 <td className="px-6 py-4 whitespace-nowrap">
                   <div className="flex items-center">
-                    <div className="flex-shrink-0 h-12 w-12">
+                    {/* <div className="flex-shrink-0 h-12 w-12">
                       <img
                         className="h-12 w-12 rounded-full object-cover"
                         src={teacher.profileImage || 'https://via.placeholder.com/48x48?text=Teacher'}
                         alt={teacher.name}
                       />
-                    </div>
+                    </div> */}
                     <div className="ml-4">
                       <div className="text-sm font-medium text-gray-900">{teacher.name}</div>
                       <div className="text-sm text-gray-500">{teacher.email}</div>

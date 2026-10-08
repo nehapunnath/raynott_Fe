@@ -1,155 +1,296 @@
 import React, { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Link, useNavigate } from 'react-router-dom';
-import { FaSearch, FaFilter, FaStar, FaTrophy, FaMapMarkerAlt, FaSchool, FaUniversity, FaChalkboardTeacher, FaTimes, FaGraduationCap, FaBookOpen } from 'react-icons/fa';
-import { BsFillCalendar2CheckFill, BsCashStack } from 'react-icons/bs';
+import {
+  FaSearch,
+  FaFilter,
+  FaStar,
+  FaTrophy,
+  FaMapMarkerAlt,
+  FaSchool,
+  FaUniversity,
+  FaChalkboardTeacher,
+  FaTimes,
+  FaGraduationCap,
+  FaBookOpen,
+} from 'react-icons/fa';
+import { BsFillCalendar2CheckFill } from 'react-icons/bs';
 import { FaBookOpenReader } from 'react-icons/fa6';
-import "tailwindcss";
+import 'tailwindcss';
 import bestSellersApi from '../services/Bestsellersapi';
+import { collegeApi } from '../services/collegeApi';
+import { schoolApi } from '../services/schoolApi';
+import { puCollegeApi } from '../services/pucollegeApi';
+import { TuitionCoachingApi } from '../services/TuitionCoachingApi';
+import { teacherApi } from '../services/TeacherApi';
 import StickyButton from '../components/StickyButton';
+
+// 👇 Safe array helper
+const safeArray = (value, fallback = []) => {
+  if (Array.isArray(value)) return value.filter(Boolean);
+  if (typeof value === 'string' && value.trim()) {
+    return value.split(',').map((s) => s.trim()).filter(Boolean);
+  }
+  return fallback;
+};
+
+// 👇 Validation: only accept real http(s) URLs
+const isValidUrl = (val) =>
+  typeof val === 'string' &&
+  val.trim().length > 0 &&
+  val.trim().toLowerCase() !== 'null' &&
+  val.trim().toLowerCase() !== 'undefined' &&
+  val.trim().startsWith('http');
+
+// 👇 Pick the first valid gallery photo from various array shapes
+const pickFirstPhoto = (photos) => {
+  if (!Array.isArray(photos)) return null;
+  for (const p of photos) {
+    if (isValidUrl(p)) return p;
+    if (p && typeof p === 'object') {
+      if (isValidUrl(p.url)) return p.url;
+      if (isValidUrl(p.image)) return p.image;
+      if (isValidUrl(p.src)) return p.src;
+    }
+  }
+  return null;
+};
+
+// 👇 Resolve image from the item alone (no extra fetch)
+const resolveImage = (item) => {
+  if (!item || typeof item !== 'object') return null;
+
+  const fields = [
+    item.image,
+    item.imageUrl,
+    item.schoolImage,
+    item.collegeImage,
+    item.centerImage,
+    item.profileImage,
+    item.thumbnail,
+    item.logo,
+    item.photo,
+    item.coverImage,
+    item.bannerImage,
+    item.mainImage,
+  ];
+  for (const f of fields) {
+    if (isValidUrl(f)) return f;
+  }
+
+  const fromPhotos =
+    pickFirstPhoto(item.photos) ||
+    pickFirstPhoto(item.images) ||
+    pickFirstPhoto(item.gallery) ||
+    pickFirstPhoto(item.photoGallery);
+  if (fromPhotos) return fromPhotos;
+
+  return null;
+};
+
+// 👇 Fetch the details for an institution and pull the first gallery photo
+const fetchPhotoFromDetails = async (type, id) => {
+  try {
+    let response;
+    if (type === 'School') {
+      response = await schoolApi.getSchool(id);
+    } else if (type === 'College') {
+      response = await collegeApi.getCollege(id);
+    } else if (type === 'PU College') {
+      response = await puCollegeApi.getPUCollege(id);
+    } else if (type === 'Coaching Center' || type === 'Tuition Center') {
+      response = await TuitionCoachingApi.getTuitionCoaching(id);
+    } else if (type === 'Professional Teacher') {
+      response = await teacherApi.getProfessionalTeacherDetails(id);
+    } else if (type === 'Personal Mentor') {
+      response = await teacherApi.getPersonalMentorDetails(id);
+    } else {
+      return null;
+    }
+
+    const data = response?.data || {};
+
+    // Try common photo array fields
+    const candidates = [
+      data.photos,
+      data.facilities,
+      data.gallery,
+      data.images,
+      data.basicInfo?.photos,
+      data.basicInfo?.profileImage ? [data.basicInfo.profileImage] : null,
+    ];
+
+    for (const arr of candidates) {
+      const hit = pickFirstPhoto(arr);
+      if (hit) return hit;
+    }
+
+    // Last resort: profile image field nested anywhere
+    const fallbackFields = [
+      data.schoolImage,
+      data.collegeImage,
+      data.centerImage,
+      data.profileImage,
+      data.basicInfo?.profileImage,
+    ];
+    for (const f of fallbackFields) {
+      if (isValidUrl(f)) return f;
+    }
+
+    return null;
+  } catch (err) {
+    console.warn(`Could not fetch details for ${type} ${id}:`, err);
+    return null;
+  }
+};
 
 const BestSellers = () => {
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [filters, setFilters] = useState({
     institutionType: [],
-    minRating: 0, // Show all ratings by default
-    location: '' // Show all locations by default
+    minRating: 0,
+    location: '',
   });
   const [institutions, setInstitutions] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const navigate = useNavigate();
 
-  const institutionTypes = ["School", "College", "PU College", "Coaching Center", "Tuition Center", "Professional Teacher", "Personal Mentor"];
+  const institutionTypes = [
+    'School',
+    'College',
+    'PU College',
+    'Coaching Center',
+    'Tuition Center',
+    'Professional Teacher',
+    'Personal Mentor',
+  ];
   const ratingOptions = [0, 3.0, 3.5, 4.0, 4.5];
-  const locationOptions = ["Bangalore", "Delhi", "Mumbai", "Hyderabad", "Chennai"];
+  const locationOptions = ['Bangalore', 'Delhi', 'Mumbai', 'Hyderabad', 'Chennai'];
 
-  // Normalize city names to handle variations
   const normalizeCity = (city) => {
     const cityMap = {
-      'bangalore': 'Bangalore',
-      'bangaluru': 'Bangalore',
+      bangalore: 'Bangalore',
+      bangaluru: 'Bangalore',
       'bengaluru urban': 'Bangalore',
-      'delhi': 'Delhi',
+      delhi: 'Delhi',
       'new delhi': 'Delhi',
-      'mumbai': 'Mumbai',
-      'bombay': 'Mumbai',
-      'hyderabad': 'Hyderabad',
-      'chennai': 'Chennai',
-      'madras': 'Chennai'
+      mumbai: 'Mumbai',
+      bombay: 'Mumbai',
+      hyderabad: 'Hyderabad',
+      chennai: 'Chennai',
+      madras: 'Chennai',
     };
     return cityMap[city?.toLowerCase()] || city || 'Not specified';
   };
 
-  // Fetch best sellers data on mount
   useEffect(() => {
     const fetchBestSellers = async () => {
       try {
         setLoading(true);
         const response = await bestSellersApi.getBestSellers({ limit: 5 });
-        console.log('API Response:', response); // Debug: Log raw API response
-        const { schools, colleges, puColleges, tuitionCoaching, professionalTeachers, personalMentors } = response.data;
+        console.log('API Response:', response);
 
-        // Map API data to match component's expected institution structure
+        const {
+          schools = [],
+          colleges = [],
+          puColleges = [],
+          tuitionCoaching = [],
+          professionalTeachers = [],
+          personalMentors = [],
+        } = response.data || {};
+
+        // 👇 Step 1: map everything, with the image resolved from the item alone
         const mappedInstitutions = [
-          ...schools.map(item => ({
+          ...safeArray(schools).map((item) => ({
             id: item.id,
             name: item.name || 'Unnamed School',
             type: 'School',
             location: normalizeCity(item.city),
             rating: parseFloat(item.rating) || 0,
             reviews: item.reviewCount || 0,
-            image: item.image,
+            image: resolveImage(item),
             isFeatured: (parseFloat(item.rating) || 0) >= 4.8,
             detailsLink: `/school-details/${item.id}`,
-            slug: item.name ? item.name.toLowerCase().replace(/\s+/g, '-') : 'unnamed-school',
-            established: item.established ,// Use API data if available
-            feeRange: item.feeRange ,
-            features: item.features 
           })),
-          ...colleges.map(item => ({
+          ...safeArray(colleges).map((item) => ({
             id: item.id,
             name: item.name || 'Unnamed College',
             type: 'College',
             location: normalizeCity(item.city),
             rating: parseFloat(item.rating) || 0,
             reviews: item.reviewCount || 0,
-            image: item.image || 'https://images.unsplash.com/photo-1549861833-c5932fd19229?ixlib=rb-4.0.3&auto=format&fit=crop&w=1470&q=80',
+            image: resolveImage(item),
             isFeatured: (parseFloat(item.rating) || 0) >= 4.8,
             detailsLink: `/college-details/${item.id}`,
-            slug: item.name ? item.name.toLowerCase().replace(/\s+/g, '-') : 'unnamed-college',
-            established: item.established || 1969,
-            feeRange: item.feeRange ,
-            features: item.features || ['NAAC A++', 'Research Programs', 'International Exchange']
           })),
-          ...puColleges.map(item => ({
+          ...safeArray(puColleges).map((item) => ({
             id: item.id,
             name: item.name || 'Unnamed PU College',
             type: 'PU College',
             location: normalizeCity(item.city),
             rating: parseFloat(item.rating) || 0,
             reviews: item.reviewCount || 0,
-            image: item.image || 'https://images.unsplash.com/photo-1588072432836-e10032774350?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80',
+            image: resolveImage(item),
             isFeatured: (parseFloat(item.rating) || 0) >= 4.8,
             detailsLink: `/pucollege-details/${item.id}`,
-            slug: item.name ? item.name.toLowerCase().replace(/\s+/g, '-') : 'unnamed-pu-college',
-            established: item.establishmentYear || 1985,
-            feeRange: item.feeRange || '₹75,000 - ₹1,50,000/year',
-            features: item.features || ['Science Focus', 'Competitive Exams', 'Scholarships']
           })),
-          ...tuitionCoaching.map(item => ({
+          ...safeArray(tuitionCoaching).map((item) => ({
             id: item.id,
             name: item.name || 'Unnamed Center',
-            type: item.type === 'tuitioncoaching' ? 'Tuition Center' : 'Coaching Center',
+            type:
+              item.type === 'tuitioncoaching'
+                ? 'Tuition Center'
+                : 'Coaching Center',
             location: normalizeCity(item.city),
             rating: parseFloat(item.rating) || 0,
             reviews: item.reviewCount || 0,
-            image: item.image || 'https://images.unsplash.com/photo-1522202176988-66273c2fd55f?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80',
+            image: resolveImage(item),
             isFeatured: (parseFloat(item.rating) || 0) >= 4.8,
-            detailsLink: item.type === 'tuitioncoaching' ? `/tuition-details/${item.id}` : `/coaching-details/${item.id}`,
-            slug: item.name ? item.name.toLowerCase().replace(/\s+/g, '-') : 'unnamed-center',
-            established: item.established || 1992,
-            feeRange: item.feeRange || '₹1,20,000 - ₹2,80,000/year',
-            features: item.features || ['Olympiad Prep', 'Test Series', 'Doubt Clearing']
+            detailsLink:
+              item.type === 'tuitioncoaching'
+                ? `/tuition-details/${item.id}`
+                : `/coaching-details/${item.id}`,
           })),
-          ...professionalTeachers.map(item => ({
+          ...safeArray(professionalTeachers).map((item) => ({
             id: item.id,
             name: item.name || 'Unnamed Teacher',
             type: 'Professional Teacher',
             location: normalizeCity(item.city),
             rating: parseFloat(item.rating) || 0,
             reviews: item.reviewCount || 0,
-            image: item.image || 'https://cdn.eduadvisor.my/articles/2022/04/how-to-be-teacher-malaysia-feature.png',
+            image: resolveImage(item),
             isFeatured: (parseFloat(item.rating) || 0) >= 4.8,
             detailsLink: `/professional-teachers-details/${item.id}`,
-            slug: item.name ? item.name.toLowerCase().replace(/\s+/g, '-') : 'unnamed-teacher',
-            established: item.established || 2000,
-            fees: item.fees || '₹800 - ₹1200/hr',
-            features: item.features || ['Mathematics', 'Physics', 'PhD Qualified']
           })),
-          ...personalMentors.map(item => ({
+          ...safeArray(personalMentors).map((item) => ({
             id: item.id,
             name: item.name || 'Unnamed Mentor',
             type: 'Personal Mentor',
             location: normalizeCity(item.city),
             rating: parseFloat(item.rating) || 0,
             reviews: item.reviewCount || 0,
-            image: item.image || 'https://cdn.eduadvisor.my/articles/2022/04/how-to-be-teacher-malaysia-feature.png',
+            image: resolveImage(item),
             isFeatured: (parseFloat(item.rating) || 0) >= 4.8,
             detailsLink: `/personal-teachers-details/${item.id}`,
-            slug: item.name ? item.name.toLowerCase().replace(/\s+/g, '-') : 'unnamed-mentor',
-            established: item.established || 2000,
-            fees: item.fees || '₹800 - ₹1200/hr',
-            features: item.features || ['Personalized Learning', 'Career Guidance']
-          }))
+          })),
         ];
 
-        console.log('Mapped Institutions:', mappedInstitutions); // Debug: Log mapped data
-        setInstitutions(mappedInstitutions);
+        // 👇 Step 2: for items with no image, fetch details to grab the first gallery photo
+        const enrichedInstitutions = await Promise.all(
+          mappedInstitutions.map(async (inst) => {
+            if (inst.image) return inst; // already has an image
+            const photo = await fetchPhotoFromDetails(inst.type, inst.id);
+            return { ...inst, image: photo };
+          })
+        );
+
+        console.log('Mapped Institutions:', enrichedInstitutions);
+        setInstitutions(enrichedInstitutions);
       } catch (err) {
         setError(err.message || 'Failed to fetch best sellers');
-        console.error('API Error:', err); // Debug: Log error details
+        console.error('API Error:', err);
       } finally {
         setLoading(false);
       }
@@ -160,68 +301,50 @@ const BestSellers = () => {
   }, []);
 
   const handleFilterChange = (filterType, value) => {
-    setFilters(prev => {
+    setFilters((prev) => {
       if (filterType === 'minRating' || filterType === 'location') {
         return { ...prev, [filterType]: value };
       } else {
         const currentValues = [...prev[filterType]];
         const index = currentValues.indexOf(value);
-        if (index === -1) {
-          currentValues.push(value);
-        } else {
-          currentValues.splice(index, 1);
-        }
+        if (index === -1) currentValues.push(value);
+        else currentValues.splice(index, 1);
         return { ...prev, [filterType]: currentValues };
       }
     });
   };
 
   const resetFilters = () => {
-    setFilters({
-      institutionType: [],
-      minRating: 0,
-      location: ''
-    });
+    setFilters({ institutionType: [], minRating: 0, location: '' });
   };
 
-  const applyFilters = () => {
-    setIsFilterOpen(false);
-  };
+  const applyFilters = () => setIsFilterOpen(false);
 
-  const filteredInstitutions = institutions.filter(institution => {
-    if (searchQuery && 
-        !institution.name.toLowerCase().includes(searchQuery.toLowerCase()) &&
-        !institution.location.toLowerCase().includes(searchQuery.toLowerCase())) {
+  const filteredInstitutions = institutions.filter((institution) => {
+    if (
+      searchQuery &&
+      !institution.name.toLowerCase().includes(searchQuery.toLowerCase()) &&
+      !institution.location.toLowerCase().includes(searchQuery.toLowerCase())
+    ) {
       return false;
     }
-    if (filters.institutionType.length > 0 && !filters.institutionType.includes(institution.type)) {
+    if (
+      filters.institutionType.length > 0 &&
+      !filters.institutionType.includes(institution.type)
+    ) {
       return false;
     }
     if (filters.minRating > 0 && institution.rating < filters.minRating) {
       return false;
     }
-    if (filters.location && !institution.location.toLowerCase().includes(filters.location.toLowerCase())) {
+    if (
+      filters.location &&
+      !institution.location.toLowerCase().includes(filters.location.toLowerCase())
+    ) {
       return false;
     }
     return true;
   });
-
-  const getInstitutionIcon = (type) => {
-    switch (type) {
-      case 'School': return <FaSchool className="text-orange-500" />;
-      case 'College': return <FaUniversity className="text-orange-500" />;
-      case 'PU College': return <FaGraduationCap className="text-orange-500" />;
-      case 'Coaching Center': return <FaChalkboardTeacher className="text-orange-500" />;
-      case 'Tuition Center': return <FaBookOpenReader className="text-orange-500" />;
-      case 'Professional Teacher': return <FaChalkboardTeacher className="text-orange-500" />;
-      case 'Personal Mentor': return <FaBookOpen className="text-orange-500" />;
-      default: return <FaSchool className="text-orange-500" />;
-    }
-  };
-
-  const handleViewDetails = (institution) => {
-    navigate(institution.detailsLink, { state: { institution } });
-  };
 
   if (loading) {
     return (
@@ -249,18 +372,11 @@ const BestSellers = () => {
 
   return (
     <div className="bg-orange-50 min-h-screen font-sans">
-      {/* Debug Info */}
-      {/* <div className="text-gray-600 text-sm max-w-7xl mx-auto px-4 py-2">
-        Debug: {institutions.length} total institutions, Filters: {JSON.stringify(filters)}
-      </div> */}
-
       <header className="bg-orange-600 shadow-md sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-4 py-4 md:py-6 flex flex-col md:flex-row items-center justify-between">
           <div className="flex w-full md:w-auto justify-between items-center mb-4 md:mb-0">
             <Link to="/" className="text-3xl font-extrabold text-white">
-              <motion.span whileHover={{ scale: 1.05 }}>
-                Raynott
-              </motion.span>
+              <motion.span whileHover={{ scale: 1.05 }}>Raynott</motion.span>
             </Link>
           </div>
 
@@ -324,88 +440,81 @@ const BestSellers = () => {
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
           {filteredInstitutions.map((institution) => (
             <motion.div
-              key={institution.id}
+              key={`${institution.type}-${institution.id}`}
               className="bg-white rounded-xl shadow-lg hover:shadow-2xl transition-all duration-300 overflow-hidden flex flex-col"
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.3 }}
               whileHover={{ y: -5 }}
             >
-              <div className="relative h-48 w-full overflow-hidden">
-                <img
-                  src={institution.image}
-                  alt={institution.name}
-                  className="w-full h-full object-cover transition-transform duration-500 hover:scale-110"
-                />
-                {institution.isFeatured && (
-                  <div className="absolute top-4 left-4 bg-yellow-500 text-dark text-xs font-bold px-3 py-1 rounded-full shadow-lg">
-                    Featured
+              {institution.image && (
+                <div className="relative h-48 w-full overflow-hidden bg-gray-100">
+                  <img
+                    src={institution.image}
+                    alt={institution.name}
+                    onError={(e) => {
+                      e.target.onerror = null;
+                      e.target.style.display = 'none';
+                    }}
+                    className="w-full h-full object-cover transition-transform duration-500 hover:scale-110"
+                  />
+                  {institution.isFeatured && (
+                    <div className="absolute top-4 left-4 bg-yellow-500 text-dark text-xs font-bold px-3 py-1 rounded-full shadow-lg">
+                      Featured
+                    </div>
+                  )}
+                  <div className="absolute top-4 right-4 flex items-center bg-white/90 text-orange-600 px-3 py-1 rounded-full shadow-lg backdrop-blur-sm">
+                    <span className="font-bold mr-1">{institution.rating}</span>
+                    <FaStar className="w-4 h-4 fill-current" />
                   </div>
-                )}
-                <div className="absolute top-4 right-4 flex items-center bg-white/90 text-orange-600 px-3 py-1 rounded-full shadow-lg backdrop-blur-sm">
-                  <span className="font-bold mr-1">{institution.rating}</span>
-                  <FaStar className="w-4 h-4 fill-current" />
                 </div>
-              </div>
-              <div className="p-4 flex flex-col flex-grow">
-                <div className="flex justify-between items-start">
-                  <h3 className="text-xl font-bold text-gray-900">{institution.name}</h3>
-                  <span className="bg-orange-100 text-orange-800 text-xs px-2 py-1 rounded-full">
-                    {institution.type}
-                  </span>
-                </div>
-                
-                {/* <div className="mt-2 flex items-center text-sm text-orange-600 font-medium">
-                  {getInstitutionIcon(institution.type)}
-                  <span className="ml-2">Est. {institution.established}</span>
-                </div> */}
+              )}
 
-                {/* <div className="mt-3 flex flex-wrap gap-2">
-                  {institution.features?.map((feature, index) => (
-                    <span key={index} className="bg-orange-100 text-orange-800 text-xs px-2 py-1 rounded">
-                      {feature}
+              <div className="p-4 flex flex-col flex-grow">
+                <div className="flex justify-between items-start gap-2">
+                  <h3 className="text-xl font-bold text-gray-900 line-clamp-2">
+                    {institution.name}
+                  </h3>
+                  <div className="flex flex-col items-end gap-1">
+                    <span className="bg-orange-100 text-orange-800 text-xs px-2 py-1 rounded-full whitespace-nowrap">
+                      {institution.type}
                     </span>
-                  ))}
-                </div> */}
+                    {!institution.image && (
+                      <span className="flex items-center text-xs text-orange-600 font-semibold">
+                        <FaStar className="mr-1 w-3 h-3" />
+                        {institution.rating}
+                      </span>
+                    )}
+                  </div>
+                </div>
 
                 <div className="mt-4 space-y-2">
                   <div className="flex items-center text-sm text-gray-600">
                     <FaMapMarkerAlt className="mr-2 text-orange-500" />
                     <span>{institution.location}</span>
                   </div>
-                  {/* <div className="flex items-center text-sm text-gray-600">
-                    <BsCashStack className="mr-2 text-orange-500" />
-                    <span>{institution.feeRange || institution.fees}</span>
-                  </div> */}
                   <div className="flex items-center text-sm text-gray-600">
                     <FaStar className="mr-2 text-orange-500" />
-                    <span>{institution.rating} ({institution.reviews} reviews)</span>
+                    <span>
+                      {institution.rating} ({institution.reviews} reviews)
+                    </span>
                   </div>
                 </div>
 
                 <div className="mt-auto pt-4">
-                  <div className="flex justify-between items-center space-x-2">
-                    <Link 
-                      to={institution.detailsLink}
-                      state={{ institution }}
-                      className="w-full"
-                    >
-                      <motion.button
-                        className="bg-orange-600 hover:bg-orange-700 text-white text-sm font-medium py-2 px-3 rounded-lg w-full transition duration-300"
-                        whileHover={{ scale: 1.02 }}
-                        whileTap={{ scale: 0.98 }}
-                      >
-                        View Details
-                      </motion.button>
-                    </Link>
-                    {/* <motion.button
-                      className="bg-transparent border border-orange-600 text-orange-600 hover:bg-orange-50 font-medium rounded-lg w-10 h-10 flex items-center justify-center transition duration-300"
+                  <Link
+                    to={institution.detailsLink}
+                    state={{ institution }}
+                    className="w-full"
+                  >
+                    <motion.button
+                      className="bg-orange-600 hover:bg-orange-700 text-white text-sm font-medium py-2 px-3 rounded-lg w-full transition duration-300"
                       whileHover={{ scale: 1.02 }}
                       whileTap={{ scale: 0.98 }}
                     >
-                      <FaMapMarkerAlt />
-                    </motion.button> */}
-                  </div>
+                      View Details
+                    </motion.button>
+                  </Link>
                 </div>
               </div>
             </motion.div>
@@ -414,8 +523,12 @@ const BestSellers = () => {
 
         {filteredInstitutions.length === 0 && (
           <div className="bg-white rounded-xl shadow-sm p-8 text-center">
-            <h3 className="text-xl font-semibold text-gray-700 mb-2">No institutions found</h3>
-            <p className="text-gray-600 mb-4">Try adjusting your filters or search query</p>
+            <h3 className="text-xl font-semibold text-gray-700 mb-2">
+              No institutions found
+            </h3>
+            <p className="text-gray-600 mb-4">
+              Try adjusting your filters or search query
+            </p>
             <button
               onClick={resetFilters}
               className="bg-orange-600 hover:bg-orange-700 text-white font-medium py-2 px-6 rounded-lg transition duration-300"
@@ -426,6 +539,7 @@ const BestSellers = () => {
         )}
       </main>
 
+      {/* Filter Modal */}
       <AnimatePresence>
         {isFilterOpen && (
           <motion.div
@@ -439,11 +553,13 @@ const BestSellers = () => {
               initial={{ y: 50, opacity: 0 }}
               animate={{ y: 0, opacity: 1 }}
               exit={{ y: 50, opacity: 0 }}
-              transition={{ type: "spring", damping: 25 }}
+              transition={{ type: 'spring', damping: 25 }}
             >
               <div className="p-6">
                 <div className="flex justify-between items-center border-b pb-4 mb-4">
-                  <h2 className="text-2xl font-bold text-gray-800">Filter Institutions</h2>
+                  <h2 className="text-2xl font-bold text-gray-800">
+                    Filter Institutions
+                  </h2>
                   <button
                     onClick={() => setIsFilterOpen(false)}
                     className="text-gray-500 hover:text-gray-700"
@@ -453,13 +569,19 @@ const BestSellers = () => {
                 </div>
 
                 <div className="mb-6">
-                  <h3 className="text-lg font-semibold mb-3 text-gray-700">Minimum Rating</h3>
+                  <h3 className="text-lg font-semibold mb-3 text-gray-700">
+                    Minimum Rating
+                  </h3>
                   <div className="flex flex-wrap gap-3">
                     {ratingOptions.map((rating) => (
                       <button
                         key={rating}
                         onClick={() => handleFilterChange('minRating', rating)}
-                        className={`px-4 py-2 rounded-full ${filters.minRating === rating ? 'bg-orange-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}
+                        className={`px-4 py-2 rounded-full ${
+                          filters.minRating === rating
+                            ? 'bg-orange-600 text-white'
+                            : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                        }`}
                       >
                         {rating === 0 ? 'Any' : `${rating}+`}
                       </button>
@@ -468,14 +590,18 @@ const BestSellers = () => {
                 </div>
 
                 <div className="mb-6">
-                  <h3 className="text-lg font-semibold mb-3 text-gray-700">Institution Type</h3>
+                  <h3 className="text-lg font-semibold mb-3 text-gray-700">
+                    Institution Type
+                  </h3>
                   <div className="grid grid-cols-2 gap-3">
                     {institutionTypes.map((type) => (
                       <label key={type} className="flex items-center">
                         <input
                           type="checkbox"
                           checked={filters.institutionType.includes(type)}
-                          onChange={() => handleFilterChange('institutionType', type)}
+                          onChange={() =>
+                            handleFilterChange('institutionType', type)
+                          }
                           className="h-4 w-4 text-orange-600 focus:ring-orange-500 border-gray-300 rounded"
                         />
                         <span className="ml-2 text-gray-700">{type}</span>
@@ -485,7 +611,9 @@ const BestSellers = () => {
                 </div>
 
                 <div className="mb-6">
-                  <h3 className="text-lg font-semibold mb-3 text-gray-700">Location</h3>
+                  <h3 className="text-lg font-semibold mb-3 text-gray-700">
+                    Location
+                  </h3>
                   <div className="grid grid-cols-2 gap-3">
                     <label className="flex items-center">
                       <input
@@ -503,7 +631,9 @@ const BestSellers = () => {
                           type="radio"
                           name="location"
                           checked={filters.location === location}
-                          onChange={() => handleFilterChange('location', location)}
+                          onChange={() =>
+                            handleFilterChange('location', location)
+                          }
                           className="h-4 w-4 text-orange-600 focus:ring-orange-500 border-gray-300"
                         />
                         <span className="ml-2 text-gray-700">{location}</span>
@@ -539,6 +669,7 @@ const BestSellers = () => {
           </motion.div>
         )}
       </AnimatePresence>
+
       {/* <StickyButton /> */}
     </div>
   );

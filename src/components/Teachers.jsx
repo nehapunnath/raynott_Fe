@@ -1,11 +1,56 @@
-import React, { useState, useEffect } from "react";
-import Slider from "react-slick";
-import { useNavigate } from "react-router-dom";
-import { ArrowLeft, ArrowRight } from "lucide-react";
-import { motion } from "framer-motion";
-import { teacherApi } from "../services/TeacherApi";
-import "tailwindcss";
+import React, { useState, useEffect } from 'react';
+import Slider from 'react-slick';
+import { useNavigate } from 'react-router-dom';
+import { ArrowLeft, ArrowRight } from 'lucide-react';
+import { motion } from 'framer-motion';
+import { teacherApi } from '../services/TeacherApi';
+import 'tailwindcss';
 
+// 👇 Validation: only accept real http(s) URLs
+const isValidUrl = (val) =>
+  typeof val === 'string' &&
+  val.trim().length > 0 &&
+  val.trim().toLowerCase() !== 'null' &&
+  val.trim().toLowerCase() !== 'undefined' &&
+  val.trim().startsWith('http');
+
+// 👇 Pick first valid photo from array (handles string or { url } shapes)
+const pickFirstPhoto = (photos) => {
+  if (!Array.isArray(photos)) return null;
+  for (const p of photos) {
+    if (isValidUrl(p)) return p;
+    if (p && typeof p === 'object') {
+      if (isValidUrl(p.url)) return p.url;
+      if (isValidUrl(p.image)) return p.image;
+      if (isValidUrl(p.src)) return p.src;
+    }
+  }
+  return null;
+};
+
+// 👇 Resolve image with fallback chain
+const getTeacherImage = (teacher) => {
+  if (isValidUrl(teacher.profileImage)) return teacher.profileImage;
+  if (isValidUrl(teacher.image)) return teacher.image;
+
+  const fromPhotos =
+    pickFirstPhoto(teacher.photos) ||
+    pickFirstPhoto(teacher.images) ||
+    pickFirstPhoto(teacher.gallery) ||
+    pickFirstPhoto(teacher.photoGallery);
+  if (fromPhotos) return fromPhotos;
+
+  return null;
+};
+
+// 👇 Safe array (handles strings, null, undefined)
+const safeArray = (value, fallback = []) => {
+  if (Array.isArray(value)) return value.filter(Boolean);
+  if (typeof value === 'string' && value.trim()) {
+    return value.split(',').map((s) => s.trim()).filter(Boolean);
+  }
+  return fallback;
+};
 
 const NextArrow = ({ onClick }) => (
   <motion.div
@@ -48,17 +93,27 @@ export default function Teachers({ selectedCity }) {
         setLoading(true);
 
         // Fetch professional teachers
-        const profResponse = await teacherApi.getProfessionalTeachers({ city: selectedCity });
-        const profTeachersData = profResponse.data ? Object.values(profResponse.data).filter(
-          (teacher, index, self) => index === self.findIndex((t) => t.id === teacher.id)
-        ) : [];
+        const profResponse = await teacherApi.getProfessionalTeachers({
+          city: selectedCity,
+        });
+        const profTeachersData = profResponse.data
+          ? Object.values(profResponse.data).filter(
+              (teacher, index, self) =>
+                index === self.findIndex((t) => t.id === teacher.id)
+            )
+          : [];
         console.log('Fetched professional teachers:', profTeachersData);
 
         // Fetch personal mentors
-        const mentorResponse = await teacherApi.getPersonalMentors({ city: selectedCity });
-        const mentorData = mentorResponse.data ? Object.values(mentorResponse.data).filter(
-          (mentor, index, self) => index === self.findIndex((m) => m.id === mentor.id)
-        ) : [];
+        const mentorResponse = await teacherApi.getPersonalMentors({
+          city: selectedCity,
+        });
+        const mentorData = mentorResponse.data
+          ? Object.values(mentorResponse.data).filter(
+              (mentor, index, self) =>
+                index === self.findIndex((m) => m.id === mentor.id)
+            )
+          : [];
         console.log('Fetched personal mentors:', mentorData);
 
         setProfessionalTeachers(profTeachersData);
@@ -109,40 +164,69 @@ export default function Teachers({ selectedCity }) {
     ],
   });
 
-  const renderTeacherCard = (teacher, type) => (
-    <motion.div
-      onClick={() => navigate(`/${type === 'professional' ? 'professional-teacher-details' : 'personal-mentor-details'}/${teacher.id}`)}
-      className="bg-white rounded-xl overflow-hidden shadow-md hover:shadow-xl transition-all duration-300 cursor-pointer group"
-      whileHover={{ y: -10 }}
-    >
-      <div className="relative h-48 overflow-hidden">
-        <img
-          src={teacher.profileImage || "https://via.placeholder.com/800x400"}
-          alt={teacher.name}
-          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-        />
-        <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent p-4">
-          <div className="flex items-center justify-between">
-            <div className="bg-yellow-400 text-yellow-900 font-bold px-2 py-1 rounded-md text-sm flex items-center">
-              ⭐ {teacher.rating || 'N/A'}
+  const renderTeacherCard = (teacher, type) => {
+    const image = getTeacherImage(teacher);
+    const subjects = safeArray(teacher.subjects, []);
+    const qualifications = safeArray(teacher.qualification, []);
+
+    return (
+      <motion.div
+        onClick={() =>
+          navigate(
+            `/${
+              type === 'professional'
+                ? 'professional-teacher-details'
+                : 'personal-mentor-details'
+            }/${teacher.id}`
+          )
+        }
+        className="bg-white rounded-xl overflow-hidden shadow-md hover:shadow-xl transition-all duration-300 cursor-pointer group"
+        whileHover={{ y: -10 }}
+      >
+        <div className="relative h-48 overflow-hidden bg-gray-100">
+          {image && (
+            <img
+              src={image}
+              alt={teacher.name}
+              onError={(e) => {
+                e.target.onerror = null;
+                e.target.style.display = 'none';
+              }}
+              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+            />
+          )}
+          <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent p-4">
+            <div className="flex items-center justify-between">
+              <div className="bg-yellow-400 text-yellow-900 font-bold px-2 py-1 rounded-md text-sm flex items-center">
+                ⭐ {teacher.rating || 'N/A'}
+              </div>
+              <span className="text-white text-sm">
+                {teacher.experience || 'N/A'} experience
+              </span>
             </div>
-            <span className="text-white text-sm">{teacher.experience || 'N/A'} experience</span>
           </div>
         </div>
-      </div>
-      <div className="p-5">
-        <h3 className="text-xl font-bold text-gray-800 mb-1">{teacher.name}</h3>
-        <p className="text-blue-600 font-medium mb-2">{teacher.subjects.split(',')[0]}</p>
-        <div className="flex flex-wrap gap-1 mt-2">
-          {(teacher.qualification ? teacher.qualification.split(',') : []).slice(0, 3).map((qual, i) => (
-            <span key={i} className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded">
-              {qual.trim()}
-            </span>
-          ))}
+        <div className="p-5">
+          <h3 className="text-xl font-bold text-gray-800 mb-1">
+            {teacher.name}
+          </h3>
+          {subjects.length > 0 && (
+            <p className="text-blue-600 font-medium mb-2">{subjects[0]}</p>
+          )}
+          <div className="flex flex-wrap gap-1 mt-2">
+            {qualifications.slice(0, 3).map((qual, i) => (
+              <span
+                key={i}
+                className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded"
+              >
+                {qual}
+              </span>
+            ))}
+          </div>
         </div>
-      </div>
-    </motion.div>
-  );
+      </motion.div>
+    );
+  };
 
   return (
     <div className="relative max-w-screen-2xl mx-auto px-6 py-12 bg-gradient-to-b from-blue-50 to-white">
@@ -152,7 +236,9 @@ export default function Teachers({ selectedCity }) {
         transition={{ duration: 0.5 }}
         className="text-center mb-12"
       >
-        <h2 className="text-4xl font-bold text-gray-800 mb-3">Expert Teachers in {selectedCity}</h2>
+        <h2 className="text-4xl font-bold text-gray-800 mb-3">
+          Expert Teachers in {selectedCity}
+        </h2>
         <p className="text-lg text-gray-600 max-w-2xl mx-auto">
           Highly qualified educators and mentors with proven track records
         </p>
@@ -170,9 +256,13 @@ export default function Teachers({ selectedCity }) {
         <>
           {/* Professional Teachers Section */}
           <div className="mb-16">
-            <h3 className="text-2xl font-bold text-gray-800 mb-6">Professional Teachers</h3>
+            <h3 className="text-2xl font-bold text-gray-800 mb-6">
+              Professional Teachers
+            </h3>
             {professionalTeachers.length === 0 ? (
-              <div className="text-center text-gray-600">No professional teachers found in {selectedCity}</div>
+              <div className="text-center text-gray-600">
+                No professional teachers found in {selectedCity}
+              </div>
             ) : professionalTeachers.length === 1 ? (
               <div className="flex justify-center">
                 <motion.div
@@ -186,7 +276,9 @@ export default function Teachers({ selectedCity }) {
               </div>
             ) : (
               <div className="relative px-10">
-                <Slider {...createSliderSettings(professionalTeachers.length)}>
+                <Slider
+                  {...createSliderSettings(professionalTeachers.length)}
+                >
                   {professionalTeachers.map((teacher, idx) => (
                     <div key={teacher.id || idx} className="px-3">
                       {renderTeacherCard(teacher, 'professional')}
@@ -199,9 +291,13 @@ export default function Teachers({ selectedCity }) {
 
           {/* Personal Mentors Section */}
           <div>
-            <h3 className="text-2xl font-bold text-gray-800 mb-6">Personal Mentors</h3>
+            <h3 className="text-2xl font-bold text-gray-800 mb-6">
+              Personal Mentors
+            </h3>
             {personalMentors.length === 0 ? (
-              <div className="text-center text-gray-600">No personal mentors found in {selectedCity}</div>
+              <div className="text-center text-gray-600">
+                No personal mentors found in {selectedCity}
+              </div>
             ) : personalMentors.length === 1 ? (
               <div className="flex justify-center">
                 <motion.div

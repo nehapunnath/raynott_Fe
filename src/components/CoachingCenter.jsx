@@ -1,10 +1,56 @@
-import React, { useState, useEffect } from "react";
-import Slider from "react-slick";
-import { useNavigate } from "react-router-dom";
-import { ArrowLeft, ArrowRight } from "lucide-react";
-import { motion } from "framer-motion";
-import { TuitionCoachingApi } from "../services/TuitionCoachingApi";
-import "tailwindcss";
+import React, { useState, useEffect } from 'react';
+import Slider from 'react-slick';
+import { useNavigate } from 'react-router-dom';
+import { ArrowLeft, ArrowRight } from 'lucide-react';
+import { motion } from 'framer-motion';
+import { TuitionCoachingApi } from '../services/TuitionCoachingApi';
+import 'tailwindcss';
+
+// 👇 Validation: only accept real http(s) URLs
+const isValidUrl = (val) =>
+  typeof val === 'string' &&
+  val.trim().length > 0 &&
+  val.trim().toLowerCase() !== 'null' &&
+  val.trim().toLowerCase() !== 'undefined' &&
+  val.trim().startsWith('http');
+
+// 👇 Pick first valid photo from array (handles string or { url } shapes)
+const pickFirstPhoto = (photos) => {
+  if (!Array.isArray(photos)) return null;
+  for (const p of photos) {
+    if (isValidUrl(p)) return p;
+    if (p && typeof p === 'object') {
+      if (isValidUrl(p.url)) return p.url;
+      if (isValidUrl(p.image)) return p.image;
+      if (isValidUrl(p.src)) return p.src;
+    }
+  }
+  return null;
+};
+
+// 👇 Resolve image with fallback chain
+const getCenterImage = (center) => {
+  if (isValidUrl(center.centerImage)) return center.centerImage;
+  if (isValidUrl(center.image)) return center.image;
+
+  const fromPhotos =
+    pickFirstPhoto(center.photos) ||
+    pickFirstPhoto(center.images) ||
+    pickFirstPhoto(center.gallery) ||
+    pickFirstPhoto(center.photoGallery);
+  if (fromPhotos) return fromPhotos;
+
+  return null;
+};
+
+// 👇 Safe array (handles strings, null, undefined)
+const safeArray = (value, fallback = []) => {
+  if (Array.isArray(value)) return value.filter(Boolean);
+  if (typeof value === 'string' && value.trim()) {
+    return value.split(',').map((s) => s.trim()).filter(Boolean);
+  }
+  return fallback;
+};
 
 const NextArrow = ({ onClick }) => (
   <motion.div
@@ -44,12 +90,16 @@ export default function TuitionCoaching({ selectedCity }) {
     const fetchTuitionCoachings = async () => {
       try {
         setLoading(true);
-        const response = await TuitionCoachingApi.searchTuitionCoachings({ city: selectedCity });
-        const tuitionCoachingsData = response.data ? Object.values(response.data).filter(
-          (center, index, self) =>
-            index === self.findIndex((c) => c.id === center.id)
-        ) : [];
-        console.log('Fetched tuition/coaching centers:', tuitionCoachingsData); // Debug log
+        const response = await TuitionCoachingApi.searchTuitionCoachings({
+          city: selectedCity,
+        });
+        const tuitionCoachingsData = response.data
+          ? Object.values(response.data).filter(
+              (center, index, self) =>
+                index === self.findIndex((c) => c.id === center.id)
+            )
+          : [];
+        console.log('Fetched tuition/coaching centers:', tuitionCoachingsData);
         setTuitionCoachings(tuitionCoachingsData);
         setLoading(false);
       } catch (err) {
@@ -105,14 +155,19 @@ export default function TuitionCoaching({ selectedCity }) {
         transition={{ duration: 0.5 }}
         className="text-center mb-12"
       >
-        <h2 className="text-4xl font-bold text-gray-800 mb-3">Top Tuition & Coaching Centers in {selectedCity}</h2>
+        <h2 className="text-4xl font-bold text-gray-800 mb-3">
+          Top Tuition & Coaching Centers in {selectedCity}
+        </h2>
         <p className="text-lg text-gray-600 max-w-2xl mx-auto">
-          Premier institutes for academic and competitive exam preparation with proven results
+          Premier institutes for academic and competitive exam preparation with
+          proven results
         </p>
       </motion.div>
 
       {loading && (
-        <div className="text-center text-gray-600">Loading tuition/coaching centers...</div>
+        <div className="text-center text-gray-600">
+          Loading tuition/coaching centers...
+        </div>
       )}
 
       {error && (
@@ -120,7 +175,9 @@ export default function TuitionCoaching({ selectedCity }) {
       )}
 
       {!loading && !error && tuitionCoachings.length === 0 && (
-        <div className="text-center text-gray-600">No tuition/coaching centers found in {selectedCity}</div>
+        <div className="text-center text-gray-600">
+          No tuition/coaching centers found in {selectedCity}
+        </div>
       )}
 
       {!loading && !error && tuitionCoachings.length > 0 && (
@@ -134,77 +191,128 @@ export default function TuitionCoaching({ selectedCity }) {
                 transition={{ delay: 0.1 }}
               >
                 <motion.div
-                  onClick={() => navigate(`/tuitioncoaching-details/${tuitionCoachings[0].id}`)}
+                  onClick={() =>
+                    navigate(
+                      `/tuitioncoaching-details/${tuitionCoachings[0].id}`
+                    )
+                  }
                   className="bg-white rounded-xl overflow-hidden shadow-md hover:shadow-xl transition-all duration-300 cursor-pointer group"
                   whileHover={{ y: -10 }}
                 >
-                  <div className="relative h-48 overflow-hidden">
-                    <img
-                      src={tuitionCoachings[0].centerImage || "https://via.placeholder.com/800x400"}
-                      alt={tuitionCoachings[0].name}
-                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                    />
-                    <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent p-4">
-                      <div className="flex items-center justify-between">
-                        <div className="bg-yellow-400 text-yellow-900 font-bold px-2 py-1 rounded-md text-sm flex items-center">
-                          ⭐ {tuitionCoachings[0].rating || 'N/A'}
+                  {(() => {
+                    const image = getCenterImage(tuitionCoachings[0]);
+                    const subjects = safeArray(
+                      tuitionCoachings[0].subjects,
+                      []
+                    );
+                    return (
+                      <>
+                        <div className="relative h-48 overflow-hidden bg-gray-100">
+                          {image && (
+                            <img
+                              src={image}
+                              alt={tuitionCoachings[0].name}
+                              onError={(e) => {
+                                e.target.onerror = null;
+                                e.target.style.display = 'none';
+                              }}
+                              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                            />
+                          )}
+                          <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent p-4">
+                            <div className="flex items-center justify-between">
+                              <div className="bg-yellow-400 text-yellow-900 font-bold px-2 py-1 rounded-md text-sm flex items-center">
+                                ⭐ {tuitionCoachings[0].rating || 'N/A'}
+                              </div>
+                              <span className="text-white text-sm">
+                                {tuitionCoachings[0].city}
+                              </span>
+                            </div>
+                          </div>
                         </div>
-                        <span className="text-white text-sm">{tuitionCoachings[0].city}</span>
-                      </div>
-                    </div>
-                  </div>
-                  <div className="p-5">
-                    <h3 className="text-xl font-bold text-gray-800 mb-1">{tuitionCoachings[0].name}</h3>
-                    <p className="text-sm text-gray-600 mb-2">{tuitionCoachings[0].typeOfCoaching}</p>
-                    <div className="flex flex-wrap gap-1 mt-2 mb-4">
-                      {(tuitionCoachings[0].subjects || []).slice(0, 3).map((subject, i) => (
-                        <span key={i} className="text-xs bg-red-100 text-red-800 px-2 py-1 rounded">
-                          {subject}
-                        </span>
-                      ))}
-                    </div>
-                  </div>
+                        <div className="p-5">
+                          <h3 className="text-xl font-bold text-gray-800 mb-1">
+                            {tuitionCoachings[0].name}
+                          </h3>
+                          <p className="text-sm text-gray-600 mb-2">
+                            {tuitionCoachings[0].typeOfCoaching}
+                          </p>
+                          <div className="flex flex-wrap gap-1 mt-2 mb-4">
+                            {subjects.slice(0, 3).map((subject, i) => (
+                              <span
+                                key={i}
+                                className="text-xs bg-red-100 text-red-800 px-2 py-1 rounded"
+                              >
+                                {subject}
+                              </span>
+                            ))}
+                          </div>
+                        </div>
+                      </>
+                    );
+                  })()}
                 </motion.div>
               </motion.div>
             </div>
           ) : (
             <Slider {...settings}>
-              {tuitionCoachings.map((center, idx) => (
-                <div key={center.id || idx} className="px-3">
-                  <motion.div
-                    onClick={() => navigate(`/tuitioncoaching-details/${center.id}`)}
-                    className="bg-white rounded-xl overflow-hidden shadow-md hover:shadow-xl transition-all duration-300 cursor-pointer group"
-                    whileHover={{ y: -10 }}
-                  >
-                    <div className="relative h-48 overflow-hidden">
-                      <img
-                        src={center.centerImage || "https://via.placeholder.com/800x400"}
-                        alt={center.name}
-                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                      />
-                      <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent p-4">
-                        <div className="flex items-center justify-between">
-                          <div className="bg-yellow-400 text-yellow-900 font-bold px-2 py-1 rounded-md text-sm flex items-center">
-                            ⭐ {center.rating || 'N/A'}
+              {tuitionCoachings.map((center, idx) => {
+                const image = getCenterImage(center);
+                const subjects = safeArray(center.subjects, []);
+                return (
+                  <div key={center.id || idx} className="px-3">
+                    <motion.div
+                      onClick={() =>
+                        navigate(`/tuitioncoaching-details/${center.id}`)
+                      }
+                      className="bg-white rounded-xl overflow-hidden shadow-md hover:shadow-xl transition-all duration-300 cursor-pointer group"
+                      whileHover={{ y: -10 }}
+                    >
+                      <div className="relative h-48 overflow-hidden bg-gray-100">
+                        {image && (
+                          <img
+                            src={image}
+                            alt={center.name}
+                            onError={(e) => {
+                              e.target.onerror = null;
+                              e.target.style.display = 'none';
+                            }}
+                            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                          />
+                        )}
+                        <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent p-4">
+                          <div className="flex items-center justify-between">
+                            <div className="bg-yellow-400 text-yellow-900 font-bold px-2 py-1 rounded-md text-sm flex items-center">
+                              ⭐ {center.rating || 'N/A'}
+                            </div>
+                            <span className="text-white text-sm">
+                              {center.city}
+                            </span>
                           </div>
-                          <span className="text-white text-sm">{center.city}</span>
                         </div>
                       </div>
-                    </div>
-                    <div className="p-5">
-                      <h3 className="text-xl font-bold text-gray-800 mb-1">{center.name}</h3>
-                      <p className="text-sm text-gray-600 mb-2">{center.typeOfCoaching}</p>
-                      <div className="flex flex-wrap gap-1 mt-2 mb-4">
-                        {(center.subjects || []).slice(0, 3).map((subject, i) => (
-                          <span key={i} className="text-xs bg-red-100 text-red-800 px-2 py-1 rounded">
-                            {subject}
-                          </span>
-                        ))}
+                      <div className="p-5">
+                        <h3 className="text-xl font-bold text-gray-800 mb-1">
+                          {center.name}
+                        </h3>
+                        <p className="text-sm text-gray-600 mb-2">
+                          {center.typeOfCoaching}
+                        </p>
+                        <div className="flex flex-wrap gap-1 mt-2 mb-4">
+                          {subjects.slice(0, 3).map((subject, i) => (
+                            <span
+                              key={i}
+                              className="text-xs bg-red-100 text-red-800 px-2 py-1 rounded"
+                            >
+                              {subject}
+                            </span>
+                          ))}
+                        </div>
                       </div>
-                    </div>
-                  </motion.div>
-                </div>
-              ))}
+                    </motion.div>
+                  </div>
+                );
+              })}
             </Slider>
           )}
         </div>

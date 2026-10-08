@@ -1,17 +1,26 @@
 import React, { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Link, useNavigate } from 'react-router-dom';
-import { FaUniversity, FaSearch, FaFilter, FaBookOpen, FaTimes, FaHome, FaSpinner } from 'react-icons/fa';
+import {
+  FaUniversity,
+  FaSearch,
+  FaFilter,
+  FaBookOpen,
+  FaTimes,
+  FaHome,
+  FaSpinner,
+  FaUserLock,
+} from 'react-icons/fa';
 import { IoLocationSharp } from 'react-icons/io5';
 import { BsFillCalendar2CheckFill } from 'react-icons/bs';
 import Footer from '../components/Footer';
 import StickyButton from '../components/StickyButton';
 import { collegeApi } from '../services/collegeApi';
-import "tailwindcss";
-
+import 'tailwindcss';
 
 function AllColleges() {
   const [isFilterOpen, setIsFilterOpen] = useState(false);
+  const [showLoginPrompt, setShowLoginPrompt] = useState(false); // 👈 popup state
   const [colleges, setColleges] = useState([]);
   const [filteredColleges, setFilteredColleges] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -24,17 +33,29 @@ function AllColleges() {
     courses: [],
   });
 
-  const typeOptions = ['Private', 'Government', 'Autonomous', 'Deemed University', 'Private University'];
-  const courseOptions = ['Engineering', 'Medical', 'Arts', 'Commerce', 'Science', 'Law', 'Management'];
+  const typeOptions = [
+    'Private',
+    'Government',
+    'Autonomous',
+    'Deemed University',
+    'Private University',
+  ];
+  const courseOptions = [
+    'Engineering',
+    'Medical',
+    'Arts',
+    'Commerce',
+    'Science',
+    'Law',
+    'Management',
+  ];
 
   const nav = useNavigate();
 
-  // Fetch colleges on component mount
   useEffect(() => {
     fetchColleges();
   }, []);
 
-  // Apply filters whenever filters or searchQuery change
   useEffect(() => {
     applyFilters();
   }, [filters, searchQuery, colleges]);
@@ -44,9 +65,8 @@ function AllColleges() {
       setLoading(true);
       setError(null);
       const response = await collegeApi.getColleges();
-      
+
       if (response.success) {
-        // Convert object of colleges to array
         const collegesArray = response.data ? Object.values(response.data) : [];
         setColleges(collegesArray);
         setFilteredColleges(collegesArray);
@@ -89,18 +109,17 @@ function AllColleges() {
   const applyFilters = () => {
     let result = [...colleges];
 
-    // Apply search filter
     if (searchQuery.trim()) {
-      result = result.filter((college) =>
-        college.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        (college.city?.toLowerCase().includes(searchQuery.toLowerCase())) ||
-        (college.coursesOffered?.some((course) =>
-          course.toLowerCase().includes(searchQuery.toLowerCase())
-        ))
+      result = result.filter(
+        (college) =>
+          college.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          college.city?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          college.coursesOffered?.some((course) =>
+            course.toLowerCase().includes(searchQuery.toLowerCase())
+          )
       );
     }
 
-    // Apply fee range filter
     if (filters.feesRange[0] !== 0 || filters.feesRange[1] !== 300000) {
       result = result.filter(
         (college) =>
@@ -109,21 +128,20 @@ function AllColleges() {
       );
     }
 
-    // Apply type filter
     if (filters.type.length > 0) {
-      result = result.filter((college) =>
-        college.typeOfCollege && filters.type.includes(college.typeOfCollege)
+      result = result.filter(
+        (college) =>
+          college.typeOfCollege && filters.type.includes(college.typeOfCollege)
       );
     }
 
-    // Apply location filter
     if (filters.location) {
-      result = result.filter((college) =>
-        college.city?.toLowerCase() === filters.location.toLowerCase()
+      result = result.filter(
+        (college) =>
+          college.city?.toLowerCase() === filters.location.toLowerCase()
       );
     }
 
-    // Apply course filter
     if (filters.courses.length > 0) {
       result = result.filter((college) =>
         college.coursesOffered?.some((course) => filters.courses.includes(course))
@@ -155,6 +173,27 @@ function AllColleges() {
   useEffect(() => {
     window.scrollTo(0, 0);
   }, []);
+
+  // 👇 Enquire Now → show login popup
+  const handleEnquireNow = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setShowLoginPrompt(true);
+  };
+
+  const goToLogin = () => {
+    setShowLoginPrompt(false);
+    nav('/login');
+  };
+
+  // 👇 Helper to resolve card image (photos[0] → collegeImage → placeholder)
+  const getCollegeImage = (college) => {
+    if (Array.isArray(college.photos) && college.photos.length > 0 && college.photos[0]) {
+      return college.photos[0];
+    }
+    if (college.collegeImage) return college.collegeImage;
+    return 'https://placehold.co/800x400?text=No+Image';
+  };
 
   if (loading) {
     return (
@@ -190,9 +229,7 @@ function AllColleges() {
         <div className="max-w-7xl mx-auto px-4 py-4 md:py-6 flex flex-col md:flex-row items-center justify-between">
           <div className="flex w-full md:w-auto justify-between items-center mb-4 md:mb-0">
             <Link to="/" className="text-3xl font-extrabold text-white">
-              <motion.span whileHover={{ scale: 1.05 }}>
-                Raynott
-              </motion.span>
+              <motion.span whileHover={{ scale: 1.05 }}>Raynott</motion.span>
             </Link>
             <div className="md:hidden flex space-x-2">
               <motion.button
@@ -259,22 +296,13 @@ function AllColleges() {
               <span className="text-orange-600">Colleges</span>
             </div>
             <h1 className="text-3xl md:text-4xl font-extrabold text-gray-800 mt-2">
-              Top Colleges in India 
+              Top Colleges in India
             </h1>
             <p className="text-lg text-gray-600 flex items-center mt-1">
               <BsFillCalendar2CheckFill className="mr-2 text-orange-500" />
-              {filteredColleges.length} Colleges 
+              {filteredColleges.length} Colleges
             </p>
           </div>
-          {/* <motion.button
-            className="bg-orange-600 hover:bg-orange-700 text-white font-semibold py-2 px-6 rounded-full transition duration-300 mt-4 md:mt-0 flex items-center"
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-            onClick={() => setIsFilterOpen(true)}
-          >
-            <FaFilter className="mr-2" />
-            Filters ({filters.type.length + filters.courses.length + (filters.location ? 1 : 0)})
-          </motion.button> */}
         </div>
 
         {/* College List */}
@@ -295,8 +323,12 @@ function AllColleges() {
                 >
                   <div className="relative h-48 w-full overflow-hidden">
                     <img
-                      src={college.collegeImage || 'https://images.unsplash.com/photo-1523050854058-8df90110c9f1?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80'}
+                      src={getCollegeImage(college)}
                       alt={college.name}
+                      onError={(e) => {
+                        e.target.onerror = null;
+                        e.target.src = 'https://placehold.co/800x400?text=No+Image';
+                      }}
                       className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
                     />
                     <div className="absolute top-4 right-4 flex items-center bg-white/90 text-orange-600 px-3 py-1 rounded-full shadow-lg backdrop-blur-sm">
@@ -326,11 +358,12 @@ function AllColleges() {
                     </div>
                     <div className="mt-auto pt-4">
                       <div className="flex justify-between items-center space-x-2">
+                        {/* 👇 Enquire Now triggers popup */}
                         <motion.button
                           className="bg-orange-600 hover:bg-orange-700 text-white text-sm font-medium py-2 px-3 rounded-lg w-full transition duration-300"
                           whileHover={{ scale: 1.02 }}
                           whileTap={{ scale: 0.98 }}
-                          onClick={(e) => e.preventDefault()}
+                          onClick={handleEnquireNow}
                         >
                           Enquire Now
                         </motion.button>
@@ -397,7 +430,9 @@ function AllColleges() {
 
                 {/* Fees Range Filter */}
                 <div className="mb-6">
-                  <h3 className="text-lg font-semibold mb-3 text-gray-700">Fees Range (per year)</h3>
+                  <h3 className="text-lg font-semibold mb-3 text-gray-700">
+                    Fees Range (per year)
+                  </h3>
                   <div className="px-2">
                     <input
                       type="range"
@@ -405,7 +440,12 @@ function AllColleges() {
                       max="300000"
                       step="10000"
                       value={filters.feesRange[1]}
-                      onChange={(e) => handleFilterChange('feesRange', [filters.feesRange[0], parseInt(e.target.value)])}
+                      onChange={(e) =>
+                        handleFilterChange('feesRange', [
+                          filters.feesRange[0],
+                          parseInt(e.target.value),
+                        ])
+                      }
                       className="w-full h-2 bg-orange-200 rounded-lg appearance-none cursor-pointer"
                     />
                     <div className="flex justify-between mt-2">
@@ -413,7 +453,8 @@ function AllColleges() {
                       <span className="text-sm text-gray-600">₹3,00,000+</span>
                     </div>
                     <div className="mt-2 text-center font-medium text-orange-600">
-                      ₹{filters.feesRange[0].toLocaleString()} - ₹{filters.feesRange[1].toLocaleString()}
+                      ₹{filters.feesRange[0].toLocaleString()} - ₹
+                      {filters.feesRange[1].toLocaleString()}
                     </div>
                   </div>
                 </div>
@@ -455,7 +496,9 @@ function AllColleges() {
 
                 {/* Course Filter */}
                 <div className="mb-6">
-                  <h3 className="text-lg font-semibold mb-3 text-gray-700">Courses Offered</h3>
+                  <h3 className="text-lg font-semibold mb-3 text-gray-700">
+                    Courses Offered
+                  </h3>
                   <div className="grid grid-cols-2 gap-3">
                     {courseOptions.map((course) => (
                       <label key={course} className="flex items-center">
@@ -499,6 +542,65 @@ function AllColleges() {
           </motion.div>
         )}
       </AnimatePresence>
+
+      {/* 👇 Login Prompt Popup */}
+      <AnimatePresence>
+        {showLoginPrompt && (
+          <motion.div
+            className="fixed inset-0 bg-black bg-opacity-60 z-[60] flex items-center justify-center p-4"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={() => setShowLoginPrompt(false)}
+          >
+            <motion.div
+              className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6 relative"
+              initial={{ scale: 0.9, y: 30, opacity: 0 }}
+              animate={{ scale: 1, y: 0, opacity: 1 }}
+              exit={{ scale: 0.9, y: 30, opacity: 0 }}
+              transition={{ type: 'spring', damping: 22 }}
+              onClick={(e) => e.stopPropagation()}
+            >
+              <button
+                onClick={() => setShowLoginPrompt(false)}
+                className="absolute top-4 right-4 text-gray-400 hover:text-gray-600"
+                aria-label="Close"
+              >
+                <FaTimes className="text-lg" />
+              </button>
+
+              <div className="flex flex-col items-center text-center">
+                <div className="w-16 h-16 rounded-full bg-gradient-to-r from-orange-500 to-amber-500 flex items-center justify-center mb-4 shadow-lg">
+                  <FaUserLock className="text-white text-2xl" />
+                </div>
+                <h3 className="text-2xl font-bold text-gray-800 mb-2">
+                  Login Required
+                </h3>
+                <p className="text-gray-600 mb-6">
+                  Dear Parents, please login to enquire about this college. It
+                  only takes a few seconds!
+                </p>
+
+                <div className="flex flex-col sm:flex-row gap-3 w-full">
+                  <button
+                    onClick={() => setShowLoginPrompt(false)}
+                    className="flex-1 px-4 py-3 border border-gray-300 text-gray-700 font-medium rounded-lg hover:bg-gray-50 transition"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={goToLogin}
+                    className="flex-1 px-4 py-3 bg-gradient-to-r from-orange-500 to-amber-600 text-white font-semibold rounded-lg hover:from-orange-600 hover:to-amber-700 transition shadow-md"
+                  >
+                    Login Now
+                  </button>
+                </div>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       {/* <Footer /> */}
       {/* <StickyButton /> */}
     </div>

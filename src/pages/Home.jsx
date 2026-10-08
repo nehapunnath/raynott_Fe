@@ -327,19 +327,12 @@ function Home() {
                     className="p-4 flex items-center gap-4 hover:bg-orange-50 cursor-pointer transition-colors duration-200"
                     whileHover={{ backgroundColor: '#fff7ed' }}
                   >
-                    {/* <img
-                      src={category === 'Teachers' ? item.profileImage : item.image || 'https://via.placeholder.com/100'}
-                      alt={item.name}
-                      className="w-12 h-12 rounded-full object-cover"
-                    /> */}
                     <div>
                       <h3 className="text-lg font-semibold text-gray-800">{item.name}</h3>
                       <p className="text-sm text-gray-600">
                         {category === 'Teachers' ? item.subjects.split(',')[0] : item.city}
                       </p>
-                      {/* <p className="text-xs text-gray-500">
-                        {category === 'Teachers' ? item.experience : item.board || item.type || 'N/A'}
-                      </p> */}
+                     
                     </div>
                   </motion.div>
                 ))}

@@ -135,10 +135,10 @@ const RegisterForm = () => {
   ];
 
   const cities = ['Bangalore', 'Hyderabad', 'Mumbai', 'Kolkata', 'Delhi', 'Chennai'];
-  const schoolTypes = ['Day School', 'Boarding', 'Pre School', 'International School'];
+  const schoolTypes = ['Day School', 'Boarding', 'Pre School', 'International School','Play Home','Daycare'];
   const collegeTypes = ['Engineering', 'Medical', 'Arts & Science', 'Management', 'Law', 'Other'];
   const coachingTypes = ['Academic', 'Competitive Exams', 'Skill Development', 'Language', 'Other'];
-  const affiliations = ['CBSE', 'ICSE', 'State Board', 'International'];
+  const affiliations = ['CBSE', 'ICSE', 'State Board', 'International','Pre School','IB' ,'IGCSE'];
   const boards = ['State Board', 'CBSE', 'ICSE', 'International Baccalaureate'];
 
   const facilities = [
