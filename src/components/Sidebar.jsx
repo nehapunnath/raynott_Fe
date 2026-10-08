@@ -59,7 +59,7 @@ const Sidebar = ({ sidebarOpen, setSidebarOpen, activeTab, setActiveTab }) => {
         />
         <NavItem 
           icon={<FiMessageSquare />} 
-          text="Plan and Limit" 
+          text="Plans and Limits" 
           active={activeTab === 'Enquiries'} 
           onClick={() => setActiveTab('Enquiries')}
           sidebarOpen={sidebarOpen}
