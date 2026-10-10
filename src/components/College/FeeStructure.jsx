@@ -208,7 +208,6 @@ const FeeStructure = () => {
         </div>
       </motion.div>
 
-      /* Admission Section */
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}

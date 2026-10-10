@@ -63,9 +63,7 @@ export const schoolApi = {
   // Get a single school by ID
   getSchool: async (id) => {
     try {
-      console.log('📡 Fetching school with ID:', id);
       const response = await api.get(`/admin/getschools/${id}`);
-      console.log('📡 API Response:', response.data);
       return response.data;
     } catch (error) {
       console.error('❌ Error fetching school:', error);

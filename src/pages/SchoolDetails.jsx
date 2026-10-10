@@ -25,7 +25,7 @@ import "tailwindcss";
 const SchoolDetails = () => {
   const [selectedImage, setSelectedImage] = useState(null);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
-  const [heroIndex, setHeroIndex] = useState(0); // 👈 hero banner index
+  const [heroIndex, setHeroIndex] = useState(0); 
   const [school, setSchool] = useState(null);
   const [similarSchools, setSimilarSchools] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -58,20 +58,20 @@ const SchoolDetails = () => {
 
         const formattedSchool = {
           id: schoolData.id || id,
-          name: schoolData.name || 'Unnamed School',
-          address: schoolData.address || schoolData.city || 'Unknown Location',
+          name: schoolData.name || 'N/A',
+          address: schoolData.address || schoolData.city || 'N/A',
           fees: schoolData.totalAnnualFee
             ? `₹${schoolData.totalAnnualFee.toLocaleString()}/year`
             : 'Fees not available',
-          rating: schoolData.rating || 4.0,
+          rating: schoolData.rating || 'N/A',
           affiliation: schoolData.affiliation || 'N/A',
-          phone: schoolData.phone || '+91 9876543210',
+          phone: schoolData.phone || 'N/A',
           image: schoolData.schoolImage || photosArray[0],
-          established: schoolData.established || 2000,
-          medium: schoolData.medium || 'English',
-          grades: schoolData.grades || 'Nursery to 12th',
-          board: schoolData.board || 'N/A',
-          facilities: schoolData.facilities || ['Smart Classes', 'Library'],
+          established: schoolData.establishmentYear|| 'N/A',
+          medium: schoolData.language || 'N/A',
+          grades: schoolData.grade || 'N/A',
+          board: schoolData.affiliation|| 'N/A',
+          facilities: schoolData.facilities || 'N/A',
           photos: photosArray,
         };
         setSchool(formattedSchool);

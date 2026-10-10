@@ -49,7 +49,6 @@ function AllSchools() {
         icon: <FaSchool className="text-white" />,
         place,
         items: filteredSchools.map((school) => {
-          // 👇 Pick first photo from gallery, fallback to schoolImage, then placeholder
           const image =
             (Array.isArray(school.photos) && school.photos.length > 0 && school.photos[0]) ||
             school.schoolImage ||
@@ -64,7 +63,7 @@ function AllSchools() {
               : 'Fees not available',
             views: school.views ? `${(school.views / 1000).toFixed(1)}K Views` : '0 Views',
             board: school.board || 'N/A',
-            rating: school.rating || 4.0,
+            rating: school.rating || 'N/A',
             image,
           };
         }),

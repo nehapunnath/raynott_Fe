@@ -807,11 +807,11 @@ const Dashboard = () => {
 
             <div className="flex items-center gap-3 flex-shrink-0">
               <button
-                // onClick={() => {
-                //   const newState = !showPlansExpanded;
-                //   setShowPlansExpanded(newState);
-                //   if (newState) fetchActivePlans();
-                // }}
+                onClick={() => {
+                  const newState = !showPlansExpanded;
+                  setShowPlansExpanded(newState);
+                  if (newState) fetchActivePlans();
+                }}
                 className="group relative px-6 py-3.5 bg-gradient-to-r from-orange-500 to-amber-500 text-white rounded-xl hover:from-orange-600 hover:to-amber-600 transition-all text-sm font-bold flex items-center gap-2 shadow-xl shadow-orange-500/30 hover:shadow-orange-500/50 hover:scale-105 whitespace-nowrap"
               >
                 <div className="absolute inset-0 rounded-xl bg-white/20 opacity-0 group-hover:opacity-100 transition-opacity" />
